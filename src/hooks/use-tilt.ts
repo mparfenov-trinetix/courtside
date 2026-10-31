@@ -17,11 +17,11 @@ const INVERT_X = 1;
 const INVERT_Y = -1;
 
 /** How far the phone has to lean (as a fraction of g) for full tilt. */
-const RANGE = 0.3;
+const RANGE = 0.38;
 /** How quickly "neutral" follows the way you're holding the phone. Lower = slower. */
 const RECENTER = 0.01;
 /** Low-pass smoothing on the sensor signal. Lower = smoother but laggier. */
-const SMOOTH = 0.2;
+const SMOOTH = 0.08;
 
 const clamp = (v: number, min: number, max: number) => {
   'worklet';

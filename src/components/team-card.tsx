@@ -15,13 +15,13 @@ import type { Tilt } from '@/hooks/use-tilt';
 import type { Team, TeamDetail } from '@/lib/espn';
 import { fonts, logoOn, mix, teamTheme, withAlpha } from '@/lib/theme';
 
-const MAX_ROTATE = 16; // degrees
+const MAX_ROTATE = 10; // degrees
 const RADIUS = 28;
 
 /** Card "deals" in with a quarter flip whenever the team changes. */
 const dealIn = new Keyframe({
   0: { opacity: 0, transform: [{ perspective: 900 }, { rotateY: '-75deg' }, { scale: 0.86 }] },
-  60: { opacity: 1, transform: [{ perspective: 900 }, { rotateY: '8deg' }, { scale: 1.02 }] },
+  60: { opacity: 1, transform: [{ perspective: 900 }, { rotateY: '3deg' }, { scale: 1.01 }] },
   100: {
     opacity: 1,
     transform: [{ perspective: 900 }, { rotateY: '0deg' }, { scale: 1 }],
@@ -60,32 +60,32 @@ export function TeamCard({ team, detail, width, tilt }: Props) {
   // The shadow slides away from the side that's lifted, as if lit from above.
   const shadowStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: -x.value * 22 },
-      { translateY: 18 - y.value * 22 },
+      { translateX: -x.value * 12 },
+      { translateY: 14 - y.value * 12 },
       { scale: 0.92 },
     ],
-    opacity: 0.55 + 0.25 * Math.max(Math.abs(x.value), Math.abs(y.value)),
+    opacity: 0.5 + 0.18 * Math.max(Math.abs(x.value), Math.abs(y.value)),
   }));
 
   const glowStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value * 10 }, { translateY: y.value * 10 }, { scale: 1.02 }],
+    transform: [{ translateX: x.value * 5 }, { translateY: y.value * 5 }, { scale: 1.01 }],
   }));
 
   // Logo floats above the card surface: it moves a little further than the card.
   const logoStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value * 10 }, { translateY: y.value * 10 }],
+    transform: [{ translateX: x.value * 5 }, { translateY: y.value * 5 }],
   }));
 
   // Court lines sit "under" the surface and drift the other way.
   const courtStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -x.value * 8 }, { translateY: -y.value * 8 }],
+    transform: [{ translateX: -x.value * 4 }, { translateY: -y.value * 4 }],
   }));
 
   const sheenStyle = useAnimatedStyle(() => ({
-    opacity: 0.25 + 0.6 * Math.min(1, Math.hypot(x.value, y.value)),
+    opacity: 0.15 + 0.4 * Math.min(1, Math.hypot(x.value, y.value)),
     transform: [
-      { translateX: x.value * width * 0.7 },
-      { translateY: y.value * height * 0.25 },
+      { translateX: x.value * width * 0.4 },
+      { translateY: y.value * height * 0.15 },
       { rotate: '22deg' },
     ],
   }));

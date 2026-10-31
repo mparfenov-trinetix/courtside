@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorState, LoadingState, ScreenHeader } from '@/components/ui';
@@ -17,7 +17,11 @@ export default function Roster() {
   const team = useTeam(currentTeamId);
   const theme = teamTheme(team);
   const { data, isPending, error, refetch } = useRoster(currentTeamId);
-  const [openId, setOpenId] = useState<string | null>(null);
+
+  const navigateToPlayer = (player: Player) => {
+    Haptics.selectionAsync();
+    router.push({ pathname: '/player/[id]', params: { id: player.id, teamId: currentTeamId ?? '' } });
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
@@ -29,9 +33,7 @@ export default function Roster() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.bannerTitle, { color: theme.onPrimary }]}>{team.displayName}</Text>
             <Text style={[styles.bannerSub, { color: withAlpha(theme.onPrimary, 0.75) }]}>
-              {[data?.coach && `Head coach ${data.coach}`, data && `${data.players.length} players`]
-                .filter(Boolean)
-                .join(', ') || ' '}
+              {data ? `${data.players.length} players` : ' '}
             </Text>
           </View>
         </Animated.View>
@@ -46,16 +48,15 @@ export default function Roster() {
           data={data?.players}
           keyExtractor={(p) => p.id}
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24, gap: 8 }}
+          ListHeaderComponent={
+            data?.coach ? <CoachRow coach={data.coach} theme={theme} /> : undefined
+          }
           renderItem={({ item, index }) => (
             <PlayerRow
               player={item}
               index={index}
               theme={theme}
-              open={openId === item.id}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setOpenId((id) => (id === item.id ? null : item.id));
-              }}
+              onPress={() => navigateToPlayer(item)}
             />
           )}
         />
@@ -64,40 +65,49 @@ export default function Roster() {
   );
 }
 
+function CoachRow({ coach, theme }: { coach: string; theme: TeamTheme }) {
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(280).easing(Easing.out(Easing.cubic))}
+      layout={LinearTransition.duration(200)}
+      style={[styles.coachRow, { backgroundColor: withAlpha(theme.primary, 0.3) }]}>
+      <View style={[styles.coachIcon, { backgroundColor: withAlpha(theme.accent, 0.18) }]}>
+        <Text style={[styles.coachInitial, { color: theme.accent }]}>
+          {coach.charAt(0).toUpperCase()}
+        </Text>
+      </View>
+      <View>
+        <Text style={styles.coachLabel}>Head Coach</Text>
+        <Text style={styles.coachName}>{coach}</Text>
+      </View>
+    </Animated.View>
+  );
+}
+
 function PlayerRow({
   player,
   index,
   theme,
-  open,
   onPress,
 }: {
   player: Player;
   index: number;
   theme: TeamTheme;
-  open: boolean;
   onPress: () => void;
 }) {
-  const details = [
-    player.positionName && ['Position', player.positionName],
-    player.age && ['Age', String(player.age)],
-    player.experience !== undefined && ['Experience', player.experience === 0 ? 'Rookie' : `${player.experience} yrs`],
-    player.college && ['College', player.college],
-  ].filter(Boolean) as [string, string][];
-
   return (
     <Animated.View
-      entering={FadeInDown.delay(Math.min(index, 10) * 35).springify().damping(18)}
-      layout={LinearTransition.springify().damping(18)}
-      style={[
-        styles.row,
-        { backgroundColor: open ? withAlpha(theme.primary, 0.55) : withAlpha('#FFFFFF', 0.05) },
-      ]}>
+      entering={FadeInDown.delay(Math.min(index, 12) * 25).duration(280).easing(Easing.out(Easing.cubic))}
+      layout={LinearTransition.duration(200)}
+      style={[styles.row, { backgroundColor: withAlpha('#FFFFFF', 0.05) }]}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
         accessibilityLabel={`${player.name}, number ${player.jersey ?? 'unknown'}, ${player.positionName ?? ''}`}
-        style={styles.rowMain}>
+        style={({ pressed }) => [
+          styles.rowMain,
+          pressed && { backgroundColor: withAlpha(theme.primary, 0.25) },
+        ]}>
         <Text style={[styles.jersey, { color: theme.accent }]}>{player.jersey ?? '–'}</Text>
         <View style={[styles.headshotWrap, { backgroundColor: withAlpha(theme.primary, 0.6) }]}>
           {player.headshot ? (
@@ -120,18 +130,10 @@ function PlayerRow({
             {[player.position, player.height, player.weight].filter(Boolean).join(', ')}
           </Text>
         </View>
+        <View style={styles.chevron}>
+          <Text style={{ color: palette.muted, fontSize: 18 }}>›</Text>
+        </View>
       </Pressable>
-
-      {open && details.length > 0 && (
-        <Animated.View entering={FadeIn.duration(220)} style={styles.details}>
-          {details.map(([label, value]) => (
-            <View key={label} style={styles.detail}>
-              <Text style={styles.detailLabel}>{label}</Text>
-              <Text style={styles.detailValue}>{value}</Text>
-            </View>
-          ))}
-        </Animated.View>
-      )}
     </Animated.View>
   );
 }
@@ -161,6 +163,36 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 13,
   },
+  coachRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderRadius: 16,
+    marginBottom: 8,
+  },
+  coachIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coachInitial: {
+    fontFamily: fonts.display,
+    fontSize: 22,
+  },
+  coachLabel: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: palette.muted,
+    marginBottom: 1,
+  },
+  coachName: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 16,
+    color: palette.chalk,
+  },
   row: {
     borderRadius: 16,
     overflow: 'hidden',
@@ -170,7 +202,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 10,
-    paddingRight: 14,
+    paddingRight: 12,
   },
   jersey: {
     width: 44,
@@ -206,26 +238,7 @@ const styles = StyleSheet.create({
     color: palette.muted,
     marginTop: 1,
   },
-  details: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    paddingLeft: 66,
-    rowGap: 10,
-    columnGap: 22,
-  },
-  detail: {
-    minWidth: 90,
-  },
-  detailLabel: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    color: withAlpha(palette.chalk, 0.6),
-  },
-  detailValue: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 15,
-    color: palette.chalk,
+  chevron: {
+    paddingLeft: 4,
   },
 });

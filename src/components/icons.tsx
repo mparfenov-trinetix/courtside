@@ -77,3 +77,30 @@ export function BasketballIcon({ size = 22, color }: IconProps) {
     </Svg>
   );
 }
+
+export function TrophyIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M8 21h8M12 17v4M17 3h3v4a3 3 0 0 1-3 3M7 3H4v4a3 3 0 0 0 3 3" {...stroke(color)} />
+      <Path d="M7 3h10v6a5 5 0 0 1-10 0V3z" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+export function ArrowLeftIcon({ size = 24, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M19 12H5M12 5l-7 7 7 7" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+export function StandingsIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Rect x={4} y={10} width={4} height={10} rx={1} {...stroke(color)} />
+      <Rect x={10} y={6} width={4} height={14} rx={1} {...stroke(color)} />
+      <Rect x={16} y={13} width={4} height={7} rx={1} {...stroke(color)} />
+    </Svg>
+  );
+}

@@ -10,7 +10,8 @@
     "backgroundColor": "#0D1B2E",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.yourname.courtside"
+      "bundleIdentifier": "com.yourname.courtside",
+      "appleTeamId": "DGL6677SZV"
     },
     "android": {
       "package": "com.yourname.courtside",

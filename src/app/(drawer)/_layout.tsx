@@ -5,7 +5,7 @@ import type { ComponentType } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CardIcon, GridIcon, PeopleIcon, StarIcon } from '@/components/icons';
+import { CardIcon, GridIcon, PeopleIcon, StandingsIcon, StarIcon, TrophyIcon } from '@/components/icons';
 import { useTeam } from '@/hooks/queries';
 import { fonts, logoOn, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
@@ -31,6 +31,8 @@ export default function DrawerLayout() {
       <Drawer.Screen name="home" options={{ title: 'Team card' }} />
       <Drawer.Screen name="teams" options={{ title: 'All teams' }} />
       <Drawer.Screen name="roster" options={{ title: 'Roster' }} />
+      <Drawer.Screen name="league-leaders" options={{ title: 'League Leaders' }} />
+      <Drawer.Screen name="standings" options={{ title: 'Standings' }} />
     </Drawer>
   );
 }
@@ -46,6 +48,8 @@ const ITEMS: MenuItem[] = [
   { route: 'home', href: '/home', label: 'Team card', Icon: CardIcon },
   { route: 'teams', href: '/teams', label: 'All teams', Icon: GridIcon },
   { route: 'roster', href: '/roster', label: 'Roster', Icon: PeopleIcon },
+  { route: 'league-leaders', href: '/league-leaders', label: 'League Leaders', Icon: TrophyIcon },
+  { route: 'standings', href: '/standings', label: 'Standings', Icon: StandingsIcon },
 ];
 
 function Menu(props: DrawerContentComponentProps) {

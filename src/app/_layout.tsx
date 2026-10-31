@@ -56,6 +56,8 @@ export default function RootLayout() {
               <Stack.Screen name="index" options={{ animation: 'none' }} />
               <Stack.Screen name="onboarding" />
               <Stack.Screen name="(drawer)" options={{ animation: 'fade' }} />
+              <Stack.Screen name="player/[id]" options={{ animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
             </Stack>
           </ThemeProvider>
         </TeamProvider>
