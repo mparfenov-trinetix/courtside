@@ -1,4 +1,4 @@
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Rect } from 'react-native-svg';
 
 type IconProps = { size?: number; color: string; filled?: boolean };
 
@@ -95,12 +95,34 @@ export function ArrowLeftIcon({ size = 24, color }: IconProps) {
   );
 }
 
+export function CalendarIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Rect x={3} y={5} width={18} height={16} rx={2} {...stroke(color)} />
+      <Line x1={3} y1={10} x2={21} y2={10} {...stroke(color)} />
+      <Line x1={8} y1={3} x2={8} y2={7} {...stroke(color)} />
+      <Line x1={16} y1={3} x2={16} y2={7} {...stroke(color)} />
+      <Path d="M7 14h2M11 14h2M15 14h2M7 18h2M11 18h2" {...stroke(color)} />
+    </Svg>
+  );
+}
+
 export function StandingsIcon({ size = 22, color }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Rect x={4} y={10} width={4} height={10} rx={1} {...stroke(color)} />
       <Rect x={10} y={6} width={4} height={14} rx={1} {...stroke(color)} />
       <Rect x={16} y={13} width={4} height={7} rx={1} {...stroke(color)} />
+    </Svg>
+  );
+}
+
+export function CompareIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx={8} cy={8} r={3.5} {...stroke(color)} />
+      <Circle cx={16} cy={8} r={3.5} {...stroke(color)} />
+      <Path d="M3 20c0-3 2.2-5 5-5M21 20c0-3-2.2-5-5-5M9 20h6" {...stroke(color)} />
     </Svg>
   );
 }

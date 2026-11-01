@@ -1,17 +1,31 @@
+import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import Animated, { FadeIn, FadeInDown, useAnimatedStyle } from 'react-native-reanimated';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import Animated, {
+  Extrapolation,
+  FadeIn,
+  FadeInDown,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ArrowLeftIcon } from '@/components/icons';
+import { ArrowLeftIcon, CompareIcon, StarIcon } from '@/components/icons';
+import { GameLog } from '@/components/player/game-log';
 import { LoadingState } from '@/components/ui';
-import { usePlayerStats, useRoster, useTeam } from '@/hooks/queries';
+import { usePlayerGameLog, usePlayerStats, useRoster, useTeam } from '@/hooks/queries';
 import { useTilt } from '@/hooks/use-tilt';
+import { useWatchlist } from '@/state/watchlist-store';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 
 const MAX_ROTATE = 10;
+
+type Tab = 'season' | 'games' | 'info';
 
 export default function PlayerScreen() {
   const { width } = useWindowDimensions();
@@ -20,33 +34,46 @@ export default function PlayerScreen() {
   const team = useTeam(teamId);
   const { data: roster } = useRoster(teamId);
   const theme = teamTheme(team);
+  const [activeTab, setActiveTab] = useState<Tab>('season');
+  const { isWatched, toggle } = useWatchlist();
 
   const player = roster?.players.find((p) => p.id === id);
   const { data: stats } = usePlayerStats(player?.id);
+  const { data: gameLog } = usePlayerGameLog(player?.id);
 
-  const cardWidth = Math.min(width * 0.82, 340);
-  const cardHeight = Math.round(cardWidth * 1.38);
-  const tilt = useTilt({ width: cardWidth, height: cardHeight });
+  const cardWidth = Math.min(width * 0.6, 240);
+  const cardHeight = Math.round(cardWidth * 1.22);
+  const tilt = useTilt({ width: cardWidth, height: cardHeight }, { scrollSafe: true });
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  // Destructure shared values so useAnimatedStyle closures don't capture the gesture
+  const tiltX = tilt.x;
+  const tiltY = tilt.y;
 
+  // The card shrinks and fades as it scrolls away so the stats take over the screen.
   const cardStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, cardHeight * 0.8], [1, 0.25], Extrapolation.CLAMP),
     transform: [
+      { scale: interpolate(scrollY.value, [0, cardHeight], [1, 0.82], Extrapolation.CLAMP) },
       { perspective: 900 },
-      { rotateY: `${tilt.x.value * MAX_ROTATE}deg` },
-      { rotateX: `${-tilt.y.value * MAX_ROTATE}deg` },
+      { rotateY: `${tiltX.value * MAX_ROTATE}deg` },
+      { rotateX: `${-tiltY.value * MAX_ROTATE}deg` },
     ],
   }));
 
   const jerseyParallax = useAnimatedStyle(() => ({
     transform: [
-      { translateX: tilt.x.value * 18 },
-      { translateY: tilt.y.value * 10 },
+      { translateX: tiltX.value * 18 },
+      { translateY: tiltY.value * 10 },
     ],
   }));
 
   const headshotParallax = useAnimatedStyle(() => ({
     transform: [
-      { translateX: tilt.x.value * 8 },
-      { translateY: tilt.y.value * 5 },
+      { translateX: tiltX.value * 8 },
+      { translateY: tiltY.value * 5 },
     ],
   }));
 
@@ -69,6 +96,8 @@ export default function PlayerScreen() {
     player.college ? ['College', player.college] : null,
   ].filter((r): r is [string, string] => r !== null);
 
+  const teamLogoUri = team?.logoDark || team?.logo;
+
   return (
     <View style={[styles.root, { backgroundColor: theme.background }]}>
       {/* Back button */}
@@ -81,8 +110,42 @@ export default function PlayerScreen() {
           style={[styles.backBtn, { backgroundColor: withAlpha(theme.primary, 0.18) }]}>
           <ArrowLeftIcon color={theme.accent} size={20} />
         </Pressable>
+        <Pressable
+          onPress={() => {
+            Haptics.selectionAsync();
+            toggle({ id: player.id, name: player.name, teamId: teamId ?? '' });
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={isWatched(player.id) ? 'Remove from watchlist' : 'Add to watchlist'}
+          hitSlop={10}
+          style={[styles.starBtn, { backgroundColor: withAlpha(theme.primary, 0.18) }]}>
+          <StarIcon color={theme.accent} size={20} filled={isWatched(player.id)} />
+        </Pressable>
+        <Pressable
+          onPress={() =>
+            router.navigate(
+              `/compare?${new URLSearchParams({
+                id: player.id,
+                name: player.name,
+                teamId: teamId ?? '',
+                teamAbbr: team?.abbreviation ?? '',
+              }).toString()}` as Href,
+            )
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Compare this player"
+          hitSlop={10}
+          style={[styles.compareBtn, { backgroundColor: withAlpha(theme.primary, 0.18) }]}>
+          <CompareIcon color={theme.accent} size={18} />
+          <Text style={[styles.compareLabel, { color: theme.accent }]}>Compare</Text>
+        </Pressable>
       </View>
 
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        stickyHeaderIndices={[1]}
+        showsVerticalScrollIndicator={false}>
       {/* Tilt card */}
       <View style={styles.cardArea}>
         <GestureDetector gesture={tilt.gesture}>
@@ -93,6 +156,15 @@ export default function PlayerScreen() {
               { width: cardWidth, height: cardHeight, backgroundColor: theme.primary },
               cardStyle,
             ]}>
+
+            {/* Team logo watermark */}
+            {teamLogoUri && (
+              <Image
+                source={teamLogoUri}
+                style={[styles.logoWatermark, { width: cardWidth * 0.75, height: cardWidth * 0.75 }]}
+                contentFit="contain"
+              />
+            )}
 
             {/* Jersey number ghost */}
             {player.jersey && (
@@ -161,63 +233,122 @@ export default function PlayerScreen() {
         </GestureDetector>
       </View>
 
-      {/* Details scrollview */}
-      <ScrollView
-        contentContainerStyle={[styles.detailsContent, { paddingBottom: insets.bottom + 32 }]}
-        showsVerticalScrollIndicator={false}>
+      {/* Tab selector (ScrollView overrides a sticky child's style, so the styled bar sits inside a plain View) */}
+      <View>
+      <Animated.View entering={FadeInDown.delay(40).duration(260)} style={[styles.tabBar, { backgroundColor: theme.background }]}>
+        {([
+          { key: 'season', label: 'Season' },
+          { key: 'games', label: 'Games' },
+          { key: 'info', label: 'Info' },
+        ] as { key: Tab; label: string }[]).map(({ key, label }) => {
+          const active = activeTab === key;
+          return (
+            <Pressable
+              key={key}
+              onPress={() => setActiveTab(key)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              style={[styles.tabBtn, active && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}>
+              <Text style={[styles.tabLabel, { color: active ? palette.chalk : palette.muted }]}>
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </Animated.View>
+      </View>
 
-        {stats && Object.values(stats).some((v) => v != null) && (
-          <Animated.View entering={FadeInDown.delay(80).duration(300)} style={styles.statsBlock}>
-            <Text style={styles.sectionLabel}>This season</Text>
-            <View style={styles.statsGrid}>
-              {([
-                { key: 'PPG', val: stats.ppg },
-                { key: 'RPG', val: stats.rpg },
-                { key: 'APG', val: stats.apg },
-                { key: 'SPG', val: stats.spg },
-                { key: 'BPG', val: stats.bpg },
-                { key: 'MPG', val: stats.mpg },
-              ] as { key: string; val: number | undefined }[])
-                .filter(({ val }) => val != null)
-                .map(({ key, val }) => (
-                  <View key={key} style={[styles.statCell, { backgroundColor: withAlpha('#FFFFFF', 0.06) }]}>
-                    <Text style={[styles.statValue, { color: theme.accent }]}>{val!.toFixed(1)}</Text>
-                    <Text style={styles.statKey}>{key}</Text>
+      {/* Tab content */}
+      <View key={activeTab} style={[styles.detailsContent, { paddingBottom: insets.bottom + 32 }]}>
+
+        {activeTab === 'season' && (
+          <>
+            {stats && Object.values(stats).some((v) => v != null) ? (
+              <Animated.View entering={FadeInDown.delay(60).duration(300)} style={styles.statsBlock}>
+                <Text style={styles.sectionLabel}>Averages</Text>
+                <View style={styles.statsGrid}>
+                  {([
+                    { key: 'PPG', val: stats.ppg },
+                    { key: 'RPG', val: stats.rpg },
+                    { key: 'APG', val: stats.apg },
+                    { key: 'SPG', val: stats.spg },
+                    { key: 'BPG', val: stats.bpg },
+                    { key: 'MPG', val: stats.mpg },
+                  ] as { key: string; val: number | undefined }[])
+                    .filter(({ val }) => val != null)
+                    .map(({ key, val }) => (
+                      <View key={key} style={[styles.statCell, { backgroundColor: withAlpha('#FFFFFF', 0.06) }]}>
+                        <Text style={[styles.statValue, { color: theme.accent }]}>{val!.toFixed(1)}</Text>
+                        <Text style={styles.statKey}>{key}</Text>
+                      </View>
+                    ))}
+                </View>
+
+                {(stats.fgPct != null || stats.threePct != null || stats.ftPct != null) && (
+                  <>
+                    <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Shooting</Text>
+                    <View style={[styles.infoCard, { backgroundColor: withAlpha('#FFFFFF', 0.06) }]}>
+                      {([
+                        { label: 'Field Goals', val: stats.fgPct },
+                        { label: '3-Pointers', val: stats.threePct },
+                        { label: 'Free Throws', val: stats.ftPct },
+                      ] as { label: string; val: number | undefined }[])
+                        .filter(({ val }) => val != null)
+                        .map(({ label, val }, i, arr) => (
+                          <View key={label} style={[styles.infoRow, i < arr.length - 1 && styles.infoRowBorder]}>
+                            <Text style={styles.infoLabel}>{label}</Text>
+                            <Text style={styles.infoValue}>{(val! * 100).toFixed(1)}%</Text>
+                          </View>
+                        ))}
+                    </View>
+                  </>
+                )}
+
+                {(stats.gamesPlayed != null) && (
+                  <Text style={styles.gamesNote}>
+                    {stats.gamesPlayed} games played
+                    {stats.gamesStarted != null ? `, ${stats.gamesStarted} started` : ''}
+                  </Text>
+                )}
+              </Animated.View>
+            ) : (
+              <Animated.View entering={FadeIn.duration(260)} style={styles.emptyTab}>
+                <Text style={styles.emptyTitle}>No stats yet</Text>
+                <Text style={styles.emptyText}>Season stats will appear once the season begins.</Text>
+              </Animated.View>
+            )}
+          </>
+        )}
+
+        {activeTab === 'games' && (
+          <Animated.View entering={FadeInDown.delay(60).duration(300)}>
+            <GameLog entries={gameLog ?? []} accent={theme.accent} />
+          </Animated.View>
+        )}
+
+        {activeTab === 'info' && (
+          <>
+            {infoRows.length > 0 ? (
+              <Animated.View
+                entering={FadeInDown.delay(60).duration(300)}
+                style={[styles.infoCard, { backgroundColor: withAlpha('#FFFFFF', 0.06) }]}>
+                {infoRows.map(([label, value], i) => (
+                  <View key={label} style={[styles.infoRow, i < infoRows.length - 1 && styles.infoRowBorder]}>
+                    <Text style={styles.infoLabel}>{label}</Text>
+                    <Text style={styles.infoValue}>{value}</Text>
                   </View>
                 ))}
-            </View>
-            {(stats.fgPct != null || stats.threePct != null || stats.ftPct != null) && (
-              <View style={[styles.infoCard, { backgroundColor: withAlpha('#FFFFFF', 0.06), marginTop: 8 }]}>
-                {([
-                  { label: 'FG%', val: stats.fgPct },
-                  { label: '3P%', val: stats.threePct },
-                  { label: 'FT%', val: stats.ftPct },
-                ] as { label: string; val: number | undefined }[])
-                  .filter(({ val }) => val != null)
-                  .map(({ label, val }, i, arr) => (
-                    <View key={label} style={[styles.infoRow, i < arr.length - 1 && styles.infoRowBorder]}>
-                      <Text style={styles.infoLabel}>{label}</Text>
-                      <Text style={styles.infoValue}>{(val! * 100).toFixed(1)}%</Text>
-                    </View>
-                  ))}
-              </View>
+              </Animated.View>
+            ) : (
+              <Animated.View entering={FadeIn.duration(260)} style={styles.emptyTab}>
+                <Text style={styles.emptyTitle}>No info</Text>
+                <Text style={styles.emptyText}>Player details not available.</Text>
+              </Animated.View>
             )}
-          </Animated.View>
+          </>
         )}
-
-        {infoRows.length > 0 && (
-          <Animated.View
-            entering={FadeInDown.delay(120).duration(300)}
-            style={[styles.infoCard, { backgroundColor: withAlpha('#FFFFFF', 0.06) }]}>
-            {infoRows.map(([label, value], i) => (
-              <View key={label} style={[styles.infoRow, i < infoRows.length - 1 && styles.infoRowBorder]}>
-                <Text style={styles.infoLabel}>{label}</Text>
-                <Text style={styles.infoValue}>{value}</Text>
-              </View>
-            ))}
-          </Animated.View>
-        )}
-      </ScrollView>
+      </View>
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -227,7 +358,28 @@ const styles = StyleSheet.create({
   topBar: {
     paddingHorizontal: 20,
     paddingBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
+  starBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 'auto',
+    marginRight: 8,
+  },
+  compareBtn: {
+    height: 40,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  compareLabel: { fontFamily: fonts.bodySemi, fontSize: 14 },
   backBtn: {
     width: 40,
     height: 40,
@@ -237,6 +389,7 @@ const styles = StyleSheet.create({
   },
   cardArea: {
     alignItems: 'center',
+    paddingTop: 8,
     paddingBottom: 16,
   },
   card: {
@@ -245,15 +398,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
+  logoWatermark: {
+    position: 'absolute',
+    top: '10%',
+    left: '12%',
+    opacity: 0.08,
+  },
   jerseyGhost: {
     position: 'absolute',
     fontFamily: fonts.display,
     right: -24,
-    bottom: 56,
+    bottom: 44,
   },
   headshotContainer: {
     position: 'absolute',
-    bottom: 80,
+    bottom: 64,
     alignItems: 'center',
   },
   initialsCircle: {
@@ -265,8 +424,8 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     width: '100%',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
     gap: 1,
   },
   cardJerseyLabel: {
@@ -276,14 +435,36 @@ const styles = StyleSheet.create({
   },
   cardName: {
     fontFamily: fonts.display,
-    fontSize: 36,
+    fontSize: 30,
   },
   cardPosition: {
     fontFamily: fonts.bodySemi,
     fontSize: 13,
   },
+
+  // Tab bar
+  tabBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: withAlpha(palette.chalk, 0.1),
+    marginBottom: 4,
+  },
+  tabBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabLabel: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 15,
+  },
+
+  // Content
   detailsContent: {
     paddingHorizontal: 16,
+    paddingTop: 16,
     gap: 12,
   },
   sectionLabel: {
@@ -345,5 +526,28 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodySemi,
     fontSize: 15,
     color: palette.chalk,
+  },
+  gamesNote: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: palette.muted,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  emptyTab: {
+    alignItems: 'center',
+    paddingTop: 40,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontFamily: fonts.display,
+    fontSize: 28,
+    color: palette.chalk,
+  },
+  emptyText: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: palette.muted,
+    textAlign: 'center',
   },
 });

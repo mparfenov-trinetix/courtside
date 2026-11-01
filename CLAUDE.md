@@ -25,6 +25,16 @@ ESPN endpoints are undocumented and may change. All parsing lives in
 `src/lib/espn.ts`. If a field shows "–" in the UI, inspect the live response
 and fix the normalizer there rather than in components.
 
+Per-quarter and per-half player/team stats are not in ESPN's box score. `src/lib/quarter-stats.ts`
+rebuilds them from the play-by-play feed (`Play[]` from `fetchGameSummary`), and it also powers the
+win-probability chart and play-by-play tab. Check accuracy against a game with
+`node --experimental-strip-types scripts/validate-quarter-stats.ts <gameId>`; counting stats match
+the box score, derived plus-minus can drift by ±1.
+
+Other data sources beyond the main ESPN site API: the common/v3 `gamelog` and `search` endpoints
+(player game log, player search for Compare) and core-API team statistics (home screen team season card).
+React Query's cache is persisted to AsyncStorage for slow-changing keys only (see `PERSISTED` in `src/app/_layout.tsx`).
+
 ## Before calling a task done
 ```bash
 npx tsc --noEmit

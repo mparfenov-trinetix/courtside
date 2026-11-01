@@ -34,7 +34,7 @@ const clamp = (v: number, min: number, max: number) => {
  * the card overrides the sensor, which also makes the effect usable in a
  * simulator where there's no real sensor.
  */
-export function useTilt(size: { width: number; height: number }) {
+export function useTilt(size: { width: number; height: number }, options?: { scrollSafe?: boolean }) {
   const reducedMotion = useReducedMotion();
   const gravity = useAnimatedSensor(SensorType.GRAVITY, { interval: 'auto' });
 
@@ -77,10 +77,24 @@ export function useTilt(size: { width: number; height: number }) {
     touchY.value = clamp((y / size.height) * 2 - 1, -1, 1);
   };
 
+  // Inside a vertical ScrollView the pan must not claim the touch immediately:
+  // only a mostly-horizontal drag tilts, so dragging up/down on the card still scrolls.
+  const scrollSafe = options?.scrollSafe ?? false;
+
   const gesture = usePanGesture({
-    minDistance: 0,
+    // No object spread here: the worklets Babel plugin rejects it inside hook configs.
+    minDistance: scrollSafe ? undefined : 0,
+    activeOffsetX: scrollSafe ? [-6, 6] : undefined,
+    failOffsetY: scrollSafe ? [-10, 10] : undefined,
     onBegin: (e) => {
       'worklet';
+      if (scrollSafe) return;
+      toTilt(e.x, e.y);
+      touchWeight.value = withSpring(1, { damping: 18, stiffness: 180 });
+    },
+    onActivate: (e) => {
+      'worklet';
+      if (!scrollSafe) return;
       toTilt(e.x, e.y);
       touchWeight.value = withSpring(1, { damping: 18, stiffness: 180 });
     },

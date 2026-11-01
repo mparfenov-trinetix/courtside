@@ -1,4 +1,6 @@
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -8,8 +10,11 @@ import { ErrorState, LoadingState, ScreenHeader } from '@/components/ui';
 import { useStandings } from '@/hooks/queries';
 import type { StandingEntry } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { useTeamStore } from '@/state/team-store';
 
 type Conference = 'east' | 'west';
+
+const COL = { w: 30, l: 30, pct: 44, gb: 38, strk: 40 };
 
 const TABS: { key: Conference; label: string }[] = [
   { key: 'east', label: 'Eastern' },
@@ -95,10 +100,11 @@ function ColumnHeader() {
   return (
     <View style={styles.columnHeader}>
       <Text style={[styles.colHeaderText, { flex: 1 }]} />
-      <Text style={styles.colHeaderText}>W</Text>
-      <Text style={styles.colHeaderText}>L</Text>
-      <Text style={styles.colHeaderText}>PCT</Text>
-      <Text style={styles.colHeaderText}>GB</Text>
+      <Text style={[styles.colHeaderText, { width: COL.w }]}>W</Text>
+      <Text style={[styles.colHeaderText, { width: COL.l }]}>L</Text>
+      <Text style={[styles.colHeaderText, { width: COL.pct }]}>PCT</Text>
+      <Text style={[styles.colHeaderText, { width: COL.gb }]}>GB</Text>
+      <Text style={[styles.colHeaderText, { width: COL.strk }]}>STRK</Text>
     </View>
   );
 }
@@ -116,24 +122,46 @@ function SectionDivider({ title }: { title: string }) {
 }
 
 function TeamRow({ entry, index }: { entry: StandingEntry; index: number }) {
+  const { viewTeam, favoriteTeamId } = useTeamStore();
   const gbText = entry.gamesBehind === 0 ? '—' : entry.gamesBehind.toFixed(1);
   const pctText = entry.winPct.toFixed(3).replace(/^0/, '');
+  const streakColor = entry.streak.startsWith('W') ? '#34D399' : entry.streak.startsWith('L') ? '#F87171' : palette.muted;
+  const diff = `${entry.diff > 0 ? '+' : ''}${entry.diff.toFixed(1)}`;
+  const details = [entry.lastTen ? `L10 ${entry.lastTen}` : null, entry.diff !== 0 ? diff : null]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <Animated.View
-      entering={FadeInDown.delay(Math.min(index, 14) * 20).duration(260).easing(Easing.out(Easing.cubic))}
-      style={styles.row}>
-      <Text style={styles.seed}>{entry.seed}</Text>
-      {entry.teamLogo ? (
-        <Image source={entry.teamLogo} style={styles.logo} contentFit="contain" />
-      ) : (
-        <View style={[styles.logo, { backgroundColor: withAlpha(palette.chalk, 0.08), borderRadius: 14 }]} />
-      )}
-      <Text style={styles.teamName} numberOfLines={1}>{entry.teamAbbr || entry.teamName}</Text>
-      <Text style={styles.stat}>{entry.wins}</Text>
-      <Text style={styles.stat}>{entry.losses}</Text>
-      <Text style={styles.stat}>{pctText}</Text>
-      <Text style={[styles.stat, { color: palette.muted }]}>{gbText}</Text>
+      entering={FadeInDown.delay(Math.min(index, 14) * 20).duration(260).easing(Easing.out(Easing.cubic))}>
+      <Pressable
+        onPress={() => {
+          Haptics.selectionAsync();
+          viewTeam(entry.teamId);
+          router.navigate('/home');
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${entry.teamName}`}
+        style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
+        <Text style={styles.seed}>{entry.seed}</Text>
+        {entry.teamLogo ? (
+          <Image source={entry.teamLogo} style={styles.logo} contentFit="contain" />
+        ) : (
+          <View style={[styles.logo, { backgroundColor: withAlpha(palette.chalk, 0.08), borderRadius: 14 }]} />
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.teamName} numberOfLines={1}>
+            {entry.teamAbbr || entry.teamName}
+            {entry.teamId === favoriteTeamId ? '  ★' : ''}
+          </Text>
+          {details ? <Text style={styles.teamDetail} numberOfLines={1}>{details}</Text> : null}
+        </View>
+        <Text style={[styles.stat, { width: COL.w }]}>{entry.wins}</Text>
+        <Text style={[styles.stat, { width: COL.l }]}>{entry.losses}</Text>
+        <Text style={[styles.stat, { width: COL.pct }]}>{pctText}</Text>
+        <Text style={[styles.stat, { width: COL.gb, color: palette.muted }]}>{gbText}</Text>
+        <Text style={[styles.stat, { width: COL.strk, color: streakColor, fontFamily: fonts.bodyBold }]}>{entry.streak || '–'}</Text>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -213,13 +241,17 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   teamName: {
-    flex: 1,
     fontFamily: fonts.bodyBold,
     fontSize: 15,
     color: palette.chalk,
   },
+  teamDetail: {
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: palette.muted,
+    marginTop: 1,
+  },
   stat: {
-    width: 40,
     fontFamily: fonts.bodySemi,
     fontSize: 14,
     color: palette.chalk,

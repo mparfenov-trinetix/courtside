@@ -5,26 +5,25 @@ import { useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   FadeIn,
+  FadeInDown,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PeopleIcon, StarIcon } from '@/components/icons';
 import { cardHeight, TeamCard } from '@/components/team-card';
+import { NextGame } from '@/components/next-game';
+import { ScoresStrip } from '@/components/scores-strip';
+import { TeamSeasonStats } from '@/components/team-season-stats';
+import { Watchlist } from '@/components/watchlist';
 import { IconButton, LoadingState, ScreenHeader } from '@/components/ui';
 import { useTeam, useTeamDetail, useTeamSchedule } from '@/hooks/queries';
 import { useTilt } from '@/hooks/use-tilt';
 import type { Game } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
-
-const CONTENT_H = 380;
-const HANDLE_H = 80;
-const SHEET_TOTAL = CONTENT_H + HANDLE_H;
 
 export default function Home() {
   const { width, height } = useWindowDimensions();
@@ -37,6 +36,9 @@ export default function Home() {
 
   const cardWidth = Math.round(Math.min(width * 0.78, 360, (height - insets.top - insets.bottom - 230) / 1.4));
   const tilt = useTilt({ width: cardWidth, height: cardHeight(cardWidth) });
+  // Destructure shared values so useAnimatedStyle closures don't capture the gesture
+  const tiltX = tilt.x;
+  const tiltY = tilt.y;
 
   const bg = useSharedValue<string>(theme.background);
   useEffect(() => {
@@ -45,39 +47,7 @@ export default function Home() {
   const bgStyle = useAnimatedStyle(() => ({ backgroundColor: bg.value }));
 
   const lettersStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -tilt.x.value * 8 }, { translateY: -tilt.y.value * 5 }],
-  }));
-
-  // Bottom sheet
-  const sheetY = useSharedValue(CONTENT_H);
-  const dragStart = useSharedValue(0);
-
-  const openSheet = () => {
-    sheetY.value = withSpring(0, { damping: 24, stiffness: 200, mass: 0.8 });
-  };
-
-  const sheetGesture = usePanGesture({
-    onBegin: () => {
-      'worklet';
-      dragStart.value = sheetY.value;
-    },
-    onUpdate: (e) => {
-      'worklet';
-      sheetY.value = Math.max(0, Math.min(CONTENT_H, dragStart.value + e.translationY));
-    },
-    onFinalize: () => {
-      'worklet';
-      const open = sheetY.value < CONTENT_H / 2;
-      sheetY.value = withSpring(open ? 0 : CONTENT_H, {
-        damping: 24,
-        stiffness: 200,
-        mass: 0.8,
-      });
-    },
-  });
-
-  const sheetAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: sheetY.value }],
+    transform: [{ translateX: -tiltX.value * 8 }, { translateY: -tiltY.value * 5 }],
   }));
 
   const completedGames = useMemo(() => {
@@ -128,17 +98,26 @@ export default function Home() {
         }
       />
 
-      <View style={styles.stage}>
-        <TeamCard key={team.id} team={team} detail={detail} width={cardWidth} tilt={tilt} />
-      </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}>
+        {/* Team card */}
+        <View style={styles.cardArea}>
+          <TeamCard key={team.id} team={team} detail={detail} width={cardWidth} tilt={tilt} />
+        </View>
 
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + 18 }]}>
-        <View style={styles.splits}>
+        {/* Team stats row */}
+        <Animated.View entering={FadeIn.duration(400)} style={styles.splits}>
           <Split label="Home" value={detail?.homeRecord} />
           <Split label="Away" value={detail?.awayRecord} />
           <Split label="Arena" value={detail?.venue} wide />
-        </View>
+        </Animated.View>
 
+        <TeamSeasonStats teamId={team.id} accent={theme.accent} />
+
+        {schedule && schedule.length > 0 && <NextGame schedule={schedule} theme={theme} />}
+
+        {/* Roster button */}
         <Pressable
           onPress={() => router.navigate('/roster')}
           accessibilityRole="button"
@@ -150,38 +129,26 @@ export default function Home() {
           <Text style={styles.rosterText}>See the roster</Text>
         </Pressable>
 
-        {!tilt.sensorAvailable && <Text style={styles.hint}>No motion sensor found. Drag the card to tilt it.</Text>}
-      </View>
+        {!tilt.sensorAvailable && (
+          <Text style={styles.hint}>No motion sensor found. Drag the card to tilt it.</Text>
+        )}
 
-      {/* Games bottom sheet */}
-      <GestureDetector gesture={sheetGesture}>
-        <Animated.View
-          style={[
-            styles.sheet,
-            { paddingBottom: insets.bottom, backgroundColor: withAlpha(theme.surface, 0.97) },
-            sheetAnimStyle,
-          ]}>
-          {/* Drag handle — taller hit-target, tap or drag to open */}
-          <Pressable onPress={openSheet} accessibilityRole="button" accessibilityLabel="View recent games" style={styles.sheetHandle}>
-            <View style={[styles.handlePill, { backgroundColor: withAlpha(palette.chalk, 0.35) }]} />
-            <Text style={[styles.sheetTitle, { color: withAlpha(palette.chalk, 0.75) }]}>Recent games</Text>
-          </Pressable>
+        <Watchlist accent={theme.accent} />
 
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={styles.sheetContent}
-            scrollEnabled
-            showsVerticalScrollIndicator={false}>
-            {completedGames.length === 0 ? (
-              <Text style={styles.emptyText}>No completed games yet</Text>
-            ) : (
-              completedGames.map((game) => (
-                <GameRow key={game.id} game={game} theme={theme} />
-              ))
-            )}
-          </ScrollView>
-        </Animated.View>
-      </GestureDetector>
+        <ScoresStrip accent={theme.accent} highlightTeamId={team.id} />
+
+        {/* Recent games */}
+        {completedGames.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(120).duration(300)} style={styles.gamesSection}>
+            <Text style={[styles.gamesSectionTitle, { color: withAlpha(palette.chalk, 0.55) }]}>
+              Recent Games
+            </Text>
+            {completedGames.map((game, i) => (
+              <GameRow key={game.id} game={game} theme={theme} index={i} />
+            ))}
+          </Animated.View>
+        )}
+      </ScrollView>
     </Animated.View>
   );
 }
@@ -197,47 +164,49 @@ function Split({ label, value, wide }: { label: string; value?: string; wide?: b
   );
 }
 
-function GameRow({ game, theme }: { game: Game; theme: ReturnType<typeof teamTheme> }) {
+function GameRow({ game, theme, index }: { game: Game; theme: ReturnType<typeof teamTheme>; index: number }) {
   const date = new Date(game.date);
   const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const isWin = game.result === 'W';
 
   return (
-    <Pressable
-      onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })}
-      accessibilityRole="button"
-      accessibilityLabel={`${game.result} vs ${game.opponent}`}
-      style={({ pressed }) => [styles.gameRow, pressed && { opacity: 0.75 }]}>
-      {/* Result badge */}
-      <View
-        style={[
-          styles.resultBadge,
-          { backgroundColor: game.result === 'W' ? withAlpha('#34D399', 0.18) : withAlpha('#F87171', 0.18) },
-        ]}>
-        <Text
+    <Animated.View entering={FadeInDown.delay(140 + index * 35).duration(260)}>
+      <Pressable
+        onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })}
+        accessibilityRole="button"
+        accessibilityLabel={`${game.result} vs ${game.opponent}`}
+        style={({ pressed }) => [styles.gameRow, pressed && { opacity: 0.75 }]}>
+        {/* Result badge */}
+        <View
           style={[
-            styles.resultLetter,
-            { color: game.result === 'W' ? '#34D399' : '#F87171' },
+            styles.resultBadge,
+            { backgroundColor: isWin ? withAlpha('#34D399', 0.15) : withAlpha('#F87171', 0.15) },
           ]}>
-          {game.result}
-        </Text>
-        <Text style={[styles.resultScore, { color: palette.chalk }]}>
-          {game.teamScore}–{game.opponentScore}
-        </Text>
-      </View>
-
-      {/* Opponent */}
-      <View style={styles.gameOpponent}>
-        {game.opponentLogo ? (
-          <Image source={game.opponentLogo} style={styles.oppLogo} contentFit="contain" />
-        ) : (
-          <View style={[styles.oppLogo, { backgroundColor: withAlpha(palette.chalk, 0.1), borderRadius: 14 }]} />
-        )}
-        <View>
-          <Text style={styles.oppName} numberOfLines={1}>{game.opponent}</Text>
-          <Text style={styles.gameLocation}>{game.home ? 'Home' : 'Away'} · {dateStr}</Text>
+          <Text style={[styles.resultLetter, { color: isWin ? '#34D399' : '#F87171' }]}>
+            {game.result}
+          </Text>
+          <Text style={[styles.resultScore, { color: palette.chalk }]}>
+            {game.teamScore}–{game.opponentScore}
+          </Text>
         </View>
-      </View>
-    </Pressable>
+
+        {/* Opponent */}
+        <View style={styles.gameOpponent}>
+          {game.opponentLogo ? (
+            <Image source={game.opponentLogo} style={styles.oppLogo} contentFit="contain" />
+          ) : (
+            <View style={[styles.oppLogo, { backgroundColor: withAlpha(palette.chalk, 0.1), borderRadius: 14 }]} />
+          )}
+          <View>
+            <Text style={styles.oppName} numberOfLines={1}>{game.opponent}</Text>
+            <Text style={styles.gameLocation}>{game.home ? 'Home' : 'Away'} · {dateStr}</Text>
+          </View>
+        </View>
+
+        {/* Chevron hint */}
+        <Text style={[styles.chevron, { color: withAlpha(palette.chalk, 0.25) }]}>›</Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -253,18 +222,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'BigShouldersDisplay_900Black',
   },
-  stage: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  scrollContent: {
+    gap: 0,
   },
-  bottom: {
-    paddingHorizontal: 24,
-    gap: 16,
+  cardArea: {
+    alignItems: 'center',
+    paddingBottom: 12,
+    paddingTop: 4,
   },
   splits: {
     flexDirection: 'row',
     gap: 24,
+    paddingHorizontal: 24,
+    marginBottom: 16,
   },
   splitLabel: {
     fontFamily: fonts.body,
@@ -282,85 +252,61 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 10,
+    paddingHorizontal: 22,
+    marginHorizontal: 24,
+    marginBottom: 8,
   },
   rosterText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 16,
+    fontFamily: fonts.bodySemi,
+    fontSize: 17,
     color: palette.chalk,
   },
   hint: {
-    textAlign: 'center',
     fontFamily: fonts.body,
-    fontSize: 13,
-    color: palette.muted,
-  },
-  // Sheet
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: SHEET_TOTAL,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
-  },
-  sheetHandle: {
-    height: HANDLE_H,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-  },
-  handlePill: {
-    width: 44,
-    height: 5,
-    borderRadius: 3,
-  },
-  sheetTitle: {
-    fontFamily: fonts.bodySemi,
     fontSize: 12,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    color: palette.muted,
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    marginTop: 4,
   },
-  sheetContent: {
+  gamesSection: {
+    marginTop: 24,
     paddingHorizontal: 16,
-    paddingBottom: 16,
     gap: 8,
   },
-  emptyText: {
-    fontFamily: fonts.body,
-    fontSize: 15,
-    color: palette.muted,
-    textAlign: 'center',
-    marginTop: 32,
+  gamesSectionTitle: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 12,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    paddingHorizontal: 4,
   },
   gameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
     paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: withAlpha('#FFFFFF', 0.06),
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    gap: 12,
   },
   resultBadge: {
-    width: 64,
-    height: 52,
+    width: 70,
+    paddingVertical: 6,
     borderRadius: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
+    gap: 1,
   },
   resultLetter: {
-    fontFamily: fonts.display,
-    fontSize: 20,
-    lineHeight: 22,
+    fontFamily: fonts.bodyBold,
+    fontSize: 13,
+    letterSpacing: 0.5,
   },
   resultScore: {
     fontFamily: fonts.bodySemi,
-    fontSize: 11,
+    fontSize: 13,
   },
   gameOpponent: {
     flex: 1,
@@ -373,7 +319,7 @@ const styles = StyleSheet.create({
     height: 36,
   },
   oppName: {
-    fontFamily: fonts.bodySemi,
+    fontFamily: fonts.bodyBold,
     fontSize: 15,
     color: palette.chalk,
   },
@@ -382,5 +328,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: palette.muted,
     marginTop: 1,
+  },
+  chevron: {
+    fontSize: 22,
+    lineHeight: 26,
   },
 });

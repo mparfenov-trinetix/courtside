@@ -204,6 +204,10 @@ export type LeagueLeaders = {
   ppg: LeaderEntry[];
   rpg: LeaderEntry[];
   apg: LeaderEntry[];
+  stpg: LeaderEntry[];
+  bpg: LeaderEntry[];
+  mpg: LeaderEntry[];
+  pfpg: LeaderEntry[];
 };
 
 function currentSeason(): number {
@@ -215,10 +219,13 @@ const CORE = 'https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba'
 
 export async function fetchLeagueLeaders(): Promise<LeagueLeaders> {
   const season = currentSeason();
-  const json = await getJson(`${CORE}/seasons/${season}/types/2/leaders?limit=10&lang=en&region=us`);
+  const json = await getJson(`${CORE}/seasons/${season}/types/2/leaders?limit=50&lang=en&region=us`);
   const cats: Json[] = json.categories ?? [];
 
-  const CAT_NAMES = ['pointsPerGame', 'reboundsPerGame', 'assistsPerGame'] as const;
+  const CAT_NAMES = [
+    'pointsPerGame', 'reboundsPerGame', 'assistsPerGame',
+    'stealsPerGame', 'blocksPerGame', 'minutesPerGame', 'foulsPerGame',
+  ] as const;
 
   type RawEntry = { ref: string; teamRef: string; value: number; displayValue: string };
   const rawByCategory: Record<string, RawEntry[]> = {};
@@ -226,7 +233,7 @@ export async function fetchLeagueLeaders(): Promise<LeagueLeaders> {
 
   for (const name of CAT_NAMES) {
     const cat = cats.find((c) => c.name === name);
-    const leaders = ((cat?.leaders ?? []) as Json[]).slice(0, 10);
+    const leaders = ((cat?.leaders ?? []) as Json[]).slice(0, 50);
     rawByCategory[name] = leaders.map((l) => {
       const ref = String(l.athlete?.$ref ?? '').replace(/^http:\/\//, 'https://');
       const teamRef = String(l.team?.$ref ?? '');
@@ -280,6 +287,10 @@ export async function fetchLeagueLeaders(): Promise<LeagueLeaders> {
     ppg: buildEntries('pointsPerGame'),
     rpg: buildEntries('reboundsPerGame'),
     apg: buildEntries('assistsPerGame'),
+    stpg: buildEntries('stealsPerGame'),
+    bpg: buildEntries('blocksPerGame'),
+    mpg: buildEntries('minutesPerGame'),
+    pfpg: buildEntries('foulsPerGame'),
   };
 }
 
@@ -295,6 +306,11 @@ export type StandingEntry = {
   winPct: number;
   gamesBehind: number;
   seed: number;
+  streak: string;
+  lastTen: string;
+  home: string;
+  road: string;
+  diff: number;
 };
 
 export type ConferenceStandings = {
@@ -317,6 +333,7 @@ export async function fetchStandings(): Promise<ConferenceStandings> {
         const team = e.team ?? {};
         const stats: Json[] = e.stats ?? [];
         const stat = (name: string): number => (stats.find((s) => s.name === name)?.value ?? 0) as number;
+        const text = (name: string): string => String(stats.find((s) => s.name === name || s.type === name)?.displayValue ?? '');
         return {
           teamId: String(team.id ?? ''),
           teamName: team.displayName ?? `${team.location ?? ''} ${team.name ?? ''}`.trim(),
@@ -327,6 +344,11 @@ export async function fetchStandings(): Promise<ConferenceStandings> {
           winPct: stat('winPercent'),
           gamesBehind: stat('gamesBehind'),
           seed: Math.round(stat('playoffSeed')),
+          streak: text('streak'),
+          lastTen: text('lasttengames'),
+          home: text('Home'),
+          road: text('Road'),
+          diff: stat('differential'),
         };
       })
       .filter((e) => e.seed > 0)
@@ -366,6 +388,7 @@ export type BoxScorePlayer = {
   shortName: string;
   jersey?: string;
   position?: string;
+  headshot?: string;
   starter: boolean;
   didNotPlay: boolean;
   stats: Record<string, string>; // e.g. { PTS: "22", REB: "6", FG: "8-18" }
@@ -382,12 +405,58 @@ export type BoxScoreTeam = {
   columnNames: string[];
 };
 
+export type Play = {
+  id: string;
+  period: number;
+  clockText: string;
+  text: string;
+  typeText: string;
+  teamId?: string;
+  homeScore: number;
+  awayScore: number;
+  scoring: boolean;
+  scoreValue: number;
+  shooting: boolean;
+  pointsAttempted: number;
+  athleteIds: string[];
+  /** Shot location in feet on a normalized half court (basket at x=25, y=5.25). */
+  x?: number;
+  y?: number;
+};
+
+export type Injury = {
+  teamId: string;
+  athleteId: string;
+  name: string;
+  position?: string;
+  headshot?: string;
+  status: string;
+  detail?: string;
+  returnDate?: string;
+};
+
+export type GameInfo = {
+  venue?: string;
+  city?: string;
+  attendance?: number;
+  officials: string[];
+  broadcast?: string;
+  date?: string;
+  seriesSummary?: string;
+  injuries: Injury[];
+};
+
 export type GameSummary = {
   id: string;
   status: string;
   completed: boolean;
+  live: boolean;
   home: BoxScoreTeam;
   away: BoxScoreTeam;
+  plays: Play[];
+  /** Home win probability (0–1) keyed by play id. */
+  winProb: Record<string, number>;
+  info: GameInfo;
 };
 
 export async function fetchGameSummary(gameId: string): Promise<GameSummary> {
@@ -409,16 +478,20 @@ export async function fetchGameSummary(gameId: string): Promise<GameSummary> {
       return r;
     };
 
-    const allPlayers: BoxScorePlayer[] = ((stats.athletes ?? []) as Json[]).map((a) => ({
-      id: String(a.athlete?.id ?? ''),
-      name: a.athlete?.displayName ?? '',
-      shortName: a.athlete?.shortName ?? a.athlete?.displayName ?? '',
-      jersey: a.athlete?.jersey,
-      position: a.athlete?.position?.abbreviation,
-      starter: a.starter === true,
-      didNotPlay: a.didNotPlay === true,
-      stats: statsRecord((a.stats ?? []) as string[]),
-    }));
+    const allPlayers: BoxScorePlayer[] = ((stats.athletes ?? []) as Json[]).map((a) => {
+      const athleteId = String(a.athlete?.id ?? '');
+      return {
+        id: athleteId,
+        name: a.athlete?.displayName ?? '',
+        shortName: a.athlete?.shortName ?? a.athlete?.displayName ?? '',
+        jersey: a.athlete?.jersey,
+        position: a.athlete?.position?.abbreviation,
+        headshot: athleteId ? `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png` : undefined,
+        starter: a.starter === true,
+        didNotPlay: a.didNotPlay === true,
+        stats: statsRecord((a.stats ?? []) as string[]),
+      };
+    });
 
     const totalsRaw: string[] = (stats.totals ?? []) as string[];
 
@@ -426,7 +499,13 @@ export async function fetchGameSummary(gameId: string): Promise<GameSummary> {
       team: normalizeTeam(c.team ?? {}),
       homeAway: c.homeAway === 'home' ? 'home' : 'away',
       score: parseFloat(String(c.score ?? '0')) || 0,
-      linescores: ((c.linescores ?? []) as Json[]).map((l) => Number(l.value ?? 0)),
+      linescores: ((c.linescores ?? []) as Json[]).map((l) => {
+        if (typeof l === 'number') return l;
+        // ESPN returns {displayValue: "22"} — no "value" field in some responses
+        const raw = l.displayValue ?? l.value;
+        const n = typeof raw === 'number' ? raw : parseInt(String(raw ?? '0'), 10);
+        return isNaN(n) ? 0 : n;
+      }),
       starters: allPlayers.filter((p) => p.starter && !p.didNotPlay),
       bench: allPlayers.filter((p) => !p.starter && !p.didNotPlay),
       totals: statsRecord(totalsRaw),
@@ -437,13 +516,129 @@ export async function fetchGameSummary(gameId: string): Promise<GameSummary> {
   const homeC = competitors.find((c) => c.homeAway === 'home') ?? competitors[0] ?? {};
   const awayC = competitors.find((c) => c.homeAway === 'away') ?? competitors[1] ?? {};
 
+  const plays: Play[] = ((json.plays ?? []) as Json[]).map((p) => ({
+    id: String(p.id ?? ''),
+    period: Number(p.period?.number ?? 1),
+    clockText: String(p.clock?.displayValue ?? '0:00'),
+    text: String(p.text ?? ''),
+    typeText: String(p.type?.text ?? ''),
+    teamId: p.team?.id != null ? String(p.team.id) : undefined,
+    homeScore: Number(p.homeScore ?? 0),
+    awayScore: Number(p.awayScore ?? 0),
+    scoring: p.scoringPlay === true,
+    scoreValue: Number(p.scoreValue ?? 0),
+    shooting: p.shootingPlay === true,
+    pointsAttempted: Number(p.pointsAttempted ?? 0),
+    athleteIds: ((p.participants ?? []) as Json[])
+      .map((x) => String(x.athlete?.id ?? ''))
+      .filter(Boolean),
+    // ESPN uses ±2^31 sentinels when a play has no location
+    x: typeof p.coordinate?.x === 'number' && Math.abs(p.coordinate.x) < 1000 ? p.coordinate.x : undefined,
+    y: typeof p.coordinate?.y === 'number' && Math.abs(p.coordinate.y) < 1000 ? p.coordinate.y : undefined,
+  }));
+
+  const winProb: Record<string, number> = {};
+  for (const w of (json.winprobability ?? []) as Json[]) {
+    if (w.playId != null && typeof w.homeWinPercentage === 'number') {
+      winProb[String(w.playId)] = w.homeWinPercentage;
+    }
+  }
+
+  const venue: Json = json.gameInfo?.venue ?? {};
+  const info: GameInfo = {
+    venue: venue.fullName,
+    city: [venue.address?.city, venue.address?.state].filter(Boolean).join(', ') || undefined,
+    attendance: typeof json.gameInfo?.attendance === 'number' && json.gameInfo.attendance > 0
+      ? json.gameInfo.attendance
+      : undefined,
+    officials: ((json.gameInfo?.officials ?? []) as Json[])
+      .map((o) => String(o.displayName ?? o.fullName ?? ''))
+      .filter(Boolean),
+    broadcast: json.broadcasts?.[0]?.media?.shortName ?? json.broadcasts?.[0]?.station,
+    date: comp.date ?? json.header?.competitions?.[0]?.date,
+    seriesSummary: json.seasonseries?.[0]?.summary,
+    injuries: ((json.injuries ?? []) as Json[]).flatMap((t) =>
+      ((t.injuries ?? []) as Json[]).map((i): Injury => ({
+        teamId: String(t.team?.id ?? ''),
+        athleteId: String(i.athlete?.id ?? ''),
+        name: i.athlete?.displayName ?? '',
+        position: i.athlete?.position?.abbreviation,
+        headshot: i.athlete?.headshot?.href,
+        status: String(i.status ?? i.type?.description ?? ''),
+        detail: i.details?.type,
+        returnDate: i.details?.returnDate,
+      })),
+    ),
+  };
+
   return {
     id: gameId,
-    status: statusType.description ?? statusType.shortDetail ?? '',
+    status:
+      statusType.state === 'in'
+        ? statusType.shortDetail ?? statusType.detail ?? 'Live'
+        : statusType.description ?? statusType.shortDetail ?? '',
     completed: statusType.completed === true,
+    live: statusType.state === 'in',
     home: buildTeam(homeC),
     away: buildTeam(awayC),
+    plays,
+    winProb,
+    info,
   };
+}
+
+// ─── Scoreboard by date ───────────────────────────────────────────────────────
+
+export type ScoreboardTeam = {
+  teamId: string;
+  name: string;
+  abbreviation: string;
+  logo: string;
+  score?: number;
+  winner?: boolean;
+};
+
+export type ScoreboardGame = {
+  id: string;
+  date: string;
+  status: string;
+  completed: boolean;
+  inProgress: boolean;
+  home: ScoreboardTeam;
+  away: ScoreboardTeam;
+};
+
+export async function fetchScoreboardByDate(date: string): Promise<ScoreboardGame[]> {
+  // date format: YYYYMMDD
+  const json = await getJson(`${BASE}/scoreboard?dates=${date}&limit=20`);
+  const events: Json[] = json.events ?? [];
+  return events.map((ev) => {
+    const comp: Json = ev.competitions?.[0] ?? {};
+    const status: Json = comp.status?.type ?? {};
+    const competitors: Json[] = comp.competitors ?? [];
+
+    const parseTeam = (c: Json): ScoreboardTeam => ({
+      teamId: String(c.team?.id ?? ''),
+      name: c.team?.displayName ?? c.team?.name ?? '',
+      abbreviation: c.team?.abbreviation ?? '',
+      logo: c.team?.logo ?? c.team?.logos?.[0]?.href ?? '',
+      score: c.score != null ? parseFloat(String(c.score)) || undefined : undefined,
+      winner: c.winner === true,
+    });
+
+    const home = parseTeam(competitors.find((c) => c.homeAway === 'home') ?? competitors[0] ?? {});
+    const away = parseTeam(competitors.find((c) => c.homeAway === 'away') ?? competitors[1] ?? {});
+
+    return {
+      id: String(ev.id ?? ''),
+      date: String(ev.date ?? ''),
+      status: status.shortDetail ?? status.description ?? '',
+      completed: status.completed === true,
+      inProgress: status.state === 'in' || status.name === 'STATUS_IN_PROGRESS',
+      home,
+      away,
+    };
+  });
 }
 
 export async function fetchPlayerStats(athleteId: string): Promise<PlayerSeasonStats> {
@@ -459,6 +654,12 @@ export async function fetchPlayerStats(athleteId: string): Promise<PlayerSeasonS
       const v = Number(s.value);
       return isNaN(v) ? undefined : v;
     };
+    // ESPN sometimes returns percentages as already-multiplied values (e.g. 48.7 instead of 0.487)
+    const pct = (name: string): number | undefined => {
+      const v = stat(name);
+      if (v == null) return undefined;
+      return v > 1 ? v / 100 : v;
+    };
     return {
       gamesPlayed: stat('gamesPlayed'),
       gamesStarted: stat('gamesStarted'),
@@ -468,11 +669,166 @@ export async function fetchPlayerStats(athleteId: string): Promise<PlayerSeasonS
       spg: stat('avgSteals'),
       bpg: stat('avgBlocks'),
       mpg: stat('avgMinutes'),
-      fgPct: stat('fieldGoalPct'),
-      threePct: stat('threePointFieldGoalPct'),
-      ftPct: stat('freeThrowPct'),
+      fgPct: pct('fieldGoalPct'),
+      threePct: pct('threePointFieldGoalPct'),
+      ftPct: pct('freeThrowPct'),
     };
   } catch {
     return {};
   }
+}
+
+// ─── Player game log ──────────────────────────────────────────────────────────
+
+export type GameLogEntry = {
+  gameId: string;
+  date: string;
+  home: boolean;
+  opponentId: string;
+  opponent: string;
+  opponentLogo: string;
+  result?: 'W' | 'L';
+  teamScore: number;
+  opponentScore: number;
+  min: number;
+  pts: number;
+  reb: number;
+  ast: number;
+  stl: number;
+  blk: number;
+  to: number;
+  pf: number;
+  fg: string;
+  tp: string;
+  ft: string;
+};
+
+export async function fetchPlayerGameLog(athleteId: string): Promise<GameLogEntry[]> {
+  const json = await getJson(
+    `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${athleteId}/gamelog`,
+  );
+  const names: string[] = json.names ?? [];
+  const events: Record<string, Json> = json.events ?? {};
+  const regular: Json =
+    (json.seasonTypes ?? []).find((s: Json) => /regular/i.test(String(s.displayName))) ?? json.seasonTypes?.[0] ?? {};
+
+  const entries: GameLogEntry[] = [];
+  for (const cat of (regular.categories ?? []) as Json[]) {
+    for (const ev of (cat.events ?? []) as Json[]) {
+      const meta = events[String(ev.eventId)];
+      if (!meta) continue;
+      const stats: string[] = ev.stats ?? [];
+      const get = (name: string) => stats[names.indexOf(name)] ?? '';
+      const num = (name: string) => {
+        const n = parseFloat(get(name));
+        return isNaN(n) ? 0 : n;
+      };
+      const away = meta.atVs === '@';
+      const homeScore = parseInt(String(meta.homeTeamScore ?? '0'), 10) || 0;
+      const awayScore = parseInt(String(meta.awayTeamScore ?? '0'), 10) || 0;
+      const opp: Json = meta.opponent ?? {};
+      entries.push({
+        gameId: String(meta.id ?? ev.eventId),
+        date: String(meta.gameDate ?? ''),
+        home: !away,
+        opponentId: String(opp.id ?? ''),
+        opponent: opp.abbreviation ?? '',
+        opponentLogo: opp.logoDark ?? opp.logo ?? '',
+        result: meta.gameResult === 'W' || meta.gameResult === 'L' ? meta.gameResult : undefined,
+        teamScore: away ? awayScore : homeScore,
+        opponentScore: away ? homeScore : awayScore,
+        min: num('minutes'),
+        pts: num('points'),
+        reb: num('totalRebounds'),
+        ast: num('assists'),
+        stl: num('steals'),
+        blk: num('blocks'),
+        to: num('turnovers'),
+        pf: num('fouls'),
+        fg: get('fieldGoalsMade-fieldGoalsAttempted'),
+        tp: get('threePointFieldGoalsMade-threePointFieldGoalsAttempted'),
+        ft: get('freeThrowsMade-freeThrowsAttempted'),
+      });
+    }
+  }
+  return entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+// ─── Player search ────────────────────────────────────────────────────────────
+
+export type PlayerSearchResult = {
+  id: string;
+  name: string;
+  teamId?: string;
+  teamAbbr?: string;
+  headshot: string;
+};
+
+export const headshotUrl = (athleteId: string) =>
+  `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png`;
+
+export async function searchPlayers(query: string): Promise<PlayerSearchResult[]> {
+  const q = encodeURIComponent(query.trim());
+  const json = await getJson(
+    `https://site.web.api.espn.com/apis/common/v3/search?query=${q}&limit=12&type=player&sport=basketball&league=nba`,
+  );
+  return ((json.items ?? []) as Json[])
+    .filter((i) => i.league === 'nba')
+    .map((i) => {
+      const core: Json = i.teamRelationships?.[0]?.core ?? {};
+      return {
+        id: String(i.id),
+        name: i.displayName ?? '',
+        teamId: core.id != null ? String(core.id) : undefined,
+        teamAbbr: core.abbreviation,
+        headshot: headshotUrl(String(i.id)),
+      };
+    });
+}
+
+// ─── Team season stats ────────────────────────────────────────────────────────
+
+export type RankedStat = { value: number; rank?: number };
+
+export type TeamSeasonStats = {
+  ppg?: number;
+  rpg?: number;
+  apg?: number;
+  spg?: number;
+  bpg?: number;
+  tov?: number;
+  fgPct?: RankedStat;
+  threePct?: RankedStat;
+  ftPct?: RankedStat;
+  efgPct?: RankedStat;
+};
+
+export async function fetchTeamSeasonStats(teamId: string): Promise<TeamSeasonStats> {
+  const json = await getJson(
+    `${CORE}/seasons/${currentSeason()}/types/2/teams/${teamId}/statistics?lang=en&region=us`,
+  );
+  const all: Json[] = (json.splits?.categories ?? []).flatMap((c: Json) => c.stats ?? []);
+  const find = (name: string) => all.find((s) => s.name === name);
+  const num = (name: string): number | undefined => {
+    const v = Number(find(name)?.value);
+    return isNaN(v) || find(name) == null ? undefined : v;
+  };
+  const ranked = (name: string): RankedStat | undefined => {
+    const s = find(name);
+    const value = Number(s?.value);
+    if (!s || isNaN(value)) return undefined;
+    return { value, rank: typeof s.rank === 'number' ? s.rank : undefined };
+  };
+  return {
+    ppg: num('avgPoints'),
+    rpg: num('avgRebounds'),
+    apg: num('avgAssists'),
+    spg: num('avgSteals'),
+    bpg: num('avgBlocks'),
+    tov: num('avgTurnovers'),
+    fgPct: ranked('fieldGoalPct'),
+    threePct: ranked('threePointFieldGoalPct'),
+    ftPct: ranked('freeThrowPct'),
+    efgPct: ranked('effectiveFGPct'),
+  };
 }

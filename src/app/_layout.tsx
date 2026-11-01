@@ -7,7 +7,10 @@ import {
   BigShouldersDisplay_700Bold,
   BigShouldersDisplay_900Black,
 } from '@expo-google-fonts/big-shoulders-display';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useFonts } from 'expo-font';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -16,14 +19,23 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { palette } from '@/lib/theme';
 import { TeamProvider } from '@/state/team-store';
+import { WatchlistProvider } from '@/state/watchlist-store';
 
 // Keep the native splash up until the intro screen has painted its first frame,
 // so the hand-off from native splash to the JS intro animation is seamless.
 SplashScreen.preventAutoHideAsync();
 
+const DAY = 24 * 60 * 60 * 1000;
+
+// gcTime must be at least the persister's maxAge or restored data is discarded.
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 2 } },
+  defaultOptions: { queries: { retry: 2, gcTime: DAY } },
 });
+
+const persister = createAsyncStoragePersister({ storage: AsyncStorage, key: 'courtside:query-cache' });
+
+// Only slow-changing, small payloads are worth restoring on launch; game summaries are big and live.
+const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'teamStats']);
 
 const navTheme = {
   ...DarkTheme,
@@ -43,8 +55,18 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.arena }}>
-      <QueryClientProvider client={queryClient}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          maxAge: DAY,
+          buster: 'v1',
+          dehydrateOptions: {
+            shouldDehydrateQuery: (q) => q.state.status === 'success' && PERSISTED.has(String(q.queryKey[0])),
+          },
+        }}>
         <TeamProvider>
+          <WatchlistProvider>
           <ThemeProvider value={navTheme}>
             <StatusBar style="light" />
             <Stack
@@ -60,8 +82,9 @@ export default function RootLayout() {
               <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
             </Stack>
           </ThemeProvider>
+          </WatchlistProvider>
         </TeamProvider>
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </GestureHandlerRootView>
   );
 }

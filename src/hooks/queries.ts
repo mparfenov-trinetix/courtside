@@ -3,11 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import {
   fetchGameSummary,
   fetchLeagueLeaders,
+  fetchPlayerGameLog,
   fetchPlayerStats,
   fetchRoster,
+  fetchScoreboardByDate,
   fetchStandings,
   fetchTeamDetail,
+  fetchTeamSeasonStats,
   fetchTeams,
+  searchPlayers,
   fetchTeamSchedule,
 } from '@/lib/espn';
 
@@ -76,6 +80,17 @@ export function useGameSummary(gameId?: string | null) {
     queryFn: () => fetchGameSummary(gameId!),
     enabled: !!gameId,
     staleTime: 30 * 60 * 1000,
+    refetchInterval: (query) => (query.state.data?.live ? 15_000 : false),
+  });
+}
+
+export function useScoreboardByDate(date: string) {
+  return useQuery({
+    queryKey: ['scoreboard', date],
+    queryFn: () => fetchScoreboardByDate(date),
+    staleTime: 5 * 60 * 1000, // 5 min — scores change during games
+    refetchInterval: (query) => (query.state.data?.some((g) => g.inProgress) ? 20_000 : false),
+    enabled: !!date,
   });
 }
 
@@ -84,6 +99,34 @@ export function usePlayerStats(athleteId?: string | null) {
     queryKey: ['playerStats', athleteId],
     queryFn: () => fetchPlayerStats(athleteId!),
     enabled: !!athleteId,
+    staleTime: HOUR,
+  });
+}
+
+export function usePlayerGameLog(athleteId?: string | null) {
+  return useQuery({
+    queryKey: ['playerGameLog', athleteId],
+    queryFn: () => fetchPlayerGameLog(athleteId!),
+    enabled: !!athleteId,
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
+export function usePlayerSearch(query: string) {
+  const q = query.trim();
+  return useQuery({
+    queryKey: ['playerSearch', q.toLowerCase()],
+    queryFn: () => searchPlayers(q),
+    enabled: q.length >= 2,
+    staleTime: HOUR,
+  });
+}
+
+export function useTeamSeasonStats(teamId?: string | null) {
+  return useQuery({
+    queryKey: ['teamStats', teamId],
+    queryFn: () => fetchTeamSeasonStats(teamId!),
+    enabled: !!teamId,
     staleTime: HOUR,
   });
 }

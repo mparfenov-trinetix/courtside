@@ -90,6 +90,25 @@ export function teamTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null):
   };
 }
 
+/**
+ * Two team colors that stay distinguishable on a dark background, for charts
+ * and head-to-head bars where both teams share one canvas.
+ */
+export function matchupColors(
+  away: Pick<Team, 'color' | 'alternateColor'>,
+  home: Pick<Team, 'color' | 'alternateColor'>,
+): { away: string; home: string } {
+  const a = teamTheme(away).accent;
+  const h = teamTheme(home).accent;
+  if (distance(a, h) >= 110) return { away: a, home: h };
+
+  const lift = (c: string) => (luminance(c) < 0.08 ? mix(c, '#FFFFFF', 0.45) : c);
+  const candidates = [home.color, home.alternateColor, mix(home.color, '#FFFFFF', 0.35)]
+    .map(lift)
+    .sort((x, y) => distance(y, a) - distance(x, a));
+  return { away: a, home: candidates[0] };
+}
+
 /** Pick the logo variant that reads on a background with the given text color. */
 export function logoOn(team: Pick<Team, 'logo' | 'logoDark'>, onColor: string) {
   return onColor === '#FFFFFF' ? team.logoDark || team.logo : team.logo;

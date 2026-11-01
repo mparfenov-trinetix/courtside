@@ -10,7 +10,6 @@ import Animated, {
   useSharedValue,
   withSpring,
   withTiming,
-  ZoomIn,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -90,7 +89,7 @@ export default function Onboarding() {
 
       {selected && (
         <Animated.View
-          entering={FadeInDown.springify().damping(16)}
+          entering={FadeInDown.duration(260)}
           exiting={FadeOutDown}
           style={[styles.ctaWrap, { paddingBottom: insets.bottom + 16 }]}>
           <Pressable
@@ -127,7 +126,7 @@ function TeamTile({
   const theme = teamTheme(team);
   const lift = useSharedValue(selected ? 1 : 0);
   useEffect(() => {
-    lift.value = withSpring(selected ? 1 : 0, { damping: 12, stiffness: 220 });
+    lift.value = withSpring(selected ? 1 : 0, { damping: 22, stiffness: 160 });
   }, [selected, lift]);
 
   const style = useAnimatedStyle(() => ({
@@ -135,7 +134,7 @@ function TeamTile({
   }));
 
   return (
-    <Animated.View entering={ZoomIn.delay(index * 28).springify().damping(15)} style={style}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 14) * 22).duration(280)} style={style}>
       <Pressable
         onPress={onPress}
         accessibilityRole="radio"
