@@ -10,14 +10,14 @@
     "backgroundColor": "#0D1B2E",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.yourname.courtside",
-      "appleTeamId": "DGL6677SZV",
+      "bundleIdentifier": "com.mykolaparfenov.courtside",
+      "appleTeamId": "5K6PXTLH38",
       "config": {
         "usesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.yourname.courtside",
+      "package": "com.mykolaparfenov.courtside",
       "adaptiveIcon": {
         "backgroundColor": "#0D1B2E",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -44,7 +44,7 @@
       [
         "expo-widgets",
         {
-          "groupIdentifier": "group.com.yourname.courtside",
+          "groupIdentifier": "group.com.mykolaparfenov.courtside",
           "widgets": [
             {
               "name": "NextGameWidget",
@@ -54,12 +54,38 @@
                 "supportedFamilies": [
                   "systemSmall",
                   "systemMedium"
-                ]
+                ],
+                "initialLayout": "./src/widgets/next-game-widget.tsx"
+              }
+            },
+            {
+              "name": "TeamFormWidget",
+              "displayName": "Team form",
+              "description": "Your team's last five results, record and streak",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium"
+                ],
+                "initialLayout": "./src/widgets/team-form-widget.tsx"
+              }
+            },
+            {
+              "name": "FixturesWidget",
+              "displayName": "Upcoming games",
+              "description": "Your team's next fixtures",
+              "ios": {
+                "supportedFamilies": [
+                  "systemMedium",
+                  "systemLarge"
+                ],
+                "initialLayout": "./src/widgets/fixtures-widget.tsx"
               }
             }
           ]
         }
-      ]
+      ],
+      "./plugins/with-pods-deployment-target"
     ],
     "experiments": {
       "typedRoutes": true,

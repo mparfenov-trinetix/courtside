@@ -60,8 +60,13 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "node --experimental-strip-types --no-warnings --test tests/*.test.ts",
+    "test": "node --experimental-strip-types --no-warnings --import ./tests/register.mjs --test tests/*.test.ts",
     "storybook": "cross-env EXPO_PUBLIC_STORYBOOK_ENABLED=true expo start"
   },
-  "private": true
+  "private": true,
+  "reanimated": {
+    "staticFeatureFlags": {
+      "ENABLE_SHARED_ELEMENT_TRANSITIONS": true
+    }
+  }
 }

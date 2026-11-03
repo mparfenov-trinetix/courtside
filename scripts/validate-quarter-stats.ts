@@ -1,6 +1,6 @@
-// Usage: node --experimental-strip-types scripts/validate-quarter-stats.ts <espnGameId>
+// Usage: node --experimental-strip-types --import ./tests/register.mjs scripts/validate-quarter-stats.ts <espnGameId>
 // Rebuilds each player's full-game line from play-by-play and diffs it against ESPN's box score.
-import { deriveQuarterStats, lineToStats, sumPeriods } from '../src/lib/quarter-stats.ts';
+import { deriveQuarterStats, lineToStats, sumPeriods } from '../src/lib/game';
 
 const gameId = process.argv[2];
 if (!gameId) throw new Error('Pass an ESPN game id');
