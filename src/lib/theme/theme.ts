@@ -1,4 +1,4 @@
-import type { Team } from './espn';
+import type { Team } from '@/lib/espn';
 
 /** Base palette used before a team is chosen and for neutral chrome. */
 export const palette = {

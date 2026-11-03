@@ -1,4 +1,4 @@
-import type { Play } from './espn';
+import type { Play } from '@/lib/espn';
 
 // ESPN only publishes full-game box scores, but the play-by-play feed is detailed
 // enough to rebuild every counting stat (and minutes / plus-minus) per period.

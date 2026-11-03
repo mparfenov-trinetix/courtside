@@ -1,5 +1,5 @@
 import type { Play } from '@/lib/espn';
-import type { Line } from '@/lib/quarter-stats';
+import type { Line } from './quarter-stats';
 
 // ─── Box score columns ────────────────────────────────────────────────────────
 

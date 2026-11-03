@@ -2,9 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { normalizeGameSummary } from '../src/lib/espn.ts';
-import { buildFourFactors, deriveFlow } from '../src/lib/game-model.ts';
-import { deriveQuarterStats, sumLineups, sumPeriods } from '../src/lib/quarter-stats.ts';
+import { normalizeGameSummary } from '../src/lib/espn';
+import { buildFourFactors, deriveFlow, deriveQuarterStats, sumLineups, sumPeriods } from '../src/lib/game';
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/game-final.json', import.meta.url), 'utf8'));
 const game = normalizeGameSummary(fixture, '401909912');

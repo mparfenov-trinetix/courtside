@@ -1,5 +1,5 @@
 import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
-import { lineToStats, sumPeriods, type QuarterStats } from '@/lib/quarter-stats';
+import { lineToStats, sumPeriods, type QuarterStats } from './quarter-stats';
 
 /** A team's players with stats for just the chosen periods (rebuilt from play-by-play), or the box score as-is. */
 export function playersWithStats(

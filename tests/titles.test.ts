@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { titleSeasons } from '../src/lib/titles.ts';
+import { titleSeasons } from '../src/lib/league';
 
 test('titles: seasons spent on the champion, newest first, ignoring combined lines', () => {
   const rows = [

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildCup, projectedField, type Conference } from '../src/lib/cup.ts';
-import { cupStage, type CupGame } from '../src/lib/espn.ts';
+import { buildCup, projectedField, type Conference } from '../src/lib/league';
+import { cupStage, type CupGame } from '../src/lib/espn';
 
 // 30 teams: ids 1-15 East (groups of five: 1-5, 6-10, 11-15), 16-30 West.
 const side = (id: number, score?: number) => ({ teamId: String(id), abbr: `T${id}`, logo: '', score });
@@ -36,6 +36,9 @@ function league(played: boolean): CupGame[] {
 test('stage names come from ESPN game notes', () => {
   assert.equal(cupStage('NBA Cup - Group Play'), 'Group Play');
   assert.equal(cupStage('NBA Cup - Quarterfinals'), 'Quarterfinals');
+  // 2023-24 was the In-Season Tournament.
+  assert.equal(cupStage('NBA In-Season Tournament - Group Play'), 'Group Play');
+  assert.equal(cupStage('NBA In-Season Tournament Championship'), 'Championship');
   assert.equal(cupStage('Rivalry Week'), undefined);
   assert.equal(cupStage(undefined), undefined);
 });

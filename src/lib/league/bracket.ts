@@ -55,11 +55,16 @@ export const ROUND_NAMES: Record<RoundKey, string> = {
 
 // ─── Parsing ESPN's notes ─────────────────────────────────────────────────────
 
+/** The play-in tournament began in 2020-21 (season 2021). The 2019-20 bubble had one play-in game, which isn't a tournament. */
+export const PLAY_IN_FROM = 2021;
+export const hasPlayIn = (season: number) => season >= PLAY_IN_FROM;
+
 /** "West 1st Round - Game 3" -> { round: 'r1', conference: 'west', game: 3 }. */
 export function parsePlayoffNote(note: string): { round: RoundKey; conference?: Conf; game?: number } | null {
-  const m = /^(East|West)?\s*(1st Round|Semifinals|Finals|NBA Finals)\b(?:\s*-\s*Game\s*(\d+))?/i.exec(note.trim());
+  // Newer notes say "West 1st Round", older ones "WESTERN CONFERENCE 1st ROUND".
+  const m = /^(East(?:ern)?|West(?:ern)?)?(?:\s+Conference)?\s*(1st Round|Semifinals|Finals|NBA Finals)\b(?:\s*-\s*Game\s*(\d+))?/i.exec(note.trim());
   if (!m) return null;
-  const conference = m[1] ? (m[1].toLowerCase() as Conf) : undefined;
+  const conference: Conf | undefined = m[1] ? (m[1].toLowerCase().startsWith('e') ? 'east' : 'west') : undefined;
   const word = m[2].toLowerCase();
   const round: RoundKey = word === '1st round' ? 'r1' : word === 'semifinals' ? 'r2' : word === 'nba finals' || !conference ? 'finals' : 'r3';
   return { round, conference, game: m[3] ? Number(m[3]) : undefined };

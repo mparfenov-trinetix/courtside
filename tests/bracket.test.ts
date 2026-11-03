@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildCupBracket, buildPlayIn, buildPlayoffs, layoutTree, parsePlayInNote, parsePlayoffNote } from '../src/lib/bracket.ts';
-import type { CupGame } from '../src/lib/espn.ts';
+import { hasPlayIn, buildCupBracket, buildPlayIn, buildPlayoffs, layoutTree, parsePlayInNote, parsePlayoffNote } from '../src/lib/league';
+import type { CupGame } from '../src/lib/espn';
 
 const side = (id: number, score?: number) => ({ teamId: String(id), abbr: `T${id}`, logo: '', score });
 let n = 0;
@@ -19,6 +19,10 @@ const game = (stage: string, home: number, away: number, hs?: number, as?: numbe
 test('playoff notes map to rounds, conferences and game numbers', () => {
   assert.deepEqual(parsePlayoffNote('West 1st Round - Game 3'), { round: 'r1', conference: 'west', game: 3 });
   assert.deepEqual(parsePlayoffNote('East Semifinals - Game 7'), { round: 'r2', conference: 'east', game: 7 });
+  // Older seasons spell the conference out.
+  assert.deepEqual(parsePlayoffNote('WESTERN CONFERENCE 1st ROUND - GAME 1'), { round: 'r1', conference: 'west', game: 1 });
+  assert.deepEqual(parsePlayoffNote('EASTERN CONFERENCE FINALS - GAME 5'), { round: 'r3', conference: 'east', game: 5 });
+  assert.deepEqual(parsePlayoffNote('NBA FINALS - GAME 2'), { round: 'finals', conference: undefined, game: 2 });
   assert.deepEqual(parsePlayoffNote('West Finals - Game 6'), { round: 'r3', conference: 'west', game: 6 });
   assert.deepEqual(parsePlayoffNote('NBA Finals - Game 2'), { round: 'finals', conference: undefined, game: 2 });
   assert.equal(parsePlayoffNote('NBA Cup - Group Play'), null);
@@ -118,4 +122,10 @@ test('Cup knockout: quarterfinals, semifinals and the championship, East half fi
   assert.deepEqual(rounds.map((r) => r.series.length), [4, 2, 1]);
   assert.deepEqual(rounds[0].series.map((s) => s.conference), ['east', 'east', 'west', 'west']);
   assert.equal(rounds[2].series[0].winnerId, '1');
+});
+
+test('the play-in tournament only exists from 2020-21', () => {
+  assert.equal(hasPlayIn(2020), false);
+  assert.equal(hasPlayIn(2021), true);
+  assert.equal(hasPlayIn(2027), true);
 });

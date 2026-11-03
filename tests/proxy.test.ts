@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { viaProxy } from '../src/lib/espn.ts';
+import { viaProxy } from '../src/lib/espn';
 
 const PROXY = 'https://gw.example.workers.dev/espn';
 

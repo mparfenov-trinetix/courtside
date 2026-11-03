@@ -1,5 +1,5 @@
-import { useCupGames, useStandings } from '@/hooks/queries';
-import { buildCup, type Conference } from '@/lib/cup';
+import { useCupGames, useStandings } from './queries';
+import { buildCup, type Conference } from '@/lib/league';
 
 /** The NBA Cup, built from every team's schedule. `conferenceOf` comes from the standings feed. */
 export function useCup(season?: number) {

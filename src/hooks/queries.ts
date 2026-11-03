@@ -3,6 +3,7 @@ import { useIsFocused } from 'expo-router';
 
 import {
   fetchGameSummary,
+  fetchHeadToHead,
   fetchCupGames,
   fetchLeagueLeaders,
   fetchPostseason,
@@ -11,6 +12,7 @@ import {
   fetchPlayerProfile,
   fetchPlayerGameLog,
   fetchPlayerStats,
+  fetchPlayerBio,
   fetchRoster,
   fetchScoreboardByDate,
   fetchStandings,
@@ -187,6 +189,24 @@ export function usePlayerProfile(athleteId?: string | null) {
   return useQuery({
     queryKey: ['playerProfile', athleteId],
     queryFn: () => fetchPlayerProfile(athleteId!),
+    enabled: !!athleteId,
+    staleTime: 6 * HOUR,
+  });
+}
+
+export function useHeadToHead(teamId?: string | null, rivalId?: string | null) {
+  return useQuery({
+    queryKey: ['headToHead', teamId, rivalId],
+    queryFn: () => fetchHeadToHead(teamId!, rivalId!),
+    enabled: !!teamId && !!rivalId && teamId !== rivalId,
+    staleTime: 6 * HOUR,
+  });
+}
+
+export function usePlayerBio(athleteId?: string | null) {
+  return useQuery({
+    queryKey: ['playerBio', athleteId],
+    queryFn: () => fetchPlayerBio(athleteId!),
     enabled: !!athleteId,
     staleTime: 6 * HOUR,
   });

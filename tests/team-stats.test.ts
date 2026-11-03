@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { normalizeLeagueTeamStats } from '../src/lib/espn.ts';
-import { formatMetric, metricByKey, ordinal, rankOf } from '../src/lib/team-stats.ts';
+import { normalizeLeagueTeamStats } from '../src/lib/espn';
+import { formatMetric, metricByKey, ordinal, rankOf } from '../src/lib/league';
 
 const rows = normalizeLeagueTeamStats(JSON.parse(readFileSync(new URL('./fixtures/league-team-stats.json', import.meta.url), 'utf8')));
 const cha = rows.find((r) => r.abbr === 'CHA')!;
