@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -7,6 +6,7 @@ import Svg, { Line, Rect } from 'react-native-svg';
 
 import type { GameLogEntry } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { openDetail } from '@/lib/nav';
 
 const STATS = [
   { key: 'pts', label: 'PTS' },
@@ -95,7 +95,7 @@ export function GameLog({ entries, accent }: { entries: GameLogEntry[]; accent: 
         {entries.slice(0, 20).map((e, i) => (
           <Animated.View key={e.gameId} entering={i < 10 ? FadeInDown.delay(i * 25).duration(240) : undefined}>
             <Pressable
-              onPress={() => router.push({ pathname: '/game/[id]', params: { id: e.gameId } })}
+              onPress={() => openDetail({ pathname: '/game/[id]', params: { id: e.gameId } })}
               style={({ pressed }) => [styles.row, i > 0 && styles.rowBorder, pressed && { opacity: 0.7 }]}>
               <View style={styles.rowLeft}>
                 <Text style={styles.date}>

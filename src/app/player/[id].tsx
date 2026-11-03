@@ -17,16 +17,25 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, CompareIcon, StarIcon } from '@/components/icons';
 import { CareerTable } from '@/components/player/career-table';
+import { ContractCard, HonorsCard } from '@/components/player/honors-card';
 import { FormCard, SplitsCard } from '@/components/player/form-card';
 import { GameLog } from '@/components/player/game-log';
 import { LoadingState } from '@/components/ui';
-import { usePlayerCareer, usePlayerGameLog, usePlayerStats, useRoster, useTeam } from '@/hooks/queries';
+import { usePlayerCareer, usePlayerGameLog, usePlayerProfile, usePlayerStats, useRoster, useTeam } from '@/hooks/queries';
 import { useRefresh } from '@/hooks/use-refresh';
 import { useTilt } from '@/hooks/use-tilt';
+import { titleSeasons } from '@/lib/titles';
 import { useWatchlist } from '@/state/watchlist-store';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 
 const MAX_ROTATE = 10;
+
+/** "2003-05-26" -> "May 26, 2003". Parsed by hand so the time zone can't shift the day. */
+function formatBorn(iso: string) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[m - 1] ?? ''} ${d}, ${y}`;
+}
 
 type Tab = 'season' | 'career' | 'games' | 'info';
 
@@ -43,7 +52,8 @@ export default function PlayerScreen() {
   const player = roster?.players.find((p) => p.id === id);
   const { data: stats } = usePlayerStats(player?.id);
   const { data: gameLog } = usePlayerGameLog(player?.id);
-  const { data: career, isPending: careerPending } = usePlayerCareer(activeTab === 'career' ? player?.id : undefined);
+  const { data: career, isPending: careerPending } = usePlayerCareer(activeTab === 'career' || activeTab === 'info' ? player?.id : undefined);
+  const { data: profile } = usePlayerProfile(activeTab === 'info' ? player?.id : undefined);
   const refreshControl = useRefresh([['playerStats', id], ['playerGameLog', id], ['playerCareer', id], ['roster', teamId]]);
 
   const cardWidth = Math.min(width * 0.6, 240);
@@ -92,9 +102,13 @@ export default function PlayerScreen() {
 
   const infoRows: [string, string][] = [
     player.positionName ? ['Position', player.positionName] : null,
-    player.age != null ? ['Age', String(player.age)] : null,
-    player.height ? ['Height', player.height] : null,
-    player.weight ? ['Weight', player.weight] : null,
+    player.born
+      ? ['Born', `${formatBorn(player.born)}${player.age != null ? ` · ${player.age} yrs` : ''}`]
+      : player.age != null
+        ? ['Age', String(player.age)]
+        : null,
+    player.height ? ['Height', `${player.height}${player.heightCm ? ` · ${player.heightCm} cm` : ''}`] : null,
+    player.weight ? ['Weight', `${player.weight}${player.weightKg ? ` · ${player.weightKg} kg` : ''}`] : null,
     player.experience != null
       ? ['Experience', player.experience === 0 ? 'Rookie' : `${player.experience} yr${player.experience !== 1 ? 's' : ''}`]
       : null,
@@ -332,7 +346,7 @@ export default function PlayerScreen() {
 
         {activeTab === 'career' && (
           career ? (
-            <CareerTable career={career} accent={theme.accent} />
+            <CareerTable career={career} accent={theme.accent} background={theme.background} />
           ) : (
             <Animated.View entering={FadeIn.duration(260)} style={styles.emptyTab}>
               <Text style={styles.emptyText}>{careerPending ? 'Loading career stats…' : 'Career stats are unavailable.'}</Text>
@@ -348,6 +362,8 @@ export default function PlayerScreen() {
 
         {activeTab === 'info' && (
           <>
+            <HonorsCard honors={profile?.honors ?? []} titles={career ? titleSeasons(career.seasons) : []} />
+            <ContractCard contract={profile?.contract} draft={profile?.draft} />
             {infoRows.length > 0 ? (
               <Animated.View
                 entering={FadeInDown.delay(60).duration(300)}

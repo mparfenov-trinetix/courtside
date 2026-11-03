@@ -9,6 +9,8 @@ const LOSS = '#F87171';
 const HOT = '#FB923C';
 const COLD = '#60A5FA';
 const BAR_AREA = 72;
+/** Distance from the bottom of a column to the bottom of its bar: opponent label, result strip and two gaps. */
+const BAR_BASE = 12 + 3 + 3 + 3;
 
 const avg = (games: GameLogEntry[], pick: (g: GameLogEntry) => number) =>
   games.length === 0 ? 0 : games.reduce((sum, g) => sum + pick(g), 0) / games.length;
@@ -33,7 +35,10 @@ export function FormCard({ log, accent }: { log: GameLogEntry[]; accent: string 
   const season = avg(log, (g) => g.pts);
   const last5 = log.slice(0, 5);
   const last10 = log.slice(0, 10);
-  const form = formOf(avg(last5, (g) => g.pts), season, last5.length);
+  // A "hot" or "cold" call needs a real sample: the last 5 against at least 3 more games.
+  const form = log.length >= 8 ? formOf(avg(last5, (g) => g.pts), season, last5.length) : null;
+  const showL10 = log.length > 10; // otherwise L10 would just repeat the season column
+  const showL5 = log.length > 5;
   const maxPts = Math.max(...recent.map((g) => g.pts), Math.ceil(season), 1);
   const seasonY = (season / maxPts) * BAR_AREA;
 
@@ -47,10 +52,12 @@ export function FormCard({ log, accent }: { log: GameLogEntry[]; accent: string 
   return (
     <Animated.View entering={FadeInDown.delay(80).duration(300)} style={styles.wrap}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Form · last {recent.length} games</Text>
-        <View style={[styles.badge, { backgroundColor: withAlpha(form.color, 0.16) }]}>
-          <Text style={[styles.badgeText, { color: form.color }]}>{form.label}</Text>
-        </View>
+        <Text style={styles.title}>Points · last {recent.length} games</Text>
+        {form && form.label !== 'STEADY' ? (
+          <View style={[styles.badge, { backgroundColor: withAlpha(form.color, 0.16) }]}>
+            <Text style={[styles.badgeText, { color: form.color }]}>{form.label}</Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.card}>
@@ -59,7 +66,7 @@ export function FormCard({ log, accent }: { log: GameLogEntry[]; accent: string 
           accessible
           accessibilityRole="image"
           accessibilityLabel={`Points in the last ${recent.length} games, oldest first: ${recent.map((g) => g.pts).join(', ')}. Season average ${season.toFixed(1)}.`}>
-          <View style={[styles.avgLine, { bottom: 28 + seasonY }]}>
+          <View style={[styles.avgLine, { bottom: BAR_BASE + seasonY }]}>
             <View style={styles.avgDash} />
             <Text style={styles.avgLabel}>{season.toFixed(1)} avg</Text>
           </View>
@@ -85,8 +92,8 @@ export function FormCard({ log, accent }: { log: GameLogEntry[]; accent: string 
         <View style={styles.table}>
           <View style={styles.tableRow}>
             <Text style={[styles.cellHead, styles.cellLabel]} />
-            <Text style={styles.cellHead}>L5</Text>
-            <Text style={styles.cellHead}>L10</Text>
+            {showL5 && <Text style={styles.cellHead}>L5</Text>}
+            {showL10 && <Text style={styles.cellHead}>L10</Text>}
             <Text style={styles.cellHead}>Season</Text>
           </View>
           {rows.map((r) => {
@@ -97,14 +104,16 @@ export function FormCard({ log, accent }: { log: GameLogEntry[]; accent: string 
             return (
               <View key={r.key} style={styles.tableRow}>
                 <Text style={[styles.cell, styles.cellLabel, styles.rowKey]}>{r.key}</Text>
-                <Text style={[styles.cell, styles.strong]}>
-                  {l5.toFixed(1)}
-                  <Text style={{ color: delta >= 0.5 ? WIN : delta <= -0.5 ? LOSS : palette.muted, fontSize: 11 }}>
-                    {Math.abs(delta) >= 0.5 ? (delta > 0 ? ' ▲' : ' ▼') : ''}
+                {showL5 && (
+                  <Text style={[styles.cell, styles.strong]}>
+                    {l5.toFixed(1)}
+                    <Text style={{ color: delta >= 0.5 ? WIN : delta <= -0.5 ? LOSS : palette.muted, fontSize: 11 }}>
+                      {Math.abs(delta) >= 0.5 ? (delta > 0 ? ' ▲' : ' ▼') : ''}
+                    </Text>
                   </Text>
-                </Text>
-                <Text style={styles.cell}>{l10.toFixed(1)}</Text>
-                <Text style={styles.cell}>{s.toFixed(1)}</Text>
+                )}
+                {showL10 && <Text style={styles.cell}>{l10.toFixed(1)}</Text>}
+                <Text style={[styles.cell, !showL5 && styles.strong]}>{s.toFixed(1)}</Text>
               </View>
             );
           })}

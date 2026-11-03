@@ -1,7 +1,15 @@
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Extrapolation,
+  FadeInDown,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 import type { CareerRow, PlayerCareer } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -12,7 +20,10 @@ const COL_W: Record<string, number> = {
   GP: 36, GS: 36, MIN: 42, PTS: 46, REB: 42, AST: 40, STL: 40, BLK: 40, TO: 38, PF: 34,
   'FG%': 48, '3P%': 48, 'FT%': 48, FG: 68, '3PT': 62, FT: 66, OR: 40, DR: 40,
 };
-const FIRST_W = 112;
+const FIRST_W = 124;
+const ROW_H = 52;
+const HEADER_H = 32;
+const CAREER_H = 46;
 /** Columns where the best season gets highlighted. */
 const HIGHLIGHT = new Set(['PTS', 'REB', 'AST', 'STL', 'BLK']);
 
@@ -23,12 +34,33 @@ const num = (v?: string) => {
   return isNaN(n) ? -Infinity : n;
 };
 
-/** Season-by-season table for a player, built like the box score table on the game screen. */
-export function CareerTable({ career, accent }: { career: PlayerCareer; accent: string }) {
+/** One list in the order it should read: for a traded season, the first team, then the combined line, then the rest. */
+function arrange(rows: CareerRow[]): CareerRow[] {
+  const seasons: string[] = [];
+  for (const r of rows) if (!seasons.includes(r.season)) seasons.push(r.season);
+  seasons.sort();
+  return seasons.flatMap((season) => {
+    const group = rows.filter((r) => r.season === season);
+    const tot = group.find((r) => r.abbr === 'TOT');
+    const teams = group.filter((r) => r.abbr !== 'TOT');
+    return tot && teams.length > 1 ? [teams[0], tot, ...teams.slice(1)] : group;
+  });
+}
+
+/**
+ * Season-by-season table for a player. Like the box score, the season/team column stays pinned on the left
+ * while the stat columns scroll sideways under a soft edge.
+ */
+export function CareerTable({ career, accent, background = palette.arena }: { career: PlayerCareer; accent: string; background?: string }) {
   const [sortCol, setSortCol] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const scrollX = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollX.set(e.contentOffset.x);
+  });
+  const edge = useAnimatedStyle(() => ({ opacity: interpolate(scrollX.get(), [0, 14], [0, 1], Extrapolation.CLAMP) }));
 
-  const rows = career.seasons;
+  const rows = arrange(career.seasons);
   const careerLine = career.career;
   const cols = COLS.filter((c) => rows.some((r) => r.stats[c] != null && r.stats[c] !== '') || careerLine[c]);
 
@@ -41,6 +73,7 @@ export function CareerTable({ career, accent }: { career: PlayerCareer; accent: 
   const sorted = sortCol
     ? [...rows].sort((a, b) => (sortDir === 'desc' ? 1 : -1) * (num(b.stats[sortCol]) - num(a.stats[sortCol])))
     : rows;
+  const teamsOf = (row: CareerRow) => (row.abbr === 'TOT' ? rows.filter((r) => r.season === row.season && r.abbr !== 'TOT') : []);
 
   const handleSort = (col: string) => {
     if (sortCol !== col) {
@@ -66,113 +99,122 @@ export function CareerTable({ career, accent }: { career: PlayerCareer; accent: 
     <Animated.View entering={FadeInDown.delay(60).duration(300)}>
       <Text style={styles.note}>Regular season, per game · tap a column to sort</Text>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tableScroll}
-        contentContainerStyle={styles.tableContent}>
-        <View>
-          <View style={styles.row}>
-            <View style={[styles.first, { justifyContent: 'flex-start' }]}>
-              <Text style={styles.firstHeader}>SEASON</Text>
-            </View>
-            {cols.map((col) => {
-              const active = sortCol === col;
-              return (
-                <Pressable key={col} onPress={() => handleSort(col)} style={{ width: COL_W[col], alignItems: 'flex-end' }}>
-                  <Text style={[styles.colHeader, active && styles.colHeaderActive]}>
-                    {col}{active ? (sortDir === 'desc' ? ' ▾' : ' ▴') : ''}
-                  </Text>
-                </Pressable>
-              );
-            })}
+      <View style={styles.table}>
+        {/* Pinned: season and team */}
+        <View style={[styles.pinned, { backgroundColor: background }]}>
+          <View style={[styles.firstCell, { height: HEADER_H }]}>
+            <Text style={styles.firstHeader}>SEASON</Text>
           </View>
-
           {sorted.map((row, i) => (
-            <CareerLine key={`${row.season}-${row.abbr}-${i}`} row={row} cols={cols} shade={i % 2 === 1} accent={accent} best={best} />
+            <SeasonCell key={`${row.season}-${row.abbr}-${i}`} row={row} teams={teamsOf(row)} shade={i % 2 === 1} />
           ))}
-
-          <View style={[styles.row, styles.careerRow]}>
-            <View style={styles.first}>
-              <Text style={styles.careerLabel}>CAREER</Text>
-            </View>
-            {cols.map((col) => (
-              <Text key={col} style={[styles.cell, styles.careerValue, { width: COL_W[col] }]}>
-                {careerLine[col] || '–'}
-              </Text>
-            ))}
+          <View style={[styles.firstCell, styles.careerBorder, { height: CAREER_H }]}>
+            <Text style={styles.careerLabel}>CAREER</Text>
           </View>
+          <Animated.View pointerEvents="none" style={[styles.edge, edge]}>
+            <LinearGradient colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+          </Animated.View>
         </View>
-      </ScrollView>
+
+        {/* Scrolls sideways: the stats */}
+        <Animated.ScrollView
+          horizontal
+          bounces={false}
+          overScrollMode="never"
+          showsHorizontalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          style={styles.stats}>
+          <View>
+            <View style={[styles.statsRow, { height: HEADER_H }]}>
+              {cols.map((col) => {
+                const active = sortCol === col;
+                return (
+                  <Pressable key={col} onPress={() => handleSort(col)} hitSlop={{ top: 6, bottom: 6 }} style={{ width: COL_W[col], alignItems: 'flex-end' }}>
+                    <Text style={[styles.colHeader, active && styles.colHeaderActive]}>
+                      {col}
+                      {active ? (sortDir === 'desc' ? ' ▾' : ' ▴') : ''}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {sorted.map((row, i) => (
+              <View key={`${row.season}-${row.abbr}-${i}`} style={[styles.statsRow, { height: ROW_H }, i % 2 === 1 && styles.shade]}>
+                {cols.map((col) => {
+                  const isBest = HIGHLIGHT.has(col) && num(row.stats[col]) === best[col] && best[col] > -Infinity;
+                  return (
+                    <Text key={col} style={[styles.cell, { width: COL_W[col] }, isBest && { color: accent, fontFamily: fonts.bodyBold }]}>
+                      {row.stats[col] || '–'}
+                    </Text>
+                  );
+                })}
+              </View>
+            ))}
+            <View style={[styles.statsRow, styles.careerBorder, { height: CAREER_H }]}>
+              {cols.map((col) => (
+                <Text key={col} style={[styles.cell, styles.careerValue, { width: COL_W[col] }]}>
+                  {careerLine[col] || '–'}
+                </Text>
+              ))}
+            </View>
+          </View>
+        </Animated.ScrollView>
+      </View>
     </Animated.View>
   );
 }
 
-function CareerLine({
-  row,
-  cols,
-  shade,
-  accent,
-  best,
-}: {
-  row: CareerRow;
-  cols: string[];
-  shade: boolean;
-  accent: string;
-  best: Record<string, number>;
-}) {
+/** The pinned half of a row: logo (or both logos for a traded season's combined line) and the season. */
+function SeasonCell({ row, teams, shade }: { row: CareerRow; teams: CareerRow[]; shade: boolean }) {
   const isTot = row.abbr === 'TOT';
   return (
-    <View style={[styles.row, shade && styles.shade]}>
-      <View style={styles.first}>
-        {row.logo && !isTot ? <Image source={row.logo} style={styles.logo} contentFit="contain" /> : <View style={styles.logo} />}
-        <View>
-          <Text style={styles.season}>{row.season}</Text>
-          <Text style={styles.team}>{isTot ? 'Combined' : row.abbr}</Text>
+    <View style={[styles.firstCell, { height: ROW_H }, shade && styles.shade]}>
+      {isTot && teams.length > 1 ? (
+        <View style={styles.pair}>
+          {teams.slice(0, 3).map((t, k) => (
+            <View key={`${t.abbr}-${k}`} style={[styles.pairLogo, k > 0 && { marginLeft: -8 }]}>
+              {t.logo ? <Image source={t.logo} style={styles.pairImg} contentFit="contain" /> : null}
+            </View>
+          ))}
         </View>
+      ) : row.logo && !isTot ? (
+        <Image source={row.logo} style={styles.logo} contentFit="contain" />
+      ) : (
+        <View style={styles.logo} />
+      )}
+      <View>
+        <Text style={styles.season}>{row.season}</Text>
+        <Text style={styles.team}>{isTot ? (teams.length > 1 ? teams.map((t) => t.abbr).join(' · ') : 'Combined') : row.abbr}</Text>
       </View>
-      {cols.map((col) => {
-        const isBest = HIGHLIGHT.has(col) && num(row.stats[col]) === best[col] && best[col] > -Infinity;
-        return (
-          <Text
-            key={col}
-            style={[styles.cell, { width: COL_W[col] }, isBest && { color: accent, fontFamily: fonts.bodyBold }]}>
-            {row.stats[col] || '–'}
-          </Text>
-        );
-      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // The page pads its content by 16; cancel that so the table scrolls edge to edge.
-  tableScroll: { marginHorizontal: -16 },
-  tableContent: { paddingHorizontal: 16 },
   note: { fontFamily: fonts.body, fontSize: 11, color: palette.muted, marginBottom: 8, marginTop: 2 },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, paddingRight: 16, borderRadius: 8 },
-  shade: { backgroundColor: withAlpha('#FFFFFF', 0.03) },
-  first: { width: FIRST_W, flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 4, paddingRight: 6 },
-  firstHeader: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 11,
-    color: withAlpha(palette.chalk, 0.8),
-    letterSpacing: 0.5,
-    paddingLeft: 4,
-  },
+  // The page pads its content by 16; cancel that so the table runs edge to edge.
+  table: { flexDirection: 'row', marginHorizontal: -16 },
+  pinned: { width: FIRST_W, zIndex: 2 },
+  edge: { position: 'absolute', top: 0, bottom: 0, right: -8, width: 8 },
+  stats: { flex: 1 },
+  // Trailing padding lives in the rows, so the zebra shading runs to the screen edge.
+  statsRow: { flexDirection: 'row', alignItems: 'center', paddingRight: 16 },
+  firstCell: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 6 },
+  shade: { backgroundColor: withAlpha('#FFFFFF', 0.04) },
+  firstHeader: { fontFamily: fonts.bodyBold, fontSize: 11, color: withAlpha(palette.chalk, 0.8), letterSpacing: 0.5 },
   colHeader: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.4 },
   colHeaderActive: { color: palette.chalk, fontFamily: fonts.bodyBold },
   logo: { width: 24, height: 24 },
+  // Same footprint as a single logo, so the season text lines up with the rows around it.
+  pair: { flexDirection: 'row', alignItems: 'center', width: 24 },
+  pairLogo: { width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  pairImg: { width: 15, height: 15 },
   season: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.chalk },
   team: { fontFamily: fonts.body, fontSize: 11, color: palette.muted, marginTop: 1 },
   cell: { textAlign: 'right', fontFamily: fonts.bodySemi, fontSize: 13, color: withAlpha(palette.chalk, 0.78) },
-  careerRow: {
-    marginTop: 6,
-    paddingTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: withAlpha(palette.chalk, 0.12),
-  },
-  careerLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: palette.muted, paddingLeft: 4 },
+  careerBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(palette.chalk, 0.12), marginTop: 4 },
+  careerLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: palette.muted },
   careerValue: { fontFamily: fonts.bodyBold, color: palette.chalk },
   empty: { alignItems: 'center', paddingTop: 40, gap: 8 },
   emptyTitle: { fontFamily: fonts.display, fontSize: 28, color: palette.chalk },
