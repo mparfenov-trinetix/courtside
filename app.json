@@ -39,6 +39,26 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 140
         }
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.com.yourname.courtside",
+          "widgets": [
+            {
+              "name": "NextGameWidget",
+              "displayName": "Next game",
+              "description": "Your team's next fixture",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium"
+                ]
+              }
+            }
+          ]
+        }
       ]
     ],
     "experiments": {

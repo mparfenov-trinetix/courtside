@@ -5,27 +5,32 @@
   "dependencies": {
     "@expo-google-fonts/barlow": "^0.4.1",
     "@expo-google-fonts/big-shoulders-display": "^0.2.3",
-    "@expo/ui": "~58.0.25",
+    "@expo/ui": "~58.0.26",
+    "@gorhom/bottom-sheet": "^5.2.14",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/datetimepicker": "9.2.1",
+    "@react-native-community/slider": "5.2.1",
     "@tanstack/query-async-storage-persister": "^5.105.0",
     "@tanstack/react-query": "^5.105.0",
     "@tanstack/react-query-persist-client": "^5.105.0",
-    "expo": "~58.0.21",
+    "expo": "~58.0.22",
     "expo-constants": "~58.0.14",
     "expo-device": "~58.0.5",
+    "expo-file-system": "~58.0.13",
     "expo-font": "~58.0.11",
     "expo-glass-effect": "~58.0.5",
     "expo-haptics": "~58.0.7",
     "expo-image": "~58.0.18",
     "expo-linear-gradient": "~58.0.3",
     "expo-linking": "~58.0.15",
-    "expo-router": "~58.0.28",
+    "expo-router": "~58.0.29",
     "expo-sensors": "~58.0.4",
     "expo-splash-screen": "~58.0.12",
     "expo-status-bar": "~58.0.4",
     "expo-symbols": "~58.0.4",
     "expo-system-ui": "~58.0.7",
     "expo-web-browser": "~58.0.7",
+    "expo-widgets": "~58.0.26",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",
@@ -38,9 +43,15 @@
     "react-native-worklets": "0.13.0"
   },
   "devDependencies": {
+    "@storybook/addon-ondevice-actions": "^10.7.1",
+    "@storybook/addon-ondevice-controls": "^10.7.1",
+    "@storybook/react-native": "^10.7.1",
+    "@storybook/react-native-ui-lite": "^10.7.1",
     "@types/react": "~19.3.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
+    "storybook": "^10.6.5",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -49,7 +60,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "node --experimental-strip-types --no-warnings --test tests/*.test.ts"
+    "test": "node --experimental-strip-types --no-warnings --test tests/*.test.ts",
+    "storybook": "cross-env EXPO_PUBLIC_STORYBOOK_ENABLED=true expo start"
   },
   "private": true
 }
