@@ -36,6 +36,7 @@ export function WinProbability({
   homeColor,
   awayColor,
   selected,
+  live,
 }: {
   plays: Play[];
   winProb: Record<string, number>;
@@ -44,6 +45,7 @@ export function WinProbability({
   homeColor: string;
   awayColor: string;
   selected: number[] | null;
+  live: boolean;
 }) {
   const [width, setWidth] = useState(0);
   const [sel, setSel] = useState<number | null>(null);
@@ -174,13 +176,14 @@ export function WinProbability({
 
       <Text style={styles.footer}>
         <Text style={{ color: palette.chalk, fontFamily: fonts.bodyBold }}>{leader.team.abbreviation} {leaderPct}%</Text>
-        {shown ? ' at this moment' : completedLabel(final)}
+        {shown ? ' at this moment' : completedLabel(final, live)}
       </Text>
     </View>
   );
 }
 
-const completedLabel = (final: number) => (final >= 0.99 || final <= 0.01 ? ' · final' : ' · latest');
+const completedLabel = (final: number, live: boolean) =>
+  live ? ' · live' : final >= 0.99 || final <= 0.01 ? ' · final' : ' · latest';
 
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, marginBottom: 14 },

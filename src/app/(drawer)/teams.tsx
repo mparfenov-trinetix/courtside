@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronIcon, StarIcon } from '@/components/icons';
 import { ErrorState, LoadingState, ScreenHeader } from '@/components/ui';
 import { useTeams } from '@/hooks/queries';
+import { useRefresh } from '@/hooks/use-refresh';
 import type { Team } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
@@ -16,6 +17,7 @@ import { useTeamStore } from '@/state/team-store';
 export default function Teams() {
   const insets = useSafeAreaInsets();
   const { data: teams, isPending, error, refetch } = useTeams();
+  const refreshControl = useRefresh([['teams']]);
   const { currentTeamId, favoriteTeamId, viewTeam } = useTeamStore();
   const [query, setQuery] = useState('');
 
@@ -53,6 +55,7 @@ export default function Teams() {
       ) : (
         <FlatList
           data={filtered}
+          refreshControl={refreshControl}
           keyExtractor={(t) => t.id}
           keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 8 }}

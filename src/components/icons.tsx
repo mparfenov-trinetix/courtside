@@ -126,3 +126,13 @@ export function CompareIcon({ size = 22, color }: IconProps) {
     </Svg>
   );
 }
+
+export function PodiumIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx={12} cy={5} r={2} {...stroke(color)} />
+      <Rect x={9} y={9} width={6} height={11} rx={1} {...stroke(color)} />
+      <Path d="M9 13H4.5a.5.5 0 0 0-.5.5V20h5M15 15h4.5a.5.5 0 0 1 .5.5V20h-5" {...stroke(color)} />
+    </Svg>
+  );
+}

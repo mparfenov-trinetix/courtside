@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorState, LoadingState, ScreenHeader } from '@/components/ui';
 import { useLeagueLeaders, useTeams } from '@/hooks/queries';
+import { useRefresh } from '@/hooks/use-refresh';
 import type { LeaderEntry } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
@@ -29,6 +30,7 @@ export default function LeagueLeaders() {
   const [active, setActive] = useState<Category>('ppg');
   const [displayCount, setDisplayCount] = useState(PAGE);
   const { data, isPending, error, refetch } = useLeagueLeaders();
+  const refreshControl = useRefresh([['leaders']]);
   const { data: teams } = useTeams();
 
   const switchTab = (tab: Category) => {
@@ -92,6 +94,7 @@ export default function LeagueLeaders() {
         <FlatList
           key={active}
           data={leaders}
+          refreshControl={refreshControl}
           keyExtractor={(item, i) => `${active}-${item.athleteId}-${i}`}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 8 }}
           onEndReached={() => {

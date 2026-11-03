@@ -114,7 +114,11 @@ export function ShotChart({
         })}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.players}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.playersScroll}
+        contentContainerStyle={styles.players}>
         <PlayerChip label="Team" active={activeId == null} onPress={() => setPlayerId(null)} color={color} count={teamShots.length} />
         {shooters.map((p) => (
           <PlayerChip
@@ -261,7 +265,9 @@ const styles = StyleSheet.create({
   },
   tabLogo: { width: 22, height: 22 },
   teamTabLabel: { fontFamily: fonts.bodySemi, fontSize: 14 },
-  players: { gap: 6, paddingBottom: 12, paddingRight: 16 },
+  // The screen pads its content by 16; cancel that here so the pills scroll to the screen edges.
+  playersScroll: { marginHorizontal: -16, flexGrow: 0 },
+  players: { gap: 6, paddingBottom: 12, paddingHorizontal: 16 },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',

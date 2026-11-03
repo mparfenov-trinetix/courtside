@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MenuIcon } from '@/components/icons';
+import { ArrowLeftIcon, MenuIcon } from '@/components/icons';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
 export function useOpenDrawer() {
@@ -16,22 +16,25 @@ export function ScreenHeader({
   title,
   color = palette.chalk,
   right,
+  onBack,
 }: {
   title?: string;
   color?: string;
   right?: ReactNode;
+  /** When set, shows a back arrow instead of the drawer menu button (for pushed screens). */
+  onBack?: () => void;
 }) {
   const insets = useSafeAreaInsets();
   const openDrawer = useOpenDrawer();
   return (
     <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
       <Pressable
-        onPress={openDrawer}
+        onPress={onBack ?? openDrawer}
         hitSlop={12}
         accessibilityRole="button"
-        accessibilityLabel="Open menu"
+        accessibilityLabel={onBack ? 'Go back' : 'Open menu'}
         style={({ pressed }) => [styles.iconButton, { backgroundColor: withAlpha('#FFFFFF', pressed ? 0.16 : 0.08) }]}>
-        <MenuIcon color={color} />
+        {onBack ? <ArrowLeftIcon color={color} /> : <MenuIcon color={color} />}
       </Pressable>
       <Text style={[styles.title, { color }]} numberOfLines={1}>
         {title}

@@ -5,7 +5,7 @@ import type { ComponentType } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CalendarIcon, CardIcon, CompareIcon, GridIcon, PeopleIcon, StandingsIcon, StarIcon, TrophyIcon } from '@/components/icons';
+import { CalendarIcon, CardIcon, CompareIcon, GridIcon, PeopleIcon, PodiumIcon, StandingsIcon, StarIcon, TrophyIcon } from '@/components/icons';
 import { useTeam } from '@/hooks/queries';
 import { fonts, logoOn, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
@@ -32,9 +32,11 @@ export default function DrawerLayout() {
       <Drawer.Screen name="teams" options={{ title: 'All teams' }} />
       <Drawer.Screen name="roster" options={{ title: 'Roster' }} />
       <Drawer.Screen name="league-leaders" options={{ title: 'League Leaders' }} />
+      <Drawer.Screen name="team-leaders" options={{ title: 'Team Leaders' }} />
       <Drawer.Screen name="standings" options={{ title: 'Standings' }} />
       <Drawer.Screen name="calendar" options={{ title: 'Calendar' }} />
       <Drawer.Screen name="compare" options={{ title: 'Compare' }} />
+      <Drawer.Screen name="watchlist" options={{ title: 'Watchlist' }} />
     </Drawer>
   );
 }
@@ -51,9 +53,11 @@ const ITEMS: MenuItem[] = [
   { route: 'teams', href: '/teams', label: 'All teams', Icon: GridIcon },
   { route: 'roster', href: '/roster', label: 'Roster', Icon: PeopleIcon },
   { route: 'league-leaders', href: '/league-leaders', label: 'League Leaders', Icon: TrophyIcon },
+  { route: 'team-leaders', href: '/team-leaders' as Href, label: 'Team Leaders', Icon: PodiumIcon },
   { route: 'standings', href: '/standings', label: 'Standings', Icon: StandingsIcon },
   { route: 'calendar', href: '/calendar' as Href, label: 'Calendar', Icon: CalendarIcon },
   { route: 'compare', href: '/compare' as Href, label: 'Compare', Icon: CompareIcon },
+  { route: 'watchlist', href: '/watchlist' as Href, label: 'Watchlist', Icon: StarIcon },
 ];
 
 function Menu(props: DrawerContentComponentProps) {
@@ -83,7 +87,7 @@ function Menu(props: DrawerContentComponentProps) {
         </Text>
       </View>
 
-      <DrawerContentScrollView {...props} contentContainerStyle={styles.list} scrollEnabled={false}>
+      <DrawerContentScrollView {...props} contentContainerStyle={styles.list}>
         {ITEMS.map(({ route, href, label, Icon }) => {
           const active = route === activeRoute;
           const color = active ? palette.chalk : withAlpha(palette.chalk, 0.7);

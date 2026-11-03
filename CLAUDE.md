@@ -33,6 +33,13 @@ the box score, derived plus-minus can drift by ±1.
 
 Other data sources beyond the main ESPN site API: the common/v3 `gamelog` and `search` endpoints
 (player game log, player search for Compare) and core-API team statistics (home screen team season card).
+Team ranks (home card, Compare > Teams) are computed in `src/lib/team-stats.ts` from the one-call
+`statistics/byteam` feed (`fetchLeagueTeamStats`); ESPN's own per-team `rank` fields are unreliable for
+derived stats like 3P%. Player career tables come from the common/v3 athlete `stats` endpoint.
+Scoreboards are keyed by US Eastern date, so use `nbaToday()` / `toNbaDateKey()` from `src/lib/date.ts`
+(not the device date) for "today" and for placing a game on a day.
+Worklet gotcha: never call plain JS helpers (e.g. `withAlpha`) inside `useAnimatedStyle`, and don't use
+object spread in gesture hook configs; neither shows up in `tsc`, both crash at runtime.
 React Query's cache is persisted to AsyncStorage for slow-changing keys only (see `PERSISTED` in `src/app/_layout.tsx`).
 
 ## Before calling a task done

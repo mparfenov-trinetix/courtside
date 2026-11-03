@@ -9,12 +9,14 @@ import {
 } from '@expo-google-fonts/big-shoulders-display';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, focusManager } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useFonts } from 'expo-font';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { AppState, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { palette } from '@/lib/theme';
@@ -35,7 +37,7 @@ const queryClient = new QueryClient({
 const persister = createAsyncStoragePersister({ storage: AsyncStorage, key: 'courtside:query-cache' });
 
 // Only slow-changing, small payloads are worth restoring on launch; game summaries are big and live.
-const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'teamStats']);
+const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'leagueTeamStats']);
 
 const navTheme = {
   ...DarkTheme,
@@ -51,6 +53,13 @@ export default function RootLayout() {
     BigShouldersDisplay_900Black,
   });
 
+  // Refetch stale queries (and resume live-game polling) when the app returns to the foreground.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const sub = AppState.addEventListener('change', (state) => focusManager.setFocused(state === 'active'));
+    return () => sub.remove();
+  }, []);
+
   if (!fontsLoaded && !fontError) return null;
 
   return (
@@ -60,7 +69,7 @@ export default function RootLayout() {
         persistOptions={{
           persister,
           maxAge: DAY,
-          buster: 'v1',
+          buster: 'v3',
           dehydrateOptions: {
             shouldDehydrateQuery: (q) => q.state.status === 'success' && PERSISTED.has(String(q.queryKey[0])),
           },
@@ -80,6 +89,7 @@ export default function RootLayout() {
               <Stack.Screen name="(drawer)" options={{ animation: 'fade' }} />
               <Stack.Screen name="player/[id]" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="team/[id]" options={{ animation: 'slide_from_right' }} />
             </Stack>
           </ThemeProvider>
           </WatchlistProvider>

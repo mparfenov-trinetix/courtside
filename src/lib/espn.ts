@@ -786,49 +786,118 @@ export async function searchPlayers(query: string): Promise<PlayerSearchResult[]
     });
 }
 
-// ─── Team season stats ────────────────────────────────────────────────────────
+/** Does this scoreboard game involve the team? */
+export const involvesTeam = (g: ScoreboardGame, teamId?: string | null) =>
+  !!teamId && (g.home.teamId === teamId || g.away.teamId === teamId);
 
-export type RankedStat = { value: number; rank?: number };
+// ─── Player career ────────────────────────────────────────────────────────────
 
-export type TeamSeasonStats = {
-  ppg?: number;
-  rpg?: number;
-  apg?: number;
-  spg?: number;
-  bpg?: number;
-  tov?: number;
-  fgPct?: RankedStat;
-  threePct?: RankedStat;
-  ftPct?: RankedStat;
-  efgPct?: RankedStat;
+export type CareerRow = {
+  year: number;
+  season: string; // "2023-24"
+  abbr: string; // team abbreviation, or "TOT" for a traded season's combined line
+  logo?: string;
+  stats: Record<string, string>; // keyed by ESPN's column labels (PTS, REB, FG%, ...)
 };
 
-export async function fetchTeamSeasonStats(teamId: string): Promise<TeamSeasonStats> {
+export type PlayerCareer = {
+  /** Per-game averages for each season, oldest first. */
+  seasons: CareerRow[];
+  career: Record<string, string>;
+};
+
+export async function fetchPlayerCareer(athleteId: string): Promise<PlayerCareer> {
   const json = await getJson(
-    `${CORE}/seasons/${currentSeason()}/types/2/teams/${teamId}/statistics?lang=en&region=us`,
+    `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${athleteId}/stats?region=us&lang=en&contentorigin=espn`,
   );
-  const all: Json[] = (json.splits?.categories ?? []).flatMap((c: Json) => c.stats ?? []);
-  const find = (name: string) => all.find((s) => s.name === name);
-  const num = (name: string): number | undefined => {
-    const v = Number(find(name)?.value);
-    return isNaN(v) || find(name) == null ? undefined : v;
-  };
-  const ranked = (name: string): RankedStat | undefined => {
-    const s = find(name);
-    const value = Number(s?.value);
-    if (!s || isNaN(value)) return undefined;
-    return { value, rank: typeof s.rank === 'number' ? s.rank : undefined };
-  };
-  return {
-    ppg: num('avgPoints'),
-    rpg: num('avgRebounds'),
-    apg: num('avgAssists'),
-    spg: num('avgSteals'),
-    bpg: num('avgBlocks'),
-    tov: num('avgTurnovers'),
-    fgPct: ranked('fieldGoalPct'),
-    threePct: ranked('threePointFieldGoalPct'),
-    ftPct: ranked('freeThrowPct'),
-    efgPct: ranked('effectiveFGPct'),
-  };
+  const teams: Record<string, Json> = json.teams ?? {};
+  const averages: Json | undefined = ((json.categories ?? []) as Json[]).find((c) => c.name === 'averages');
+  const labels: string[] = averages?.labels ?? [];
+
+  const seasons = ((averages?.statistics ?? []) as Json[]).map((s): CareerRow => {
+    const team = teams[String(s.teamSlug)];
+    const stats: Record<string, string> = {};
+    labels.forEach((label, i) => { stats[label] = String(s.stats?.[i] ?? ''); });
+    return {
+      year: Number(s.season?.year ?? 0),
+      season: String(s.season?.displayName ?? ''),
+      abbr: team?.abbreviation ?? (/total/i.test(String(s.teamSlug)) ? 'TOT' : ''),
+      logo: team?.logos?.[0]?.href,
+      stats,
+    };
+  });
+  const career: Record<string, string> = {};
+  labels.forEach((label, i) => { career[label] = String(averages?.totals?.[i] ?? ''); });
+  return { seasons, career };
+}
+
+// ─── League team stats ────────────────────────────────────────────────────────
+
+/** One team's season numbers (per game unless noted). `opp*` are what opponents did against them. */
+export type TeamStatRow = {
+  teamId: string;
+  abbr: string;
+  name: string;
+  gp: number;
+  ppg: number;
+  oppPpg: number;
+  rpg: number;
+  apg: number;
+  spg: number;
+  bpg: number;
+  tov: number;
+  fgPct: number;
+  threePct: number;
+  ftPct: number;
+  efgPct: number;
+  oppFgPct: number;
+  /** Average margin: points scored minus points allowed. */
+  diff: number;
+};
+
+/**
+ * All 30 teams in one call (the same feed ESPN's team-stats page uses). Ranks are computed
+ * from this table in `src/lib/team-stats.ts`: ESPN's own per-team `rank` fields are inconsistent
+ * for derived stats such as 3-point %.
+ */
+export async function fetchLeagueTeamStats(): Promise<TeamStatRow[]> {
+  const json = await getJson(
+    `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/statistics/byteam` +
+      `?region=us&lang=en&contentorigin=espn&season=${currentSeason()}&seasontype=2`,
+  );
+  // Stat names are listed once per category group; each team then has an "Own" and an "Opponent" split.
+  const names: Record<string, string[]> = {};
+  for (const c of json.categories ?? []) if (Array.isArray(c.names)) names[c.name] = c.names;
+
+  return (json.teams ?? []).map((t: Json): TeamStatRow => {
+    const pick = (group: string, split: 'own' | 'opp', stat: string): number => {
+      const cats: Json[] = (t.categories ?? []).filter((c: Json) => c.name === group);
+      const cat = cats[split === 'own' ? 0 : 1];
+      const idx = (names[group] ?? []).indexOf(stat);
+      const v = idx >= 0 ? Number(cat?.values?.[idx]) : NaN;
+      return isNaN(v) ? 0 : v;
+    };
+    const fgm = pick('offensive', 'own', 'avgFieldGoalsMade');
+    const fga = pick('offensive', 'own', 'avgFieldGoalsAttempted');
+    const tpm = pick('offensive', 'own', 'avgThreePointFieldGoalsMade');
+    return {
+      teamId: String(t.team?.id),
+      abbr: t.team?.abbreviation ?? '',
+      name: t.team?.displayName ?? '',
+      gp: pick('general', 'own', 'gamesPlayed'),
+      ppg: pick('offensive', 'own', 'avgPoints'),
+      oppPpg: pick('offensive', 'opp', 'avgPoints'),
+      rpg: pick('general', 'own', 'avgRebounds'),
+      apg: pick('offensive', 'own', 'avgAssists'),
+      spg: pick('defensive', 'own', 'avgSteals'),
+      bpg: pick('defensive', 'own', 'avgBlocks'),
+      tov: pick('offensive', 'own', 'avgTurnovers'),
+      fgPct: pick('offensive', 'own', 'fieldGoalPct'),
+      threePct: pick('offensive', 'own', 'threePointFieldGoalPct'),
+      ftPct: pick('offensive', 'own', 'freeThrowPct'),
+      efgPct: fga > 0 ? ((fgm + 0.5 * tpm) / fga) * 100 : 0,
+      oppFgPct: pick('offensive', 'opp', 'fieldGoalPct'),
+      diff: pick('offensive', 'own', 'avgPoints') - pick('offensive', 'opp', 'avgPoints'),
+    };
+  });
 }

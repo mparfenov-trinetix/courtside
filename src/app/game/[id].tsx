@@ -1,9 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -22,6 +22,8 @@ import { WinProbability } from '@/components/game/win-probability';
 import { ArrowLeftIcon } from '@/components/icons';
 import { ErrorState, LoadingState } from '@/components/ui';
 import { useGameSummary } from '@/hooks/queries';
+import { FlashOverlay, Tick } from '@/components/live-flash';
+import { useRefresh } from '@/hooks/use-refresh';
 import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
 import {
   deriveQuarterStats,
@@ -178,7 +180,8 @@ function playersWithStats(team: BoxScoreTeam, derived: QuarterStats | null, peri
 export default function GameScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isPending, error, refetch, isRefetching } = useGameSummary(id);
+  const { data, isPending, error, refetch } = useGameSummary(id);
+  const refreshControl = useRefresh([['game', id]]);
   const [activeTeam, setActiveTeam] = useState<'home' | 'away'>('home');
   const [tab, setTab] = useState<MainTab>('stats');
   const [periodKey, setPeriodKey] = useState('full');
@@ -272,10 +275,6 @@ export default function GameScreen() {
       })
     : null;
 
-  const refreshControl = (
-    <RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={palette.muted} />
-  );
-
   return (
     <View style={styles.root}>
       <LinearGradient
@@ -310,7 +309,7 @@ export default function GameScreen() {
         <Animated.View entering={FadeIn.duration(350)} style={styles.scoreHeader}>
           <TeamScore team={away} />
           <View style={styles.scoreCenter}>
-            <Text style={styles.vsScore}>{hasStarted ? `${away.score}–${home.score}` : 'vs'}</Text>
+            <Tick style={styles.vsScore} value={hasStarted ? `${away.score}–${home.score}` : 'vs'} />
             {live ? <LivePill label={status} /> : <Text style={styles.gameStatus}>{status}</Text>}
           </View>
           <TeamScore team={home} right />
@@ -327,7 +326,7 @@ export default function GameScreen() {
                     {periodLabel(i + 1)}
                   </Text>
                 ))}
-                <Text style={[styles.lsCell, styles.lsHeaderCell, styles.lsTotalCell, !filtered && styles.lsActiveHeader]}>F</Text>
+                <Text style={[styles.lsCell, styles.lsHeaderCell, styles.lsTotalCell, !filtered && styles.lsActiveHeader]}>{completed ? 'F' : 'T'}</Text>
               </View>
               {([away, home] as BoxScoreTeam[]).map((t) => (
                 <View key={t.team.id} style={[styles.lsRow, styles.lsDataRow]}>
@@ -335,13 +334,16 @@ export default function GameScreen() {
                     {t.team.abbreviation}
                   </Text>
                   {Array.from({ length: periodCount }, (_, i) => (
-                    <Text key={i} style={[styles.lsCell, selPeriods?.includes(i + 1) && styles.lsActiveVal]}>
-                      {t.linescores[i] != null ? String(t.linescores[i]) : '–'}
-                    </Text>
+                    <Tick
+                      key={i}
+                      style={[styles.lsCell, selPeriods?.includes(i + 1) && styles.lsActiveVal]}
+                      value={t.linescores[i] != null ? String(t.linescores[i]) : '–'}
+                    />
                   ))}
-                  <Text style={[styles.lsCell, styles.lsTotalCell, styles.lsFinalScore, !filtered && styles.lsActiveVal]}>
-                    {t.score}
-                  </Text>
+                  <Tick
+                    style={[styles.lsCell, styles.lsTotalCell, styles.lsFinalScore, !filtered && styles.lsActiveVal]}
+                    value={t.score}
+                  />
                 </View>
               ))}
             </View>
@@ -359,6 +361,7 @@ export default function GameScreen() {
               homeColor={homeColor}
               awayColor={awayColor}
               selected={selPeriods}
+              live={live}
             />
           </Animated.View>
         )}
@@ -512,7 +515,7 @@ export default function GameScreen() {
                     ? `${option.label} player stats rebuilt from play-by-play · tap a column to sort`
                     : 'Tap a column header to sort'}
                 </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 16 }}>
                   <View>
                     <View style={styles.boxRow}>
                       <View style={[styles.playerColFixed, styles.headerPlayerCol]}>
@@ -607,7 +610,7 @@ function LivePill({ label }: { label: string }) {
   return (
     <View style={styles.livePill}>
       <Animated.View style={[styles.liveDot, dot]} />
-      <Text style={styles.liveText}>{label || 'Live'}</Text>
+      <Tick style={styles.liveText} value={label || 'Live'} />
     </View>
   );
 }
@@ -667,12 +670,16 @@ function TeamStatBar({
 
 function TeamScore({ team, right }: { team: BoxScoreTeam; right?: boolean }) {
   return (
-    <View style={[styles.teamBlock, right && styles.teamBlockRight]}>
+    <Pressable
+      onPress={() => router.push(`/team/${team.team.id}` as Href)}
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${team.team.abbreviation}`}
+      style={({ pressed }) => [styles.teamBlock, right && styles.teamBlockRight, pressed && { opacity: 0.7 }]}>
       {(team.team.logoDark || team.team.logo) ? (
         <Image source={team.team.logoDark || team.team.logo} style={styles.teamLogo} contentFit="contain" />
       ) : null}
       <Text style={styles.teamAbbr}>{team.team.abbreviation}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -693,6 +700,7 @@ function BoxPlayerRow({
       onPress={() => canNavigate && router.push({ pathname: '/player/[id]', params: { id: player.id, teamId } })}
       accessibilityRole={canNavigate ? 'button' : 'none'}
       style={({ pressed }) => [styles.boxRow, shade && styles.shadeRow, pressed && canNavigate && { opacity: 0.7 }]}>
+      <FlashOverlay radius={8} signature={cols.map((c) => player.stats[c] ?? '').join('|')} />
       <View style={styles.playerColFixed}>
         {player.headshot ? (
           <Image source={player.headshot} style={styles.playerHeadshot} contentFit="cover" />
@@ -871,12 +879,13 @@ const styles = StyleSheet.create({
   tabLabel: { fontFamily: fonts.bodySemi, fontSize: 14 },
 
   // Box score
-  boxWrap: { paddingLeft: 16 },
+  boxWrap: {},
   boxNote: {
     fontFamily: fonts.body,
     fontSize: 11,
     color: palette.muted,
     marginBottom: 6,
+    paddingHorizontal: 16,
   },
   groupLabel: {
     fontFamily: fonts.bodySemi,

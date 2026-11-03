@@ -4,19 +4,21 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { FlashOverlay, Tick } from '@/components/live-flash';
 import { useScoreboardByDate } from '@/hooks/queries';
-import { toDateKey } from '@/lib/date';
-import type { ScoreboardGame, ScoreboardTeam } from '@/lib/espn';
+import { nbaToday, toDateKey } from '@/lib/date';
+import { involvesTeam, type ScoreboardGame, type ScoreboardTeam } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
 export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highlightTeamId?: string | null }) {
-  const dateKey = useMemo(() => toDateKey(new Date()), []);
+  const dateKey = useMemo(() => toDateKey(nbaToday()), []);
   const { data: games } = useScoreboardByDate(dateKey);
 
   if (!games || games.length === 0) return null;
 
   const ordered = [...games].sort((a, b) => {
-    const rank = (g: ScoreboardGame) => (g.inProgress ? 0 : g.completed ? 2 : 1);
+    // The team on screen leads, then live games, upcoming, finished.
+    const rank = (g: ScoreboardGame) => (involvesTeam(g, highlightTeamId) ? -1 : g.inProgress ? 0 : g.completed ? 2 : 1);
     return rank(a) - rank(b) || new Date(a.date).getTime() - new Date(b.date).getTime();
   });
   const anyLive = games.some((g) => g.inProgress);
@@ -46,13 +48,17 @@ export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highl
                 g.inProgress && { backgroundColor: withAlpha('#4ADE80', 0.08) },
                 pressed && { opacity: 0.75 },
               ]}>
+              <FlashOverlay radius={16} signature={`${g.away.score ?? ''}-${g.home.score ?? ''}-${g.status}`} />
               <Side team={g.away} completed={g.completed} />
               <Side team={g.home} completed={g.completed} />
-              <Text style={[styles.status, g.inProgress && { color: '#4ADE80' }]} numberOfLines={1}>
-                {!g.completed && !g.inProgress
-                  ? new Date(g.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-                  : g.status}
-              </Text>
+              <Tick
+                style={[styles.status, g.inProgress && { color: '#4ADE80' }]}
+                value={
+                  !g.completed && !g.inProgress
+                    ? new Date(g.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                    : g.status
+                }
+              />
             </Pressable>
           );
         })}
@@ -67,9 +73,7 @@ function Side({ team, completed }: { team: ScoreboardTeam; completed: boolean })
     <View style={styles.side}>
       {team.logo ? <Image source={team.logo} style={styles.logo} contentFit="contain" /> : <View style={styles.logo} />}
       <Text style={[styles.abbr, dim && { color: withAlpha(palette.chalk, 0.5) }]}>{team.abbreviation}</Text>
-      <Text style={[styles.score, dim && { color: withAlpha(palette.chalk, 0.5) }]}>
-        {team.score != null ? Math.round(team.score) : ''}
-      </Text>
+      <Tick style={[styles.score, dim && { color: withAlpha(palette.chalk, 0.5) }]} value={team.score != null ? Math.round(team.score) : ''} />
     </View>
   );
 }

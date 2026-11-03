@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorState, LoadingState, ScreenHeader } from '@/components/ui';
 import { useRoster, useTeam } from '@/hooks/queries';
+import { useRefresh } from '@/hooks/use-refresh';
 import type { Player } from '@/lib/espn';
 import { fonts, logoOn, palette, teamTheme, withAlpha, type TeamTheme } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
@@ -17,6 +18,7 @@ export default function Roster() {
   const team = useTeam(currentTeamId);
   const theme = teamTheme(team);
   const { data, isPending, error, refetch } = useRoster(currentTeamId);
+  const refreshControl = useRefresh([['roster', currentTeamId]]);
 
   const navigateToPlayer = (player: Player) => {
     Haptics.selectionAsync();
@@ -46,6 +48,7 @@ export default function Roster() {
       ) : (
         <FlatList
           data={data?.players}
+          refreshControl={refreshControl}
           keyExtractor={(p) => p.id}
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24, gap: 8 }}
           ListHeaderComponent={

@@ -16,16 +16,18 @@ import { GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, CompareIcon, StarIcon } from '@/components/icons';
+import { CareerTable } from '@/components/player/career-table';
 import { GameLog } from '@/components/player/game-log';
 import { LoadingState } from '@/components/ui';
-import { usePlayerGameLog, usePlayerStats, useRoster, useTeam } from '@/hooks/queries';
+import { usePlayerCareer, usePlayerGameLog, usePlayerStats, useRoster, useTeam } from '@/hooks/queries';
+import { useRefresh } from '@/hooks/use-refresh';
 import { useTilt } from '@/hooks/use-tilt';
 import { useWatchlist } from '@/state/watchlist-store';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 
 const MAX_ROTATE = 10;
 
-type Tab = 'season' | 'games' | 'info';
+type Tab = 'season' | 'career' | 'games' | 'info';
 
 export default function PlayerScreen() {
   const { width } = useWindowDimensions();
@@ -40,6 +42,8 @@ export default function PlayerScreen() {
   const player = roster?.players.find((p) => p.id === id);
   const { data: stats } = usePlayerStats(player?.id);
   const { data: gameLog } = usePlayerGameLog(player?.id);
+  const { data: career, isPending: careerPending } = usePlayerCareer(activeTab === 'career' ? player?.id : undefined);
+  const refreshControl = useRefresh([['playerStats', id], ['playerGameLog', id], ['playerCareer', id], ['roster', teamId]]);
 
   const cardWidth = Math.min(width * 0.6, 240);
   const cardHeight = Math.round(cardWidth * 1.22);
@@ -143,6 +147,7 @@ export default function PlayerScreen() {
 
       <Animated.ScrollView
         onScroll={onScroll}
+        refreshControl={refreshControl}
         scrollEventThrottle={16}
         stickyHeaderIndices={[1]}
         showsVerticalScrollIndicator={false}>
@@ -238,6 +243,7 @@ export default function PlayerScreen() {
       <Animated.View entering={FadeInDown.delay(40).duration(260)} style={[styles.tabBar, { backgroundColor: theme.background }]}>
         {([
           { key: 'season', label: 'Season' },
+          { key: 'career', label: 'Career' },
           { key: 'games', label: 'Games' },
           { key: 'info', label: 'Info' },
         ] as { key: Tab; label: string }[]).map(({ key, label }) => {
@@ -318,6 +324,16 @@ export default function PlayerScreen() {
               </Animated.View>
             )}
           </>
+        )}
+
+        {activeTab === 'career' && (
+          career ? (
+            <CareerTable career={career} accent={theme.accent} />
+          ) : (
+            <Animated.View entering={FadeIn.duration(260)} style={styles.emptyTab}>
+              <Text style={styles.emptyText}>{careerPending ? 'Loading career stats…' : 'Career stats are unavailable.'}</Text>
+            </Animated.View>
+          )
         )}
 
         {activeTab === 'games' && (

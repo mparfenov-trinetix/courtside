@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorState, LoadingState, ScreenHeader } from '@/components/ui';
 import { useStandings } from '@/hooks/queries';
+import { useRefresh } from '@/hooks/use-refresh';
 import type { StandingEntry } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
@@ -25,6 +26,7 @@ export default function Standings() {
   const insets = useSafeAreaInsets();
   const [conf, setConf] = useState<Conference>('east');
   const { data, isPending, error, refetch } = useStandings();
+  const refreshControl = useRefresh([['standings']]);
 
   const entries: StandingEntry[] = data?.[conf] ?? [];
 
@@ -80,6 +82,7 @@ export default function Standings() {
         <FlatList
           key={conf}
           data={flat}
+          refreshControl={refreshControl}
           keyExtractor={(item, i) => ('sectionTitle' in item ? `header-${item.sectionTitle}` : `${item.teamId}-${i}`)}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 6 }}
           ListHeaderComponent={<ColumnHeader />}
@@ -122,7 +125,7 @@ function SectionDivider({ title }: { title: string }) {
 }
 
 function TeamRow({ entry, index }: { entry: StandingEntry; index: number }) {
-  const { viewTeam, favoriteTeamId } = useTeamStore();
+  const { favoriteTeamId } = useTeamStore();
   const gbText = entry.gamesBehind === 0 ? '—' : entry.gamesBehind.toFixed(1);
   const pctText = entry.winPct.toFixed(3).replace(/^0/, '');
   const streakColor = entry.streak.startsWith('W') ? '#34D399' : entry.streak.startsWith('L') ? '#F87171' : palette.muted;
@@ -137,8 +140,7 @@ function TeamRow({ entry, index }: { entry: StandingEntry; index: number }) {
       <Pressable
         onPress={() => {
           Haptics.selectionAsync();
-          viewTeam(entry.teamId);
-          router.navigate('/home');
+          router.push(`/team/${entry.teamId}` as Href);
         }}
         accessibilityRole="button"
         accessibilityLabel={`Open ${entry.teamName}`}

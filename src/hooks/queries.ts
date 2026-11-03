@@ -3,13 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import {
   fetchGameSummary,
   fetchLeagueLeaders,
+  fetchPlayerCareer,
   fetchPlayerGameLog,
   fetchPlayerStats,
   fetchRoster,
   fetchScoreboardByDate,
   fetchStandings,
   fetchTeamDetail,
-  fetchTeamSeasonStats,
+  fetchLeagueTeamStats,
   fetchTeams,
   searchPlayers,
   fetchTeamSchedule,
@@ -122,11 +123,19 @@ export function usePlayerSearch(query: string) {
   });
 }
 
-export function useTeamSeasonStats(teamId?: string | null) {
+export function useLeagueTeamStats() {
   return useQuery({
-    queryKey: ['teamStats', teamId],
-    queryFn: () => fetchTeamSeasonStats(teamId!),
-    enabled: !!teamId,
+    queryKey: ['leagueTeamStats'],
+    queryFn: fetchLeagueTeamStats,
+    staleTime: HOUR,
+  });
+}
+
+export function usePlayerCareer(athleteId?: string | null) {
+  return useQuery({
+    queryKey: ['playerCareer', athleteId],
+    queryFn: () => fetchPlayerCareer(athleteId!),
+    enabled: !!athleteId,
     staleTime: HOUR,
   });
 }

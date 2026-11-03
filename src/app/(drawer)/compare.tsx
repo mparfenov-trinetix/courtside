@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -12,22 +12,17 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CompareRow, type Row } from '@/components/compare/compare-row';
+import { TeamCompare } from '@/components/compare/team-compare';
 import { ScreenHeader } from '@/components/ui';
 import { usePlayerSearch, usePlayerStats, useTeams } from '@/hooks/queries';
 import { headshotUrl, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
 import { fonts, matchupColors, palette, withAlpha } from '@/lib/theme';
 
 type Slot = PlayerSearchResult | null;
-
-type Row = {
-  label: string;
-  a?: number;
-  b?: number;
-  fmt: (v: number) => string;
-};
 
 const one = (v: number) => v.toFixed(1);
 const percent = (v: number) => `${(v * 100).toFixed(1)}%`;
@@ -50,7 +45,8 @@ function buildRows(a: PlayerSeasonStats, b: PlayerSeasonStats): Row[] {
 
 export default function Compare() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id?: string; name?: string; teamId?: string; teamAbbr?: string }>();
+  const params = useLocalSearchParams<{ id?: string; name?: string; teamId?: string; teamAbbr?: string; mode?: string }>();
+  const mode = params.mode === 'teams' ? 'teams' : 'players';
   const { data: teams } = useTeams();
 
   const fromParams: Slot = params.id
@@ -83,7 +79,28 @@ export default function Compare() {
   return (
     <View style={styles.root}>
       <ScreenHeader title="Compare" />
+      <View style={styles.switch}>
+        {(['players', 'teams'] as const).map((m) => {
+          const active = m === mode;
+          return (
+            <Pressable
+              key={m}
+              onPress={() => router.setParams({ mode: m })}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              style={[styles.switchBtn, active && styles.switchBtnActive]}>
+              <Text style={[styles.switchLabel, { color: active ? palette.chalk : palette.muted }]}>
+                {m === 'players' ? 'Players' : 'Teams'}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
+        {mode === 'teams' ? (
+          <TeamCompare />
+        ) : (
+          <>
         <View style={styles.slots}>
           <PlayerSlot slot={slotA} color={colors.away} onPress={() => setPicking('a')} />
           <Text style={styles.vs}>VS</Text>
@@ -111,6 +128,8 @@ export default function Compare() {
             </Text>
             {slotA && slotB && <ActivityIndicator color={palette.muted} style={{ marginTop: 12 }} />}
           </Animated.View>
+        )}
+          </>
         )}
       </ScrollView>
 
@@ -140,44 +159,6 @@ function PlayerSlot({ slot, color, onPress }: { slot: Slot; color: string; onPre
       <Text style={styles.slotName} numberOfLines={2}>{slot ? slot.name : 'Choose player'}</Text>
       <Text style={styles.slotTeam}>{slot ? slot.teamAbbr ?? ' ' : 'Tap to search'}</Text>
     </Pressable>
-  );
-}
-
-function CompareRow({ row, aColor, bColor, delay }: { row: Row; aColor: string; bColor: string; delay: number }) {
-  const progress = useSharedValue(0);
-  const { a, b } = row;
-  useEffect(() => {
-    progress.value = 0;
-    progress.value = withTiming(1, { duration: 650 });
-  }, [a, b, progress]);
-
-  const max = Math.max(a ?? 0, b ?? 0, 0.0001);
-  const aFrac = (a ?? 0) / max;
-  const bFrac = (b ?? 0) / max;
-  const aWins = (a ?? -1) > (b ?? -1);
-  const bWins = (b ?? -1) > (a ?? -1);
-
-  const aStyle = useAnimatedStyle(() => ({ width: `${aFrac * progress.value * 100}%` }));
-  const bStyle = useAnimatedStyle(() => ({ width: `${bFrac * progress.value * 100}%` }));
-
-  return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(260)} style={styles.row}>
-      <View style={styles.rowTop}>
-        <Text style={[styles.val, aWins ? { color: palette.chalk } : styles.valDim]}>{a != null ? row.fmt(a) : '–'}</Text>
-        <Text style={styles.rowLabel}>{row.label}</Text>
-        <Text style={[styles.val, { textAlign: 'right' }, bWins ? { color: palette.chalk } : styles.valDim]}>
-          {b != null ? row.fmt(b) : '–'}
-        </Text>
-      </View>
-      <View style={styles.bars}>
-        <View style={[styles.track, { alignItems: 'flex-end' }]}>
-          <Animated.View style={[styles.fill, { backgroundColor: aColor, opacity: aWins ? 1 : 0.4, borderTopLeftRadius: 3, borderBottomLeftRadius: 3 }, aStyle]} />
-        </View>
-        <View style={styles.track}>
-          <Animated.View style={[styles.fill, { backgroundColor: bColor, opacity: bWins ? 1 : 0.4, borderTopRightRadius: 3, borderBottomRightRadius: 3 }, bStyle]} />
-        </View>
-      </View>
-    </Animated.View>
   );
 }
 
@@ -246,6 +227,17 @@ function PickerModal({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  switch: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    padding: 3,
+    borderRadius: 14,
+    backgroundColor: withAlpha(palette.chalk, 0.07),
+    marginTop: 4,
+  },
+  switchBtn: { paddingHorizontal: 26, paddingVertical: 7, borderRadius: 11 },
+  switchBtnActive: { backgroundColor: withAlpha(palette.chalk, 0.16) },
+  switchLabel: { fontFamily: fonts.bodySemi, fontSize: 14 },
   slots: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 8, marginTop: 8, marginBottom: 16 },
   vs: { fontFamily: fonts.display, fontSize: 20, color: palette.muted },
   slot: {
@@ -267,14 +259,6 @@ const styles = StyleSheet.create({
   tally: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   tallyNum: { fontFamily: fonts.display, fontSize: 44 },
   tallyLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  row: { marginBottom: 14 },
-  rowTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
-  val: { width: 64, fontFamily: fonts.bodyBold, fontSize: 16 },
-  valDim: { color: withAlpha(palette.chalk, 0.5) },
-  rowLabel: { flex: 1, textAlign: 'center', fontFamily: fonts.body, fontSize: 12, color: palette.muted },
-  bars: { flexDirection: 'row', gap: 3 },
-  track: { flex: 1, height: 6, backgroundColor: withAlpha(palette.chalk, 0.06), borderRadius: 3, overflow: 'hidden' },
-  fill: { height: 6 },
   empty: { alignItems: 'center', paddingTop: 36, paddingHorizontal: 32, gap: 8 },
   emptyTitle: { fontFamily: fonts.displayBold, fontSize: 28, color: palette.chalk },
   emptyText: { fontFamily: fonts.body, fontSize: 15, color: palette.muted, textAlign: 'center' },
