@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, type Href } from 'expo-router';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -23,6 +24,7 @@ import { UpdatedAgo } from '@/components/updated-ago';
 import type { BoxScoreTeam } from '@/lib/espn';
 import { periodLabel } from '@/lib/game-model';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { openDetail } from '@/lib/nav';
 
 // ─── Big header ───────────────────────────────────────────────────────────────
 
@@ -126,7 +128,7 @@ export function LivePill({ label }: { label: string }) {
 function TeamScore({ team, right }: { team: BoxScoreTeam; right?: boolean }) {
   return (
     <Pressable
-      onPress={() => router.push(`/team/${team.team.id}` as Href)}
+      onPress={() => openDetail(`/team/${team.team.id}` as Href)}
       accessibilityRole="button"
       accessibilityLabel={`Open ${team.team.abbreviation}`}
       style={({ pressed }) => [styles.teamBlock, right && styles.teamBlockRight, pressed && { opacity: 0.7 }]}>
@@ -152,6 +154,9 @@ export function GameTopBar({
   live,
   hasStarted,
   updatedAt,
+  cup,
+  tint,
+  pinned,
 }: {
   scrollY: SharedValue<number>;
   away: BoxScoreTeam;
@@ -160,6 +165,12 @@ export function GameTopBar({
   live: boolean;
   hasStarted: boolean;
   updatedAt: number;
+  /** NBA Cup stage, when this game is part of the Cup. */
+  cup?: string;
+  /** Opaque left and right colors of the team-colored header surface. */
+  tint: [string, string];
+  /** 0 while the tabs are still in flow, 1 once they are pinned (see the game screen). */
+  pinned: SharedValue<number>;
 }) {
   const insets = useSafeAreaInsets();
   const compact = useAnimatedStyle(() => ({
@@ -169,12 +180,13 @@ export function GameTopBar({
   const label = useAnimatedStyle(() => ({
     opacity: interpolate(scrollY.get(), [40, 100], [1, 0], Extrapolation.CLAMP),
   }));
-  const rule = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.get(), [100, 160], [0, 1], Extrapolation.CLAMP),
-  }));
+  const surface = useAnimatedStyle(() => ({ opacity: pinned.get() }));
 
   return (
     <View style={[styles.topBar, { paddingTop: insets.top + 6 }]}>
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, surface]}>
+        <LinearGradient colors={tint} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
+      </Animated.View>
       <View style={styles.topRow}>
         <View style={styles.topSide}>
           <Pressable
@@ -190,7 +202,7 @@ export function GameTopBar({
         <View style={styles.topCenter}>
           <Animated.View style={[styles.topLayer, label]} pointerEvents="none">
             <Text style={styles.matchup}>
-              {away.team.abbreviation} @ {home.team.abbreviation}
+              {away.team.abbreviation} @ {home.team.abbreviation}{cup ? ' · NBA CUP' : ''}
             </Text>
           </Animated.View>
           <Animated.View style={[styles.topLayer, compact]} pointerEvents="none">
@@ -211,7 +223,6 @@ export function GameTopBar({
 
         <View style={[styles.topSide, { alignItems: 'flex-end' }]}>{live ? <UpdatedAgo at={updatedAt} /> : null}</View>
       </View>
-      <Animated.View style={[styles.rule, rule]} />
     </View>
   );
 }
@@ -270,5 +281,4 @@ const styles = StyleSheet.create({
   miniNum: { fontFamily: fonts.display, fontSize: 24, color: palette.chalk },
   miniDash: { fontFamily: fonts.body, fontSize: 16, color: palette.muted },
   miniStatus: { fontFamily: fonts.bodySemi, fontSize: 10, color: palette.muted, letterSpacing: 0.5, textTransform: 'uppercase', marginTop: -2 },
-  rule: { height: StyleSheet.hairlineWidth, backgroundColor: withAlpha(palette.chalk, 0.18), marginTop: 6, marginHorizontal: -16 },
 });

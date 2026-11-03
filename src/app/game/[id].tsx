@@ -2,7 +2,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BoxScoreTab } from '@/components/game/box-score-tab';
@@ -19,7 +26,7 @@ import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
 import { buildPeriodOptions, deriveFlow, numsFromLine, numsFromTotals } from '@/lib/game-model';
 import { playersWithStats } from '@/lib/period-stats';
 import { deriveQuarterStats, emptyLine, lineToStats, sumPeriods, type Line, type QuarterStats } from '@/lib/quarter-stats';
-import { matchupColors, palette, withAlpha } from '@/lib/theme';
+import { matchupColors, mix, palette, withAlpha } from '@/lib/theme';
 
 const TAB_ORDER: GameTab[] = ['summary', 'box', 'plays', 'shots'];
 
@@ -40,6 +47,14 @@ export default function GameScreen() {
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.set(e.contentOffset.y);
   });
+  // Where the tab bar sits in the page. It pins once the scroll reaches that point; `pinned` ramps 0 -> 1
+  // over the last stretch before, so the bars' team-colored surface arrives exactly as they take over
+  // from the page's big colored wash, with no band in between.
+  const stickyY = useSharedValue(330);
+  const pinned = useDerivedValue(() =>
+    interpolate(scrollY.get(), [stickyY.get() - 70, stickyY.get() - 8], [0, 1], Extrapolation.CLAMP),
+  );
+  const heroTintStyle = useAnimatedStyle(() => ({ opacity: 1 - pinned.get() }));
 
   if (isPending) {
     return (
@@ -60,6 +75,7 @@ export default function GameScreen() {
   const { home, away, status, completed, live, plays, winProb, info } = data;
   const { home: homeColor, away: awayColor } = matchupColors(away.team, home.team);
   const hasStarted = completed || live || plays.length > 0;
+  const tint: [string, string] = [mix(palette.arena, awayColor, 0.34), mix(palette.arena, homeColor, 0.34)];
   const tabbed = hasStarted && plays.length > 0;
 
   const derived: QuarterStats | null =
@@ -106,14 +122,15 @@ export default function GameScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient
-        pointerEvents="none"
-        colors={[withAlpha(awayColor, 0.34), withAlpha(homeColor, 0.34)]}
-        start={{ x: 0, y: 0.4 }}
-        end={{ x: 1, y: 0.6 }}
-        style={styles.heroTint}
-      />
-      <LinearGradient pointerEvents="none" colors={['rgba(13,27,46,0)', palette.arena]} style={styles.heroTint} />
+      <Animated.View pointerEvents="none" style={[styles.heroTint, heroTintStyle]}>
+        <LinearGradient
+          colors={[withAlpha(awayColor, 0.34), withAlpha(homeColor, 0.34)]}
+          start={{ x: 0, y: 0.4 }}
+          end={{ x: 1, y: 0.6 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <LinearGradient colors={['rgba(13,27,46,0)', palette.arena]} style={StyleSheet.absoluteFill} />
+      </Animated.View>
 
       <GameTopBar
         scrollY={scrollY}
@@ -123,6 +140,9 @@ export default function GameScreen() {
         live={live}
         hasStarted={hasStarted}
         updatedAt={dataUpdatedAt}
+        cup={data.cup}
+        tint={tint}
+        pinned={pinned}
       />
 
       <Animated.ScrollView
@@ -144,7 +164,7 @@ export default function GameScreen() {
         />
 
         {/* A plain View: ScrollView replaces the style of a sticky child, so the bar styles itself. */}
-        <View>
+        <View onLayout={(e) => stickyY.set(e.nativeEvent.layout.y)}>
           {tabbed && (
             <GameStickyBar
               tab={tab}
@@ -153,6 +173,8 @@ export default function GameScreen() {
               options={options}
               optionKey={option.key}
               onOption={setPeriodKey}
+              pinned={pinned}
+              tint={tint}
             />
           )}
         </View>

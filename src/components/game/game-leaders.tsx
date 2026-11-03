@@ -1,9 +1,9 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { BoxScorePlayer, GameInfo, Injury } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { openDetail } from '@/lib/nav';
 
 type Side = { teamId: string; abbr: string; color: string; players: BoxScorePlayer[] };
 
@@ -64,7 +64,7 @@ function Leader({
   const right = align === 'right';
   return (
     <Pressable
-      onPress={() => player.id && router.push({ pathname: '/player/[id]', params: { id: player.id, teamId: side.teamId } })}
+      onPress={() => player.id && openDetail({ pathname: '/player/[id]', params: { id: player.id, teamId: side.teamId } })}
       style={({ pressed }) => [styles.leader, right && styles.leaderRight, pressed && { opacity: 0.7 }]}>
       {!right && <Headshot player={player} color={side.color} />}
       <View style={[styles.leaderText, right && { alignItems: 'flex-end' }]}>

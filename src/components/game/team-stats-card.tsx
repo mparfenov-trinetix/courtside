@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 
+import { Expandable } from '@/components/expandable';
 import { TeamStatBar } from '@/components/game/team-stat-bar';
 import type { StatBarConfig } from '@/lib/game-model';
 import { fonts, palette } from '@/lib/theme';
@@ -31,7 +31,7 @@ export function TeamStatsCard({
   const hasMore = more.length + factors.length > 0;
 
   return (
-    <Animated.View layout={LinearTransition.duration(220)} style={styles.wrap}>
+    <View style={styles.wrap}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Team stats</Text>
         {note ? <Text style={styles.note}>{note}</Text> : null}
@@ -44,8 +44,8 @@ export function TeamStatsCard({
         <TeamStatBar key={s.label} {...s} awayColor={awayColor} homeColor={homeColor} />
       ))}
 
-      {open && (
-        <Animated.View entering={FadeIn.duration(220)}>
+      <Expandable open={open}>
+        <View>
           {more.map((s) => (
             <TeamStatBar key={s.label} {...s} awayColor={awayColor} homeColor={homeColor} />
           ))}
@@ -57,8 +57,8 @@ export function TeamStatsCard({
               ))}
             </>
           )}
-        </Animated.View>
-      )}
+        </View>
+      </Expandable>
 
       {hasMore && (
         <Pressable
@@ -72,7 +72,7 @@ export function TeamStatsCard({
           <Text style={styles.toggleText}>{open ? 'Show fewer stats' : 'Show all stats and four factors'}</Text>
         </Pressable>
       )}
-    </Animated.View>
+    </View>
   );
 }
 

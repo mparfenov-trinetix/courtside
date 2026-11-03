@@ -1,7 +1,14 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 import type { PeriodOption } from '@/lib/game-model';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -26,6 +33,8 @@ export function GameStickyBar({
   options,
   optionKey,
   onOption,
+  pinned,
+  tint,
 }: {
   tab: GameTab;
   onTab: (t: GameTab) => void;
@@ -33,18 +42,28 @@ export function GameStickyBar({
   options: PeriodOption[];
   optionKey: string;
   onOption: (key: string) => void;
+  /** 0 while the bar is still in flow with the page, 1 once it is pinned over scrolling content. */
+  pinned: SharedValue<number>;
+  /** Opaque left and right colors of the team-colored header surface. */
+  tint: [string, string];
 }) {
   const [width, setWidth] = useState(0);
   const index = TABS.findIndex((t) => t.key === tab);
   const position = useSharedValue(index);
   useEffect(() => {
-    position.set(withSpring(index, { damping: 20, stiffness: 240 }));
+    position.set(withTiming(index, { duration: 240, easing: Easing.out(Easing.cubic) }));
   }, [index, position]);
   const segment = width / TABS.length;
+  // Nothing scrolls under the bar until it pins, so it stays see-through (the page's own wash shows)
+  // and only becomes an opaque team-colored surface as it reaches the top.
+  const surface = useAnimatedStyle(() => ({ opacity: pinned.get() }));
   const underline = useAnimatedStyle(() => ({ transform: [{ translateX: position.get() * segment }] }));
 
   return (
     <View style={styles.wrap}>
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: palette.arena }, surface]}>
+        <LinearGradient colors={tint} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
+      </Animated.View>
       <View style={styles.tabs} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         {TABS.map((t) => {
           const active = t.key === tab;
@@ -94,7 +113,7 @@ export function GameStickyBar({
 }
 
 const styles = StyleSheet.create({
-  wrap: { backgroundColor: palette.arena, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: withAlpha(palette.chalk, 0.1) },
+  wrap: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: withAlpha(palette.chalk, 0.08) },
   tabs: { flexDirection: 'row', marginHorizontal: 16 },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 12 },
   tabLabel: { fontFamily: fonts.bodySemi, fontSize: 14, color: palette.muted },

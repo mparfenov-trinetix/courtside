@@ -110,9 +110,11 @@ export function SummaryTab({
     </Animated.View>
   );
 
+  // Live: the swing first, then the numbers and who's producing. Final: who stood out, how the teams
+  // compared, then the story of the game.
   const ordered = live
-    ? [flowChart, timeouts, leaders, moments, stats]
-    : [leaders, flowChart, moments, stats, timeouts];
+    ? [flowChart, stats, leaders, timeouts, moments]
+    : [leaders, stats, flowChart, moments, timeouts];
 
   return (
     <View>

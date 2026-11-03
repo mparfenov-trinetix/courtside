@@ -1,8 +1,15 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  FadeInDown,
+  Extrapolation,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 
 import { LineupsCard } from '@/components/game/lineups-card';
 import { FlashOverlay } from '@/components/live-flash';
@@ -10,9 +17,14 @@ import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
 import { COLS, COL_W, parseStatNum, type Col, type SortDir } from '@/lib/game-model';
 import type { QuarterStats } from '@/lib/quarter-stats';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { openDetail } from '@/lib/nav';
 
-const PLAYER_COL_W = 134;
+const PLAYER_COL_W = 138;
 const HEADSHOT_SIZE = 28;
+const ROW_H = 48;
+const HEADER_H = 32;
+const TOTALS_H = 44;
+const GOLD = '#FBBF24';
 
 function statStyle(col: Col, value?: string): object[] {
   const base = { width: COL_W[col], textAlign: 'right' as const, fontFamily: fonts.bodySemi, fontSize: 13 };
@@ -24,7 +36,10 @@ function statStyle(col: Col, value?: string): object[] {
   return [base, { color, fontFamily: pts || to ? fonts.bodyBold : fonts.bodySemi }];
 }
 
-/** Player lines for one team at a time, sortable by any column. */
+/**
+ * Player lines for one team at a time, sortable by any column. The player column stays pinned on the
+ * left while the stat columns scroll sideways, and starters carry a golden edge instead of a divider.
+ */
 export function BoxScoreTab({
   away,
   home,
@@ -53,6 +68,12 @@ export function BoxScoreTab({
   const [side, setSide] = useState<'home' | 'away'>('home');
   const [sortCol, setSortCol] = useState<Col | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const scrollX = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollX.set(e.contentOffset.x);
+  });
+  // A soft shadow on the pinned column's right edge, only once the stats have scrolled under it.
+  const edge = useAnimatedStyle(() => ({ opacity: interpolate(scrollX.get(), [0, 14], [0, 1], Extrapolation.CLAMP) }));
 
   const team = side === 'home' ? home : away;
   const players = side === 'home' ? homePlayers : awayPlayers;
@@ -69,17 +90,20 @@ export function BoxScoreTab({
     }
   };
 
-  const sorted = effectiveSort
+  // Unsorted, the order is the game's own: starters, then the bench (the golden edge marks starters).
+  const rows = effectiveSort
     ? [...players].sort((a, b) => {
         const av = parseStatNum(a.stats[effectiveSort]);
         const bv = parseStatNum(b.stats[effectiveSort]);
         return effectiveDir === 'desc' ? bv - av : av - bv;
       })
-    : null;
+    : players;
 
   if (!hasStarted) {
     return <Text style={styles.empty}>Available after tip-off</Text>;
   }
+
+  const hasTotals = Object.keys(teamTotals).length > 0;
 
   return (
     <View>
@@ -112,64 +136,69 @@ export function BoxScoreTab({
       {cols.length > 0 && players.length > 0 ? (
         <Animated.View key={side} entering={FadeInDown.duration(240)}>
           <Text style={styles.note}>
-            {filtered ? `${periodLabel} stats rebuilt from play-by-play · tap a column to sort` : 'Tap a column header to sort'}
+            {filtered ? `${periodLabel} stats rebuilt from play-by-play · ` : ''}
+            Tap a column to sort ·{' '}
+            <Text style={{ color: GOLD }}>gold edge</Text> = starter
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 16 }}>
-            <View>
-              <View style={styles.row}>
-                <View style={[styles.playerCol, { justifyContent: 'flex-start' }]}>
-                  <Text style={styles.playerColHeader}>PLAYER</Text>
-                </View>
-                {cols.map((col) => {
-                  const active = effectiveSort === col;
-                  return (
-                    <Pressable key={col} onPress={() => handleSort(col)} style={{ width: COL_W[col], alignItems: 'flex-end' }}>
-                      <Text style={[styles.colHeader, active && styles.colHeaderActive]}>
-                        {col}
-                        {active ? (effectiveDir === 'desc' ? ' ▾' : ' ▴') : ''}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+
+          <View style={styles.table}>
+            {/* Pinned: player names */}
+            <View style={styles.pinned}>
+              <View style={[styles.headerCell, { height: HEADER_H }]}>
+                <Text style={styles.playerColHeader}>PLAYER</Text>
               </View>
-
-              {sorted ? (
-                sorted.map((p, i) => <PlayerRow key={p.id || String(i)} player={p} cols={cols} shade={i % 2 === 1} teamId={team.team.id} />)
-              ) : (
-                <>
-                  {team.starters.length > 0 && (
-                    <>
-                      <Text style={styles.group}>Starters</Text>
-                      {team.starters.map((p, i) => (
-                        <PlayerRow key={p.id || String(i)} player={p} cols={cols} shade={i % 2 === 1} teamId={team.team.id} />
-                      ))}
-                    </>
-                  )}
-                  {team.bench.length > 0 && (
-                    <>
-                      <Text style={styles.group}>Bench</Text>
-                      {team.bench.map((p, i) => (
-                        <PlayerRow key={p.id || String(i)} player={p} cols={cols} shade={i % 2 === 1} teamId={team.team.id} />
-                      ))}
-                    </>
-                  )}
-                </>
-              )}
-
-              {Object.keys(teamTotals).length > 0 && (
-                <View style={[styles.row, styles.totalsRow]}>
-                  <View style={styles.playerCol}>
-                    <Text style={styles.totalsLabel}>TEAM</Text>
-                  </View>
-                  {cols.map((col) => (
-                    <Text key={col} style={[{ width: COL_W[col], textAlign: 'right' }, styles.totalsValue]}>
-                      {teamTotals[col] || '–'}
-                    </Text>
-                  ))}
+              {rows.map((p, i) => (
+                <PlayerCell key={p.id || String(i)} player={p} shade={i % 2 === 1} teamId={team.team.id} />
+              ))}
+              {hasTotals && (
+                <View style={[styles.totalsCell, { height: TOTALS_H }]}>
+                  <Text style={styles.totalsLabel}>TEAM</Text>
                 </View>
               )}
+              <Animated.View pointerEvents="none" style={[styles.edge, edge]}>
+                <LinearGradient colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+              </Animated.View>
             </View>
-          </ScrollView>
+
+            {/* Scrolls sideways: the stat columns */}
+            <Animated.ScrollView
+              horizontal
+              bounces={false}
+              overScrollMode="never"
+              decelerationRate="fast"
+              showsHorizontalScrollIndicator={false}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              style={styles.stats}>
+              <View>
+                <View style={[styles.statsRow, { height: HEADER_H }]}>
+                  {cols.map((col) => {
+                    const active = effectiveSort === col;
+                    return (
+                      <Pressable key={col} onPress={() => handleSort(col)} hitSlop={{ top: 6, bottom: 6 }} style={{ width: COL_W[col], alignItems: 'flex-end' }}>
+                        <Text style={[styles.colHeader, active && styles.colHeaderActive]}>
+                          {col}
+                          {active ? (effectiveDir === 'desc' ? ' ▾' : ' ▴') : ''}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {rows.map((p, i) => (
+                  <StatsRow key={p.id || String(i)} player={p} cols={cols} shade={i % 2 === 1} teamId={team.team.id} />
+                ))}
+                {hasTotals && (
+                  <View style={[styles.statsRow, styles.totalsRow, { height: TOTALS_H }]}>
+                    {cols.map((col) => (
+                      <Text key={col} style={[{ width: COL_W[col], textAlign: 'right' }, styles.totalsValue]}>
+                        {teamTotals[col] || '–'}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </Animated.ScrollView>
+          </View>
         </Animated.View>
       ) : (
         <Text style={styles.empty}>No player stats for this period</Text>
@@ -177,39 +206,47 @@ export function BoxScoreTab({
 
       {derived && (
         <View style={styles.lineups}>
-          <LineupsCard
-            derived={derived}
-            teamId={team.team.id}
-            players={[...team.starters, ...team.bench]}
-            periods={selPeriods}
-          />
+          <LineupsCard derived={derived} teamId={team.team.id} players={[...team.starters, ...team.bench]} periods={selPeriods} />
         </View>
       )}
     </View>
   );
 }
 
-function PlayerRow({ player, cols, shade, teamId }: { player: BoxScorePlayer; cols: Col[]; shade: boolean; teamId: string }) {
-  const canNavigate = !!player.id;
+const openPlayer = (player: BoxScorePlayer, teamId: string) =>
+  player.id && openDetail({ pathname: '/player/[id]', params: { id: player.id, teamId } });
+
+/** The pinned half of a row: gold starter edge, avatar and name. */
+function PlayerCell({ player, shade, teamId }: { player: BoxScorePlayer; shade: boolean; teamId: string }) {
   return (
     <Pressable
-      onPress={() => canNavigate && router.push({ pathname: '/player/[id]', params: { id: player.id, teamId } })}
-      accessibilityRole={canNavigate ? 'button' : 'none'}
-      style={({ pressed }) => [styles.row, shade && styles.shade, pressed && canNavigate && { opacity: 0.7 }]}>
-      <FlashOverlay radius={8} signature={cols.map((c) => player.stats[c] ?? '').join('|')} />
-      <View style={styles.playerCol}>
-        {player.headshot ? (
-          <Image source={player.headshot} style={styles.headshot} contentFit="cover" />
-        ) : (
-          <View style={[styles.headshot, styles.headshotPlaceholder]}>
-            <Text style={styles.initials}>{(player.shortName || player.name).charAt(0)}</Text>
-          </View>
-        )}
-        <View style={{ flex: 1 }}>
-          <Text style={styles.playerName} numberOfLines={1}>{player.shortName || player.name}</Text>
-          {player.position ? <Text style={styles.playerPos}>{player.position}</Text> : null}
+      onPress={() => openPlayer(player, teamId)}
+      accessibilityRole={player.id ? 'button' : 'none'}
+      accessibilityLabel={`${player.name}${player.starter ? ', starter' : ''}`}
+      style={({ pressed }) => [styles.playerCell, shade && styles.shade, pressed && { opacity: 0.7 }]}>
+      {player.starter && <View style={styles.starterEdge} />}
+      {player.headshot ? (
+        <Image source={player.headshot} style={styles.headshot} contentFit="cover" />
+      ) : (
+        <View style={[styles.headshot, styles.headshotPlaceholder]}>
+          <Text style={styles.initials}>{(player.shortName || player.name).charAt(0)}</Text>
         </View>
+      )}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.playerName} numberOfLines={1}>{player.shortName || player.name}</Text>
+        {player.position ? <Text style={styles.playerPos}>{player.position}</Text> : null}
       </View>
+    </Pressable>
+  );
+}
+
+/** The scrolling half of a row: the stat values. */
+function StatsRow({ player, cols, shade, teamId }: { player: BoxScorePlayer; cols: Col[]; shade: boolean; teamId: string }) {
+  return (
+    <Pressable
+      onPress={() => openPlayer(player, teamId)}
+      style={({ pressed }) => [styles.statsRow, { height: ROW_H }, shade && styles.shade, pressed && { opacity: 0.7 }]}>
+      <FlashOverlay radius={8} signature={cols.map((c) => player.stats[c] ?? '').join('|')} />
       {cols.map((col) => (
         <Text key={col} style={statStyle(col, player.stats[col])}>
           {player.stats[col] ?? '–'}
@@ -234,19 +271,16 @@ const styles = StyleSheet.create({
   tabLogo: { width: 22, height: 22 },
   tabLabel: { fontFamily: fonts.bodySemi, fontSize: 14 },
   note: { fontFamily: fonts.body, fontSize: 11, color: palette.muted, marginBottom: 6, paddingHorizontal: 16 },
-  group: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 11,
-    color: palette.muted,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginTop: 10,
-    marginBottom: 2,
-    paddingLeft: 4,
-  },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, paddingRight: 16, borderRadius: 8 },
-  shade: { backgroundColor: withAlpha('#FFFFFF', 0.03) },
-  playerCol: { width: PLAYER_COL_W, flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 6 },
+  table: { flexDirection: 'row' },
+  pinned: { width: PLAYER_COL_W, backgroundColor: palette.arena, zIndex: 2 },
+  edge: { position: 'absolute', top: 0, bottom: 0, right: -8, width: 8 },
+  stats: { flex: 1 },
+  headerCell: { justifyContent: 'center', paddingLeft: 16 },
+  playerCell: { height: ROW_H, flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 6 },
+  starterEdge: { position: 'absolute', left: 0, top: 6, bottom: 6, width: 3, borderTopRightRadius: 2, borderBottomRightRadius: 2, backgroundColor: GOLD },
+  // Trailing padding lives in the rows, so the zebra shading runs to the screen edge.
+  statsRow: { flexDirection: 'row', alignItems: 'center', paddingRight: 16 },
+  shade: { backgroundColor: withAlpha('#FFFFFF', 0.04) },
   playerColHeader: { fontFamily: fonts.bodyBold, fontSize: 11, color: withAlpha(palette.chalk, 0.8), letterSpacing: 0.5 },
   colHeader: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.4 },
   colHeaderActive: { color: palette.chalk, fontFamily: fonts.bodyBold },
@@ -255,7 +289,8 @@ const styles = StyleSheet.create({
   initials: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted },
   playerName: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.chalk },
   playerPos: { fontFamily: fonts.body, fontSize: 11, color: palette.muted, marginTop: 1 },
-  totalsRow: { marginTop: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(palette.chalk, 0.12), paddingTop: 10 },
+  totalsCell: { justifyContent: 'center', paddingLeft: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(palette.chalk, 0.12), marginTop: 2 },
+  totalsRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(palette.chalk, 0.12), marginTop: 2 },
   totalsLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: palette.muted },
   totalsValue: { fontFamily: fonts.bodyBold, fontSize: 13, color: palette.chalk },
   lineups: { marginTop: 16 },
