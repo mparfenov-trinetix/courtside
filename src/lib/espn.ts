@@ -15,6 +15,10 @@ export type Team = {
   alternateColor: string;
   logo: string; // logo for light backgrounds
   logoDark: string; // logo for dark backgrounds (falls back to logo)
+  /** ESPN's own dark-background variant, for sitting on the team's primary color (see logoOn). */
+  logoOnPrimary?: string;
+  /** ESPN's secondary logo (a lettered wordmark for a few teams, an alternate emblem for the rest), for headers. */
+  mark?: string;
 };
 
 export type TeamDetail = Team & {
@@ -34,6 +38,11 @@ export type Player = {
   positionName?: string; // "Point Guard"
   height?: string;
   weight?: string;
+  /** Same measurements in metric, derived from ESPN's inches and pounds. */
+  heightCm?: number;
+  weightKg?: number;
+  /** Date of birth as YYYY-MM-DD. */
+  born?: string;
   age?: number;
   college?: string;
   experience?: number;
@@ -106,8 +115,27 @@ function normalizeTeam(t: Json): Team {
     color: hex(t.color, '#1D428A'),
     alternateColor: hex(t.alternateColor, '#C8102E'),
     logo,
-    logoDark: pickLogo(t.logos, 'dark') || logo,
+    // ESPN's "dark" variant is a flat white mark for these teams, which loses the team's identity on the
+    // app's dark background: show the colored logo there instead.
+    logoDark: COLORED_ON_DARK.has(t.abbreviation) ? logo : pickLogo(t.logos, 'dark') || logo,
+    logoOnPrimary: pickLogo(t.logos, 'dark') || logo,
+    mark: markUrl(t.logos),
   };
+}
+
+/** The 4096px originals are resized through ESPN's image service. */
+function markUrl(logos: Json[] | undefined): string | undefined {
+  const href: string | undefined = (logos ?? []).find((l) => Array.isArray(l.rel) && l.rel.includes('secondary_logo_on_black_color'))?.href;
+  const guid = href?.split('/guid/')[1];
+  return guid ? `https://a.espncdn.com/combiner/i?img=/guid/${guid}&w=400&h=400&transparent=true` : undefined;
+}
+
+const COLORED_ON_DARK = new Set(['TOR']);
+
+/** "NBA Cup - Group Play" -> "Group Play"; undefined for any game that isn't Cup. */
+export function cupStage(note: unknown): string | undefined {
+  const m = /NBA Cup\s*[-–:]?\s*(.*)$/i.exec(typeof note === 'string' ? note : '');
+  return m ? m[1].trim() || 'NBA Cup' : undefined;
 }
 
 export async function fetchTeams(): Promise<Team[]> {
@@ -143,6 +171,9 @@ function normalizePlayer(a: Json): Player {
     positionName: a.position?.displayName,
     height: a.displayHeight,
     weight: a.displayWeight,
+    heightCm: typeof a.height === 'number' && a.height > 0 ? Math.round(a.height * 2.54) : undefined,
+    weightKg: typeof a.weight === 'number' && a.weight > 0 ? Math.round(a.weight * 0.45359237) : undefined,
+    born: typeof a.dateOfBirth === 'string' ? a.dateOfBirth.slice(0, 10) : undefined,
     age: typeof a.age === 'number' ? a.age : undefined,
     college: a.college?.name ?? a.college?.shortName,
     experience: a.experience?.years,
@@ -180,14 +211,25 @@ export type Game = {
   opponent: string;
   opponentAbbr: string;
   opponentLogo: string;
+  opponentId: string;
   teamScore?: number;
   opponentScore?: number;
   completed: boolean;
   result?: 'W' | 'L';
+  /** NBA Cup stage ("Group Play", "Quarterfinals"...) when the game is part of the Cup. */
+  cup?: string;
+  /** ESPN's note for the game, e.g. "West 1st Round - Game 3" or "NBA Cup - Group Play". */
+  note?: string;
 };
 
-export async function fetchTeamSchedule(teamId: string): Promise<Game[]> {
-  const json = await getJson(`${BASE}/teams/${teamId}/schedule`);
+export async function fetchTeamSchedule(
+  teamId: string,
+  opts: { season?: number; seasonType?: number } = {},
+): Promise<Game[]> {
+  const q = new URLSearchParams();
+  if (opts.season) q.set('season', String(opts.season));
+  if (opts.seasonType) q.set('seasontype', String(opts.seasonType));
+  const json = await getJson(`${BASE}/teams/${teamId}/schedule${q.size ? `?${q}` : ''}`);
   const events: Json[] = json.events ?? [];
   return events.map((e): Game => {
     const comp: Json = e.competitions?.[0] ?? {};
@@ -209,6 +251,9 @@ export async function fetchTeamSchedule(teamId: string): Promise<Game[]> {
       opponent: them?.team?.displayName ?? them?.team?.name ?? 'Unknown',
       opponentAbbr: them?.team?.abbreviation ?? '???',
       opponentLogo: theirLogos[0]?.href ?? '',
+      opponentId: String(them?.team?.id ?? ''),
+      cup: cupStage(comp.notes?.[0]?.headline),
+      note: typeof comp.notes?.[0]?.headline === 'string' ? comp.notes[0].headline : undefined,
       teamScore,
       opponentScore,
       completed,
@@ -241,10 +286,14 @@ export type LeagueLeaders = {
   pfpg: LeaderEntry[];
 };
 
-function currentSeason(): number {
+/** The NBA season's ending year: 2027 is the 2026-27 season. */
+export function currentSeason(): number {
   const now = new Date();
   return now.getFullYear() + (now.getMonth() >= 9 ? 1 : 0);
 }
+
+/** 2027 -> "2026-27". */
+export const seasonLabel = (year: number) => `${year - 1}-${String(year).slice(2)}`;
 
 const CORE = 'https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba';
 
@@ -353,16 +402,19 @@ export type ConferenceStandings = {
   west: StandingEntry[];
 };
 
-export async function fetchStandings(): Promise<ConferenceStandings> {
+export async function fetchStandings(season: number = currentSeason()): Promise<ConferenceStandings> {
+  // Past seasons come from a different shape of the same feed (conferences carry their table directly).
   const json = await getJson(
-    'https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?region=us&lang=en&contentorigin=espn&type=0&level=3'
+    season === currentSeason()
+      ? 'https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings?region=us&lang=en&contentorigin=espn&type=0&level=3'
+      : `https://site.api.espn.com/apis/v2/sports/basketball/nba/standings?season=${season}`,
   );
   const conferences: Json[] = json.children ?? [];
 
   const parseConference = (conf: Json): StandingEntry[] => {
-    const entries: Json[] = (conf.children ?? []).flatMap(
-      (div: Json) => div.standings?.entries ?? []
-    );
+    const entries: Json[] = conf.standings?.entries
+      ? conf.standings.entries
+      : (conf.children ?? []).flatMap((div: Json) => div.standings?.entries ?? []);
     return entries
       .map((e) => {
         const team = e.team ?? {};
@@ -497,6 +549,8 @@ export type GameSummary = {
   /** Home win probability (0–1) keyed by play id. */
   winProb: Record<string, number>;
   info: GameInfo;
+  /** NBA Cup stage when the game is part of the Cup. */
+  cup?: string;
 };
 
 export async function fetchGameSummary(gameId: string): Promise<GameSummary> {
@@ -634,6 +688,7 @@ export function normalizeGameSummary(json: Json, gameId: string): GameSummary {
       statusType.state === 'in'
         ? statusType.shortDetail ?? statusType.detail ?? 'Live'
         : statusType.description ?? statusType.shortDetail ?? '',
+    cup: cupStage(json.header?.gameNote),
     completed: statusType.completed === true,
     live: statusType.state === 'in',
     home: buildTeam(homeC),
@@ -663,6 +718,8 @@ export type ScoreboardGame = {
   inProgress: boolean;
   home: ScoreboardTeam;
   away: ScoreboardTeam;
+  /** NBA Cup stage when the game is part of the Cup. */
+  cup?: string;
 };
 
 export async function fetchScoreboardByDate(date: string): Promise<ScoreboardGame[]> {
@@ -694,6 +751,7 @@ export async function fetchScoreboardByDate(date: string): Promise<ScoreboardGam
       inProgress: status.state === 'in' || status.name === 'STATUS_IN_PROGRESS',
       home,
       away,
+      cup: cupStage(comp.notes?.[0]?.headline),
     };
   });
 }
@@ -888,6 +946,74 @@ export async function fetchPlayerCareer(athleteId: string): Promise<PlayerCareer
   return { seasons, career };
 }
 
+// ─── Player honors, contract, draft ───────────────────────────────────────────
+
+export type Honor = { id: string; name: string; count: number; seasons: number[] };
+
+export type Contract = {
+  season: number;
+  salary: number;
+  yearsRemaining: number;
+  /** ESPN's option code: 0 means none. */
+  option: number;
+  tradeRestriction: boolean;
+  tradeKicker: boolean;
+  minimumException: boolean;
+};
+
+export type Draft = { year: number; round: number; pick: number };
+
+export type PlayerProfile = { honors: Honor[]; contract?: Contract; draft?: Draft };
+
+const CORE_ATHLETE = (id: string) => `${CORE}/athletes/${id}`;
+
+/**
+ * Honors (MVP, All-NBA, All-Defensive... already counted by ESPN), the current contract and the draft slot.
+ * Each part is independent: a missing contract (retired player, no data) doesn't lose the honors.
+ */
+export async function fetchPlayerProfile(athleteId: string): Promise<PlayerProfile> {
+  const season = currentSeason();
+  const [overview, contract, athlete] = await Promise.allSettled([
+    getJson(`https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${athleteId}/overview`),
+    // The newest contract record: this season's, else last season's (offseason, before the new one is filed).
+    getJson(`${CORE_ATHLETE(athleteId)}/contracts/${season}?lang=en&region=us`).catch(() =>
+      getJson(`${CORE_ATHLETE(athleteId)}/contracts/${season - 1}?lang=en&region=us`),
+    ),
+    getJson(`${CORE_ATHLETE(athleteId)}?lang=en&region=us`),
+  ]);
+
+  const honors: Honor[] =
+    overview.status === 'fulfilled'
+      ? ((overview.value.awards ?? []) as Json[]).map((a) => {
+          const seasons = ((a.seasons ?? []) as string[]).map(Number).filter((n) => !isNaN(n)).sort((x, y) => y - x);
+          return { id: String(a.id), name: String(a.name ?? ''), count: seasons.length || parseInt(String(a.displayCount), 10) || 1, seasons };
+        })
+      : [];
+
+  let parsed: Contract | undefined;
+  if (contract.status === 'fulfilled' && typeof contract.value.salary === 'number' && contract.value.active !== false) {
+    const c = contract.value;
+    const m = /seasons\/(\d{4})/.exec(String(c.season?.$ref ?? c.$ref ?? ''));
+    parsed = {
+      season: m ? Number(m[1]) : season,
+      salary: c.salary,
+      yearsRemaining: Number(c.yearsRemaining ?? 0),
+      option: Number(c.optionType ?? 0),
+      tradeRestriction: c.tradeRestriction === true,
+      tradeKicker: c.tradeKicker?.active === true,
+      minimumException: c.minimumSalaryException === true,
+    };
+  }
+
+  let draft: Draft | undefined;
+  if (athlete.status === 'fulfilled') {
+    const d = athlete.value.draft;
+    if (d && typeof d.year === 'number' && d.round > 0) draft = { year: d.year, round: d.round, pick: Number(d.selection ?? 0) };
+  }
+
+  return { honors, contract: parsed, draft };
+}
+
 // ─── League team stats ────────────────────────────────────────────────────────
 
 /** One team's season numbers (per game unless noted). `opp*` are what opponents did against them. */
@@ -965,4 +1091,71 @@ export function normalizeLeagueTeamStats(json: Json): TeamStatRow[] {
       diff: pick('offensive', 'own', 'avgPoints') - pick('offensive', 'opp', 'avgPoints'),
     };
   });
+}
+
+
+// ─── Tagged games: NBA Cup, playoffs, play-in ────────────────────────────────
+
+export type CupSide = { teamId: string; abbr: string; logo: string; score?: number };
+
+/**
+ * One game seen from neither team's side. `stage` is the Cup stage for Cup games ("Group Play"...) and
+ * ESPN's full note for playoff and play-in games ("West 1st Round - Game 3").
+ */
+export type CupGame = {
+  id: string;
+  date: string;
+  stage: string;
+  completed: boolean;
+  home: CupSide;
+  away: CupSide;
+};
+
+/**
+ * ESPN has no feed for Cup standings or brackets, but every Cup, play-in and playoff game carries a note,
+ * and team schedules include games still to come. Reading the schedules and keeping the tagged games
+ * rebuilds the whole event (the groups and brackets are built in src/lib/cup.ts and src/lib/bracket.ts).
+ */
+async function fetchTaggedGames(
+  teams: Team[],
+  opts: { season?: number; seasonType?: number },
+  stageOf: (g: Game) => string | undefined,
+): Promise<CupGame[]> {
+  const schedules = await Promise.all(teams.map((t) => fetchTeamSchedule(t.id, opts).catch(() => [] as Game[])));
+  const byId = new Map<string, CupGame>();
+  teams.forEach((team, i) => {
+    for (const g of schedules[i]) {
+      const stage = stageOf(g);
+      if (!stage || byId.has(g.id)) continue;
+      const mine: CupSide = { teamId: team.id, abbr: team.abbreviation, logo: team.logoDark || team.logo, score: g.teamScore };
+      const theirs: CupSide = { teamId: g.opponentId, abbr: g.opponentAbbr, logo: g.opponentLogo, score: g.opponentScore };
+      byId.set(g.id, { id: g.id, date: g.date, stage, completed: g.completed, home: g.home ? mine : theirs, away: g.home ? theirs : mine });
+    }
+  });
+  return [...byId.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export async function fetchCupGames(season: number = currentSeason()): Promise<CupGame[]> {
+  const teams = await fetchTeams();
+  return fetchTaggedGames(teams, { season: season === currentSeason() ? undefined : season }, (g) => g.cup);
+}
+
+export type Postseason = {
+  /** Playoff games, `stage` = ESPN's note. */
+  playoffs: CupGame[];
+  /** Play-in games, `stage` = ESPN's note. */
+  playIn: CupGame[];
+  standings: ConferenceStandings;
+};
+
+/** Only the ten teams per conference that can reach the postseason are asked for their schedules. */
+export async function fetchPostseason(season: number): Promise<Postseason> {
+  const [teams, standings] = await Promise.all([fetchTeams(), fetchStandings(season)]);
+  const contenders = new Set([...standings.east, ...standings.west].filter((e) => e.seed <= 10).map((e) => e.teamId));
+  const pool = contenders.size >= 16 ? teams.filter((t) => contenders.has(t.id)) : teams;
+  const [playoffs, playIn] = await Promise.all([
+    fetchTaggedGames(pool, { season, seasonType: 3 }, (g) => g.note),
+    fetchTaggedGames(pool, { season, seasonType: 5 }, (g) => g.note),
+  ]);
+  return { playoffs, playIn, standings };
 }

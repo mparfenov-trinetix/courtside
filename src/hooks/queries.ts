@@ -1,9 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
+import { useIsFocused } from 'expo-router';
 
 import {
   fetchGameSummary,
+  fetchCupGames,
   fetchLeagueLeaders,
+  fetchPostseason,
+  currentSeason,
   fetchPlayerCareer,
+  fetchPlayerProfile,
   fetchPlayerGameLog,
   fetchPlayerStats,
   fetchRoster,
@@ -67,31 +72,38 @@ export function useLeagueLeaders() {
   });
 }
 
-export function useStandings() {
+export function useStandings(season?: number) {
+  const current = currentSeason();
+  const year = season ?? current;
   return useQuery({
-    queryKey: ['standings'],
-    queryFn: fetchStandings,
-    staleTime: 30 * 60 * 1000,
+    // The current season keeps the plain ['standings'] key (it is persisted and refreshed elsewhere).
+    queryKey: year === current ? ['standings'] : ['standings', year],
+    queryFn: () => fetchStandings(year),
+    // A finished season never changes.
+    staleTime: year === current ? 30 * 60 * 1000 : Infinity,
   });
 }
 
 export function useGameSummary(gameId?: string | null) {
+  // A page buried under others must not keep polling ESPN for a game nobody is looking at.
+  const focused = useIsFocused();
   return useQuery({
     queryKey: ['game', gameId],
     queryFn: () => fetchGameSummary(gameId!),
     enabled: !!gameId,
     // A finished game never changes, so it never needs refetching.
     staleTime: (query) => (query.state.data?.completed ? Infinity : 30 * 60 * 1000),
-    refetchInterval: (query) => (query.state.data?.live ? 15_000 : false),
+    refetchInterval: (query) => (focused && query.state.data?.live ? 15_000 : false),
   });
 }
 
 export function useScoreboardByDate(date: string) {
+  const focused = useIsFocused();
   return useQuery({
     queryKey: ['scoreboard', date],
     queryFn: () => fetchScoreboardByDate(date),
     staleTime: 5 * 60 * 1000, // 5 min — scores change during games
-    refetchInterval: (query) => (query.state.data?.some((g) => g.inProgress) ? 20_000 : false),
+    refetchInterval: (query) => (focused && query.state.data?.some((g) => g.inProgress) ? 20_000 : false),
     enabled: !!date,
   });
 }
@@ -138,5 +150,44 @@ export function usePlayerCareer(athleteId?: string | null) {
     queryFn: () => fetchPlayerCareer(athleteId!),
     enabled: !!athleteId,
     staleTime: HOUR,
+  });
+}
+
+export function useCupGames(season?: number) {
+  const current = currentSeason();
+  const year = season ?? current;
+  return useQuery({
+    queryKey: ['cup', year],
+    queryFn: () => fetchCupGames(year),
+    staleTime: year === current ? 10 * 60 * 1000 : Infinity,
+    // While a Cup game is on, keep the table fresh.
+    refetchInterval: (query) =>
+      year === current &&
+      query.state.data?.some((g) => !g.completed && Date.parse(g.date) < Date.now() + 3 * 60 * 60 * 1000 && Date.parse(g.date) > Date.now() - 4 * 60 * 60 * 1000)
+        ? 60_000
+        : false,
+  });
+}
+
+export function usePostseason(season: number) {
+  const current = currentSeason();
+  return useQuery({
+    queryKey: ['postseason', season],
+    queryFn: () => fetchPostseason(season),
+    staleTime: season === current ? 5 * 60 * 1000 : Infinity,
+    // Games in progress move the series score.
+    refetchInterval: (query) =>
+      season === current && query.state.data?.playoffs.some((g) => !g.completed && Date.parse(g.date) < Date.now() + 3 * 3600_000 && Date.parse(g.date) > Date.now() - 4 * 3600_000)
+        ? 60_000
+        : false,
+  });
+}
+
+export function usePlayerProfile(athleteId?: string | null) {
+  return useQuery({
+    queryKey: ['playerProfile', athleteId],
+    queryFn: () => fetchPlayerProfile(athleteId!),
+    enabled: !!athleteId,
+    staleTime: 6 * HOUR,
   });
 }

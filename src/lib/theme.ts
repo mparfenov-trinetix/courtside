@@ -41,6 +41,12 @@ export function withAlpha(hex: string, alpha: number) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+function saturation(hex: string) {
+  const [r, g, b] = toRgb(hex);
+  const max = Math.max(r, g, b);
+  return max === 0 ? 0 : (max - Math.min(r, g, b)) / max;
+}
+
 export function luminance(hex: string) {
   const [r, g, b] = toRgb(hex).map((v) => {
     const c = v / 255;
@@ -79,7 +85,12 @@ export function teamTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null):
   // Some teams list near-identical colors; fall back to a lifted primary.
   const secondary =
     distance(team.alternateColor, primary) < 60 ? mix(primary, '#FFFFFF', 0.45) : team.alternateColor;
-  const accent = luminance(primary) > luminance(secondary) ? primary : secondary;
+  let accent = luminance(primary) > luminance(secondary) ? primary : secondary;
+  // The brighter color isn't always the team's color: the Kings' purple loses to a grey alternate. When the
+  // brighter one is washed out and the primary is the vivid one, keep the primary (lifted if it's too dark).
+  if (accent === secondary && saturation(secondary) < 0.3 && saturation(primary) > 0.35) {
+    accent = luminance(primary) < 0.08 ? mix(primary, '#FFFFFF', 0.3) : primary;
+  }
   return {
     primary,
     secondary,
@@ -110,6 +121,6 @@ export function matchupColors(
 }
 
 /** Pick the logo variant that reads on a background with the given text color. */
-export function logoOn(team: Pick<Team, 'logo' | 'logoDark'>, onColor: string) {
-  return onColor === '#FFFFFF' ? team.logoDark || team.logo : team.logo;
+export function logoOn(team: Pick<Team, 'logo' | 'logoDark' | 'logoOnPrimary'>, onColor: string) {
+  return onColor === '#FFFFFF' ? team.logoOnPrimary || team.logoDark || team.logo : team.logo;
 }
