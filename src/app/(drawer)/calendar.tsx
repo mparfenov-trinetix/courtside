@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AgendaView } from '@/components/calendar/agenda-view';
 import { MonthView, startOfMonth } from '@/components/calendar/month-view';
 import { FlashOverlay, Tick } from '@/components/live-flash';
+import { Segmented, slideIn } from '@/components/segmented';
 import { ErrorState, LoadingState, ScreenHeader } from '@/components/ui';
 import { useScoreboardByDate, useTeam, useTeamSchedule } from '@/hooks/queries';
 import { useRefresh } from '@/hooks/use-refresh';
@@ -61,6 +62,7 @@ export default function CalendarScreen() {
   const today = useMemo(() => nbaToday(), []);
   const dates = useMemo(() => buildDates(), []);
   const [mode, setMode] = useState<Mode>('day');
+  const [slide, setSlide] = useState<1 | -1>(1);
   const [selected, setSelected] = useState<Date>(today);
   const [cursor, setCursor] = useState(() => startOfMonth(today));
   const dateKey = toDateKey(selected);
@@ -105,25 +107,18 @@ export default function CalendarScreen() {
       <ScreenHeader title="Calendar" color={palette.chalk} right={headerRight} />
 
       {/* View switch */}
-      <View style={styles.switch}>
-        {MODES.map((m) => {
-          const active = m.key === mode;
-          return (
-            <Pressable
-              key={m.key}
-              onPress={() => {
-                if (m.key === 'day') centered.current = false;
-                setMode(m.key);
-              }}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              style={[styles.switchBtn, active && styles.switchBtnActive]}>
-              <Text style={[styles.switchLabel, { color: active ? palette.chalk : palette.muted }]}>{m.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <Segmented
+        options={MODES}
+        value={mode}
+        onChange={(key, direction) => {
+          if (key === 'day') centered.current = false;
+          setSlide(direction);
+          setMode(key);
+        }}
+      />
 
+      {/* Content slides in from the side the switcher moved toward */}
+      <Animated.View key={mode} entering={slideIn(slide)} style={styles.view}>
       {mode === 'day' && (
         <>
           {/* Date strip */}
@@ -239,6 +234,7 @@ export default function CalendarScreen() {
           refreshControl={scheduleRefresh}
         />
       ) : null}
+      </Animated.View>
     </View>
   );
 }
@@ -321,17 +317,7 @@ const styles = StyleSheet.create({
     color: palette.chalk,
     paddingHorizontal: 4,
   },
-  switch: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    padding: 3,
-    borderRadius: 14,
-    backgroundColor: withAlpha(palette.chalk, 0.07),
-    marginBottom: 6,
-  },
-  switchBtn: { paddingHorizontal: 22, paddingVertical: 7, borderRadius: 11 },
-  switchBtnActive: { backgroundColor: withAlpha(palette.chalk, 0.16) },
-  switchLabel: { fontFamily: fonts.bodySemi, fontSize: 14 },
+  view: { flex: 1 },
   strip: {
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,

@@ -17,12 +17,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CompareRow, type Row } from '@/components/compare/compare-row';
 import { TeamCompare } from '@/components/compare/team-compare';
+import { Segmented, slideIn } from '@/components/segmented';
 import { ScreenHeader } from '@/components/ui';
 import { usePlayerSearch, usePlayerStats, useTeams } from '@/hooks/queries';
 import { headshotUrl, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
 import { fonts, matchupColors, palette, withAlpha } from '@/lib/theme';
 
 type Slot = PlayerSearchResult | null;
+
+const MODES = [
+  { key: 'players', label: 'Players' },
+  { key: 'teams', label: 'Teams' },
+] as const;
 
 const one = (v: number) => v.toFixed(1);
 const percent = (v: number) => `${(v * 100).toFixed(1)}%`;
@@ -47,6 +53,7 @@ export default function Compare() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string; name?: string; teamId?: string; teamAbbr?: string; mode?: string }>();
   const mode = params.mode === 'teams' ? 'teams' : 'players';
+  const [slide, setSlide] = useState<1 | -1>(1);
   const { data: teams } = useTeams();
 
   const fromParams: Slot = params.id
@@ -79,24 +86,16 @@ export default function Compare() {
   return (
     <View style={styles.root}>
       <ScreenHeader title="Compare" />
-      <View style={styles.switch}>
-        {(['players', 'teams'] as const).map((m) => {
-          const active = m === mode;
-          return (
-            <Pressable
-              key={m}
-              onPress={() => router.setParams({ mode: m })}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              style={[styles.switchBtn, active && styles.switchBtnActive]}>
-              <Text style={[styles.switchLabel, { color: active ? palette.chalk : palette.muted }]}>
-                {m === 'players' ? 'Players' : 'Teams'}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <Segmented
+        options={[...MODES]}
+        value={mode}
+        onChange={(key, direction) => {
+          setSlide(direction);
+          router.setParams({ mode: key });
+        }}
+      />
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
+        <Animated.View key={mode} entering={slideIn(slide)}>
         {mode === 'teams' ? (
           <TeamCompare />
         ) : (
@@ -131,6 +130,7 @@ export default function Compare() {
         )}
           </>
         )}
+        </Animated.View>
       </ScrollView>
 
       <PickerModal
@@ -227,17 +227,6 @@ function PickerModal({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  switch: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    padding: 3,
-    borderRadius: 14,
-    backgroundColor: withAlpha(palette.chalk, 0.07),
-    marginTop: 4,
-  },
-  switchBtn: { paddingHorizontal: 26, paddingVertical: 7, borderRadius: 11 },
-  switchBtnActive: { backgroundColor: withAlpha(palette.chalk, 0.16) },
-  switchLabel: { fontFamily: fonts.bodySemi, fontSize: 14 },
   slots: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 8, marginTop: 8, marginBottom: 16 },
   vs: { fontFamily: fonts.display, fontSize: 20, color: palette.muted },
   slot: {

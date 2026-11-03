@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     color: withAlpha(palette.chalk, 0.55),
-    marginBottom: 8,
+    marginVertical: 8,
     paddingHorizontal: 4,
   },
   card: {
