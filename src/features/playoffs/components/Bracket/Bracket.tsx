@@ -1,0 +1,197 @@
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
+
+import { MiniSeries, MINI_H, MINI_W, SeriesCard } from '../SeriesCard';
+import { SeriesSheet } from '../SeriesSheet';
+import { Segmented, slideIn } from '@/components';
+import { layoutTree, type Round, type Series } from '@/lib/league';
+import { fonts, palette, withAlpha } from '@/lib/theme';
+import { COL_GAP, ROW_GAP } from './constants';
+
+export type BracketSection = { title: string; rounds: Round[] };
+
+/**
+ * A knockout bracket with two ways in. "Rounds" steps through the stages one at a time with big series
+ * cards; "Bracket" draws the whole tree left to right. Either way, tap a series for its game-by-game results.
+ */
+export function Bracket({
+  rounds,
+  sections,
+  favoriteTeamId,
+  emptyText = 'Nothing has been scheduled yet.',
+}: {
+  rounds: Round[];
+  sections: BracketSection[];
+  favoriteTeamId?: string | null;
+  emptyText?: string;
+}) {
+  const [mode, setMode] = useState<'rounds' | 'tree'>('rounds');
+  const [roundKey, setRoundKey] = useState<string | null>(null);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const [open, setOpen] = useState<Series | null>(null);
+
+  if (rounds.length === 0) return <Text style={styles.empty}>{emptyText}</Text>;
+
+  const active = rounds.find((r) => r.key === roundKey) ?? rounds[rounds.length - 1];
+  const activeIndex = rounds.indexOf(active);
+  // Jump straight to the stage that matters: the latest round that has begun.
+  const pick = (key: string) => {
+    setDirection(rounds.findIndex((r) => r.key === key) > activeIndex ? 1 : -1);
+    setRoundKey(key);
+  };
+
+  return (
+    <View>
+      <View style={styles.switch}>
+        <Segmented
+          options={[
+            { key: 'rounds', label: 'Rounds' },
+            { key: 'tree', label: 'Bracket' },
+          ]}
+          value={mode}
+          onChange={(k) => setMode(k)}
+          segmentWidth={96}
+          compact
+        />
+      </View>
+
+      {mode === 'rounds' ? (
+        <View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chips}>
+            {rounds.map((r) => {
+              const on = r.key === active.key;
+              const done = r.series.every((s) => s.winnerId);
+              return (
+                <Pressable
+                  key={r.key}
+                  onPress={() => pick(r.key)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: on }}
+                  style={[styles.chip, on && styles.chipOn]}>
+                  <Text style={[styles.chipText, on && { color: palette.chalk }]}>
+                    {r.name}
+                    <Text style={styles.chipCount}>{done ? '  ✓' : ''}</Text>
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <Animated.View key={active.key} entering={slideIn(direction)}>
+            <RoundList round={active} favoriteTeamId={favoriteTeamId} onOpen={setOpen} />
+          </Animated.View>
+        </View>
+      ) : (
+        <Tree sections={sections} favoriteTeamId={favoriteTeamId} onOpen={setOpen} />
+      )}
+
+      <SeriesSheet series={open} onClose={() => setOpen(null)} />
+    </View>
+  );
+}
+
+function RoundList({ round, favoriteTeamId, onOpen }: { round: Round; favoriteTeamId?: string | null; onOpen: (s: Series) => void }) {
+  const confs = ['east', 'west', undefined] as const;
+  const groups = confs
+    .map((c) => ({ conf: c, series: round.series.filter((s) => s.conference === c) }))
+    .filter((g) => g.series.length > 0);
+  const labelled = groups.length > 1 || groups[0]?.conf != null;
+  return (
+    <View>
+      {groups.map((g) => (
+        <View key={String(g.conf)}>
+          {labelled && g.conf ? <Text style={styles.confLabel}>{g.conf === 'east' ? 'Eastern Conference' : 'Western Conference'}</Text> : null}
+          {g.series.map((s, i) => (
+            <Animated.View key={s.id} entering={FadeInDown.delay(Math.min(i, 6) * 40).duration(240)}>
+              <SeriesCard series={s} favoriteTeamId={favoriteTeamId} onPress={() => onOpen(s)} />
+            </Animated.View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Tree({ sections, favoriteTeamId, onOpen }: { sections: BracketSection[]; favoriteTeamId?: string | null; onOpen: (s: Series) => void }) {
+  return (
+    <View>
+      <Text style={styles.hint}>Swipe sideways for later rounds. Tap a series for its games.</Text>
+      {sections.map((section) => (
+        <TreeSection key={section.title} section={section} favoriteTeamId={favoriteTeamId} onOpen={onOpen} />
+      ))}
+    </View>
+  );
+}
+
+function TreeSection({ section, favoriteTeamId, onOpen }: { section: BracketSection; favoriteTeamId?: string | null; onOpen: (s: Series) => void }) {
+  const { placements, height } = layoutTree(section.rounds, MINI_H, ROW_GAP);
+  const colX = (col: number) => col * (MINI_W + COL_GAP);
+  const width = section.rounds.length * (MINI_W + COL_GAP) - COL_GAP;
+  const byId = new Map(placements.map((p) => [p.series.id, p]));
+
+  // An elbow from each feeder's right edge to the series it fed; brighter along the winner's path.
+  const links = placements.flatMap((p) => {
+    if (p.col === 0) return [];
+    const prev = section.rounds[p.col - 1].series;
+    return prev
+      .filter((f) => [f.top.teamId, f.bottom.teamId].some((id) => id === p.series.top.teamId || id === p.series.bottom.teamId))
+      .map((f) => {
+        const from = byId.get(f.id)!;
+        const x1 = colX(from.col) + MINI_W;
+        const y1 = from.y + MINI_H / 2;
+        const x2 = colX(p.col);
+        const y2 = p.y + MINI_H / 2;
+        const xm = x1 + COL_GAP / 2;
+        const advanced = !!f.winnerId && [p.series.top.teamId, p.series.bottom.teamId].includes(f.winnerId);
+        return { key: `${f.id}>${p.series.id}`, d: `M${x1},${y1} H${xm} V${y2} H${x2}`, advanced };
+      });
+  });
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{section.title}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+        <View style={{ width, height: height + 22 }}>
+          <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
+            {links.map((l) => (
+              <Path key={l.key} d={l.d} fill="none" strokeWidth={1.5} stroke={l.advanced ? withAlpha(palette.chalk, 0.55) : withAlpha(palette.chalk, 0.16)} />
+            ))}
+          </Svg>
+          {placements.map((p) => (
+            <MiniSeries
+              key={p.series.id}
+              series={p.series}
+              favoriteTeamId={favoriteTeamId}
+              onPress={() => onOpen(p.series)}
+              style={{ position: 'absolute', left: colX(p.col), top: p.y }}
+            />
+          ))}
+          {/* Round names scroll with the tree they label */}
+          {section.rounds.map((r, i) => (
+            <Text key={r.key} style={[styles.colName, { left: colX(i), top: height + 6 }]} numberOfLines={1}>
+              {r.name}
+            </Text>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  empty: { textAlign: 'center', fontFamily: fonts.body, fontSize: 15, color: palette.muted, padding: 40 },
+  switch: { alignItems: 'flex-start', marginBottom: 12 },
+  chipScroll: { marginHorizontal: -16, flexGrow: 0, marginBottom: 12 },
+  chips: { gap: 8, paddingHorizontal: 16 },
+  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: withAlpha(palette.chalk, 0.06) },
+  chipOn: { backgroundColor: withAlpha(palette.chalk, 0.16) },
+  chipText: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.muted },
+  chipCount: { color: '#34D399' },
+  confLabel: { fontFamily: fonts.bodySemi, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: withAlpha(palette.chalk, 0.55), paddingTop: 6, paddingBottom: 8, paddingHorizontal: 4 },
+  hint: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, marginBottom: 6 },
+  section: { marginHorizontal: -16, marginTop: 12 },
+  sectionTitle: { fontFamily: fonts.bodySemi, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: withAlpha(palette.chalk, 0.55), paddingHorizontal: 20, paddingBottom: 8 },
+  colName: { position: 'absolute', width: MINI_W, fontFamily: fonts.body, fontSize: 10, color: palette.muted, textAlign: 'center' },
+});
