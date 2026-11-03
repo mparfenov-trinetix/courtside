@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, CompareIcon, StarIcon } from '@/components/icons';
 import { CareerTable } from '@/components/player/career-table';
+import { FormCard, SplitsCard } from '@/components/player/form-card';
 import { GameLog } from '@/components/player/game-log';
 import { LoadingState } from '@/components/ui';
 import { usePlayerCareer, usePlayerGameLog, usePlayerStats, useRoster, useTeam } from '@/hooks/queries';
@@ -316,6 +317,9 @@ export default function PlayerScreen() {
                     {stats.gamesStarted != null ? `, ${stats.gamesStarted} started` : ''}
                   </Text>
                 )}
+
+                {gameLog && gameLog.length > 1 && <FormCard log={gameLog} accent={theme.accent} />}
+                {gameLog && gameLog.length > 3 && <SplitsCard log={gameLog} />}
               </Animated.View>
             ) : (
               <Animated.View entering={FadeIn.duration(260)} style={styles.emptyTab}>

@@ -6,9 +6,10 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CompareRow, rowWinner, type Row } from '@/components/compare/compare-row';
+import { Radar, type RadarAxis } from '@/components/compare/radar';
 import { useLeagueTeamStats, useTeams } from '@/hooks/queries';
 import type { Team, TeamStatRow } from '@/lib/espn';
-import { TEAM_METRICS, formatMetric, ordinal, rankOf } from '@/lib/team-stats';
+import { TEAM_METRICS, formatMetric, metricByKey, ordinal, rankOf, type TeamMetric } from '@/lib/team-stats';
 import { fonts, matchupColors, palette, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
 
@@ -26,6 +27,21 @@ function buildRows(rows: TeamStatRow[], a: TeamStatRow, b: TeamStatRow): Row[] {
     });
   }
   return out;
+}
+
+const RADAR: { label: string; key: TeamMetric['key'] }[] = [
+  { label: 'Scoring', key: 'ppg' },
+  { label: 'Defense', key: 'oppPpg' },
+  { label: 'Rebounding', key: 'rpg' },
+  { label: 'Passing', key: 'apg' },
+  { label: 'Shooting', key: 'efgPct' },
+  { label: 'Ball security', key: 'tov' },
+];
+
+/** League rank turned into a 0-1 score: best in the league is the outer ring. */
+function radarAxes(rows: TeamStatRow[], a: TeamStatRow, b: TeamStatRow): RadarAxis[] {
+  const score = (team: TeamStatRow, key: TeamMetric['key']) => (rows.length + 1 - rankOf(rows, team.teamId, metricByKey(key))!) / rows.length;
+  return RADAR.map(({ label, key }) => ({ label, a: score(a, key), b: score(b, key) }));
 }
 
 /** Head-to-head season comparison for two teams, with league ranks computed from all 30. */
@@ -60,6 +76,8 @@ export function TeamCompare() {
 
       {rows.length > 0 ? (
         <Animated.View entering={FadeInDown.duration(300)} style={styles.card}>
+          <Radar axes={radarAxes(table!, statsA!, statsB!)} aColor={colors.away} bColor={colors.home} />
+          <Text style={styles.radarNote}>Outer ring = best in the league</Text>
           <View style={styles.tally}>
             <Text style={[styles.tallyNum, { color: colors.away }]}>{winsA}</Text>
             <Text style={styles.tallyLabel}>categories won</Text>
@@ -180,6 +198,7 @@ const styles = StyleSheet.create({
   slotName: { fontFamily: fonts.displayBold, fontSize: 20, color: palette.chalk, textAlign: 'center', minHeight: 48 },
   slotSub: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
   card: { marginHorizontal: 16, borderRadius: 22, padding: 16, backgroundColor: withAlpha('#FFFFFF', 0.05) },
+  radarNote: { textAlign: 'center', fontFamily: fonts.body, fontSize: 11, color: palette.muted, marginBottom: 14 },
   tally: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   tallyNum: { fontFamily: fonts.display, fontSize: 44 },
   tallyLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted, textTransform: 'uppercase', letterSpacing: 0.5 },

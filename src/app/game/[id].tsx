@@ -200,6 +200,8 @@ export default function GameScreen() {
               filtered={filtered}
               periodLabel={option.label}
               hasStarted={hasStarted}
+              derived={derived}
+              selPeriods={selPeriods}
             />
           ) : tab === 'plays' ? (
             <PlayByPlay

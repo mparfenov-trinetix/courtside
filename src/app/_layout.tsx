@@ -90,6 +90,7 @@ export default function RootLayout() {
               <Stack.Screen name="player/[id]" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="team/[id]" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="search" options={{ animation: 'fade' }} />
             </Stack>
           </ThemeProvider>
           </WatchlistProvider>

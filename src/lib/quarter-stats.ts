@@ -24,10 +24,15 @@ export type Line = {
 
 export type Lineup = { teamId: string; starterIds: string[] };
 
+/** Time a particular five-man group shared the floor, and the score while it did. */
+export type LineupLine = { ids: string[]; sec: number; pf: number; pa: number };
+
 export type QuarterStats = {
   periods: number[];
   players: Record<number, Record<string, Line>>;
   teams: Record<number, Record<string, Line>>;
+  /** period → team → lineup key (sorted player ids) → totals */
+  lineups: Record<number, Record<string, Record<string, LineupLine>>>;
 };
 
 export const emptyLine = (): Line => ({
@@ -61,6 +66,7 @@ const isPersonalFoul = (type: string) =>
 export function deriveQuarterStats(plays: Play[], lineups: [Lineup, Lineup], homeId: string): QuarterStats {
   const players: QuarterStats['players'] = {};
   const teams: QuarterStats['teams'] = {};
+  const lineupStats: QuarterStats['lineups'] = {};
   const teamIds = [lineups[0].teamId, lineups[1].teamId];
   const opponent = (id?: string) => (id === teamIds[0] ? teamIds[1] : id === teamIds[1] ? teamIds[0] : undefined);
 
@@ -101,6 +107,14 @@ export function deriveQuarterStats(plays: Play[], lineups: [Lineup, Lineup], hom
         line.sec += elapsed;
         line.pm += diff;
       });
+      if (set.size === 5 && (elapsed > 0 || dHome !== 0 || dAway !== 0)) {
+        const ids = [...set].sort();
+        const byTeam = ((lineupStats[period] ??= {})[teamId] ??= {});
+        const entry = (byTeam[ids.join('|')] ??= { ids, sec: 0, pf: 0, pa: 0 });
+        entry.sec += elapsed;
+        entry.pf += teamId === homeId ? dHome : dAway;
+        entry.pa += teamId === homeId ? dAway : dHome;
+      }
     });
     cursor = clock;
     lastHome = homeScore;
@@ -195,8 +209,8 @@ export function deriveQuarterStats(plays: Play[], lineups: [Lineup, Lineup], hom
   const last = plays[plays.length - 1];
   if (last) flush(currentPeriod, 0, last.homeScore, last.awayScore);
 
-  periods.forEach((p) => { players[p] ??= {}; teams[p] ??= {}; });
-  return { periods, players, teams };
+  periods.forEach((p) => { players[p] ??= {}; teams[p] ??= {}; lineupStats[p] ??= {}; });
+  return { periods, players, teams, lineups: lineupStats };
 }
 
 export function sumPeriods(
@@ -227,4 +241,20 @@ export function lineToStats(l: Line): Record<string, string> {
     PF: String(l.pf),
     '+/-': l.pm > 0 ? `+${l.pm}` : String(l.pm),
   };
+}
+
+/** Five-man groups for a team over the chosen periods (all periods when null), most minutes first. */
+export function sumLineups(stats: QuarterStats, periods: number[] | null, teamId: string): LineupLine[] {
+  const merged = new Map<string, LineupLine>();
+  for (const p of periods ?? stats.periods) {
+    const byKey = stats.lineups[p]?.[teamId] ?? {};
+    for (const [key, l] of Object.entries(byKey)) {
+      const cur = merged.get(key) ?? { ids: l.ids, sec: 0, pf: 0, pa: 0 };
+      cur.sec += l.sec;
+      cur.pf += l.pf;
+      cur.pa += l.pa;
+      merged.set(key, cur);
+    }
+  }
+  return [...merged.values()].sort((a, b) => b.sec - a.sec);
 }

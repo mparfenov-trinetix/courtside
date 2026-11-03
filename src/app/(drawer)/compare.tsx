@@ -16,11 +16,12 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CompareRow, type Row } from '@/components/compare/compare-row';
+import { Radar, type RadarAxis } from '@/components/compare/radar';
 import { TeamCompare } from '@/components/compare/team-compare';
 import { Segmented, slideIn } from '@/components/segmented';
 import { ScreenHeader } from '@/components/ui';
-import { usePlayerSearch, usePlayerStats, useTeams } from '@/hooks/queries';
-import { headshotUrl, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
+import { usePlayerCareer, usePlayerSearch, usePlayerStats, useTeams } from '@/hooks/queries';
+import { headshotUrl, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
 import { fonts, matchupColors, palette, withAlpha } from '@/lib/theme';
 
 type Slot = PlayerSearchResult | null;
@@ -49,11 +50,58 @@ function buildRows(a: PlayerSeasonStats, b: PlayerSeasonStats): Row[] {
   ].filter((r) => r.a != null || r.b != null);
 }
 
+const SCOPES = [
+  { key: 'season', label: 'This season' },
+  { key: 'career', label: 'Career' },
+] as const;
+type Scope = (typeof SCOPES)[number]['key'];
+
+const num = (v?: string) => {
+  const n = parseFloat(v ?? '');
+  return isNaN(n) ? undefined : n;
+};
+
+function buildCareerRows(a: PlayerCareer, b: PlayerCareer): Row[] {
+  const row = (label: string, stat: string, pct = false): Row => ({
+    label,
+    a: num(a.career[stat]),
+    b: num(b.career[stat]),
+    fmt: pct ? (v) => `${v.toFixed(1)}%` : one,
+  });
+  return [
+    row('Points', 'PTS'),
+    row('Rebounds', 'REB'),
+    row('Assists', 'AST'),
+    row('Steals', 'STL'),
+    row('Blocks', 'BLK'),
+    row('Minutes', 'MIN'),
+    row('Field goal %', 'FG%', true),
+    row('3-point %', '3P%', true),
+    row('Free throw %', 'FT%', true),
+    { label: 'Games played', a: num(a.career.GP), b: num(b.career.GP), fmt: whole },
+  ].filter((r) => r.a != null || r.b != null);
+}
+
+/** Per-game production against rough elite ceilings, so one chart works for guards and bigs. */
+const CEILING = { pts: 32, reb: 13, ast: 10, stl: 2.2, blk: 2.2, fg: 0.6 };
+function playerAxes(a: { pts?: number; reb?: number; ast?: number; stl?: number; blk?: number; fg?: number }, b: typeof a): RadarAxis[] {
+  const f = (v: number | undefined, cap: number) => (v ?? 0) / cap;
+  return [
+    { label: 'Scoring', a: f(a.pts, CEILING.pts), b: f(b.pts, CEILING.pts) },
+    { label: 'Rebounding', a: f(a.reb, CEILING.reb), b: f(b.reb, CEILING.reb) },
+    { label: 'Playmaking', a: f(a.ast, CEILING.ast), b: f(b.ast, CEILING.ast) },
+    { label: 'Steals', a: f(a.stl, CEILING.stl), b: f(b.stl, CEILING.stl) },
+    { label: 'Blocks', a: f(a.blk, CEILING.blk), b: f(b.blk, CEILING.blk) },
+    { label: 'Efficiency', a: f(a.fg, CEILING.fg), b: f(b.fg, CEILING.fg) },
+  ];
+}
+
 export default function Compare() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string; name?: string; teamId?: string; teamAbbr?: string; mode?: string }>();
   const mode = params.mode === 'teams' ? 'teams' : 'players';
   const [slide, setSlide] = useState<1 | -1>(1);
+  const [scope, setScope] = useState<Scope>('season');
   const { data: teams } = useTeams();
 
   const fromParams: Slot = params.id
@@ -72,6 +120,8 @@ export default function Compare() {
 
   const { data: statsA } = usePlayerStats(slotA?.id);
   const { data: statsB } = usePlayerStats(slotB?.id);
+  const { data: careerA } = usePlayerCareer(scope === 'career' ? slotA?.id : undefined);
+  const { data: careerB } = usePlayerCareer(scope === 'career' ? slotB?.id : undefined);
 
   const teamOf = (s: Slot): Team | undefined => teams?.find((t) => t.id === s?.teamId);
   const teamA = teamOf(slotA);
@@ -79,9 +129,31 @@ export default function Compare() {
   const fallback = { color: '#8A96A8', alternateColor: '#F2F4F7' };
   const colors = matchupColors(teamA ?? fallback, teamB ?? { color: '#E2B077', alternateColor: '#F2F4F7' });
 
-  const rows = statsA && statsB ? buildRows(statsA, statsB) : [];
+  const rows =
+    scope === 'career'
+      ? careerA && careerB
+        ? buildCareerRows(careerA, careerB)
+        : []
+      : statsA && statsB
+        ? buildRows(statsA, statsB)
+        : [];
   const winsA = rows.filter((r) => (r.a ?? -1) > (r.b ?? -1)).length;
   const winsB = rows.filter((r) => (r.b ?? -1) > (r.a ?? -1)).length;
+
+  const axes: RadarAxis[] | null =
+    scope === 'career'
+      ? careerA && careerB
+        ? playerAxes(
+            { pts: num(careerA.career.PTS), reb: num(careerA.career.REB), ast: num(careerA.career.AST), stl: num(careerA.career.STL), blk: num(careerA.career.BLK), fg: (num(careerA.career['FG%']) ?? 0) / 100 },
+            { pts: num(careerB.career.PTS), reb: num(careerB.career.REB), ast: num(careerB.career.AST), stl: num(careerB.career.STL), blk: num(careerB.career.BLK), fg: (num(careerB.career['FG%']) ?? 0) / 100 },
+          )
+        : null
+      : statsA && statsB
+        ? playerAxes(
+            { pts: statsA.ppg, reb: statsA.rpg, ast: statsA.apg, stl: statsA.spg, blk: statsA.bpg, fg: statsA.fgPct },
+            { pts: statsB.ppg, reb: statsB.rpg, ast: statsB.apg, stl: statsB.spg, blk: statsB.bpg, fg: statsB.fgPct },
+          )
+        : null;
 
   return (
     <View style={styles.root}>
@@ -106,8 +178,15 @@ export default function Compare() {
           <PlayerSlot slot={slotB} color={colors.home} onPress={() => setPicking('b')} />
         </View>
 
+        {slotA && slotB && (
+          <View style={styles.scope}>
+            <Segmented options={[...SCOPES]} value={scope} onChange={(key) => setScope(key)} segmentWidth={120} />
+          </View>
+        )}
+
         {rows.length > 0 ? (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.card}>
+          <Animated.View key={scope} entering={FadeInDown.duration(300)} style={styles.card}>
+            {axes && <Radar axes={axes} aColor={colors.away} bColor={colors.home} />}
             <View style={styles.tally}>
               <Text style={[styles.tallyNum, { color: colors.away }]}>{winsA}</Text>
               <Text style={styles.tallyLabel}>categories won</Text>
@@ -227,6 +306,7 @@ function PickerModal({
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  scope: { alignItems: 'center', marginBottom: 12 },
   slots: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 8, marginTop: 8, marginBottom: 16 },
   vs: { fontFamily: fonts.display, fontSize: 20, color: palette.muted },
   slot: {

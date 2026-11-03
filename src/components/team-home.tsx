@@ -12,10 +12,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CompareIcon, PeopleIcon, StarIcon } from '@/components/icons';
+import { CompareIcon, PeopleIcon, SearchIcon, StarIcon } from '@/components/icons';
 import { cardHeight, TeamCard } from '@/components/team-card';
 import { NextGame } from '@/components/next-game';
 import { ScoresStrip } from '@/components/scores-strip';
+import { SeasonSeries } from '@/components/season-series';
 import { TeamSeasonStats } from '@/components/team-season-stats';
 import { Watchlist } from '@/components/watchlist';
 import { IconButton, LoadingState, ScreenHeader } from '@/components/ui';
@@ -38,6 +39,7 @@ export function TeamHome({ teamId, pushed = false }: { teamId?: string | null; p
   const { data: detail } = useTeamDetail(teamId);
   const { data: schedule } = useTeamSchedule(teamId);
   const theme = teamTheme(team);
+  const rival = useTeam(pushed && favoriteTeamId !== teamId ? favoriteTeamId : null);
 
   const cardWidth = Math.round(Math.min(width * 0.78, 360, (height - insets.top - insets.bottom - 230) / 1.4));
   const tilt = useTilt({ width: cardWidth, height: cardHeight(cardWidth) }, { scrollSafe: true });
@@ -109,14 +111,19 @@ export function TeamHome({ teamId, pushed = false }: { teamId?: string | null; p
               </IconButton>
             )
           ) : (
-            <IconButton
-              label="Change favorite team"
-              onPress={() => {
-                Haptics.selectionAsync();
-                router.push('/onboarding');
-              }}>
-              <StarIcon color={isFavorite ? theme.accent : palette.chalk} filled={isFavorite} />
-            </IconButton>
+            <View style={styles.headerActions}>
+              <IconButton label="Search players and teams" onPress={() => router.push('/search')}>
+                <SearchIcon color={palette.chalk} />
+              </IconButton>
+              <IconButton
+                label="Change favorite team"
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push('/onboarding');
+                }}>
+                <StarIcon color={isFavorite ? theme.accent : palette.chalk} filled={isFavorite} />
+              </IconButton>
+            </View>
           )
         }
       />
@@ -140,6 +147,8 @@ export function TeamHome({ teamId, pushed = false }: { teamId?: string | null; p
         <TeamSeasonStats teamId={team.id} accent={theme.accent} />
 
         {schedule && schedule.length > 0 && <NextGame schedule={schedule} theme={theme} />}
+
+        {pushed && rival && schedule && <SeasonSeries schedule={schedule} team={team} rival={rival} accent={theme.accent} />}
 
         {/* Roster button */}
         <Pressable
@@ -250,6 +259,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'BigShouldersDisplay_900Black',
   },
+  headerActions: { flexDirection: 'row', gap: 8 },
   scrollContent: {
     gap: 0,
   },

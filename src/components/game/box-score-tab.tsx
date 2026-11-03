@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { LineupsCard } from '@/components/game/lineups-card';
 import { FlashOverlay } from '@/components/live-flash';
 import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
 import { COLS, COL_W, parseStatNum, type Col, type SortDir } from '@/lib/game-model';
+import type { QuarterStats } from '@/lib/quarter-stats';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
 const PLAYER_COL_W = 134;
@@ -32,6 +34,8 @@ export function BoxScoreTab({
   filtered,
   periodLabel,
   hasStarted,
+  derived,
+  selPeriods,
 }: {
   away: BoxScoreTeam;
   home: BoxScoreTeam;
@@ -43,6 +47,8 @@ export function BoxScoreTab({
   filtered: boolean;
   periodLabel: string;
   hasStarted: boolean;
+  derived: QuarterStats | null;
+  selPeriods: number[] | null;
 }) {
   const [side, setSide] = useState<'home' | 'away'>('home');
   const [sortCol, setSortCol] = useState<Col | null>(null);
@@ -168,6 +174,17 @@ export function BoxScoreTab({
       ) : (
         <Text style={styles.empty}>No player stats for this period</Text>
       )}
+
+      {derived && (
+        <View style={styles.lineups}>
+          <LineupsCard
+            derived={derived}
+            teamId={team.team.id}
+            players={[...team.starters, ...team.bench]}
+            periods={selPeriods}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -241,5 +258,6 @@ const styles = StyleSheet.create({
   totalsRow: { marginTop: 6, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(palette.chalk, 0.12), paddingTop: 10 },
   totalsLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: palette.muted },
   totalsValue: { fontFamily: fonts.bodyBold, fontSize: 13, color: palette.chalk },
+  lineups: { marginTop: 16 },
   empty: { padding: 40, textAlign: 'center', fontFamily: fonts.body, fontSize: 15, color: palette.muted },
 });

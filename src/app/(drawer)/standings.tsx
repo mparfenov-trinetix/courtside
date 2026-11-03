@@ -6,6 +6,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Segmented } from '@/components/segmented';
 import { ErrorState, LoadingState, ScreenHeader } from '@/components/ui';
 import { useStandings } from '@/hooks/queries';
 import { useRefresh } from '@/hooks/use-refresh';
@@ -39,6 +40,25 @@ export default function Standings() {
   if (playIn.length) sections.push({ title: 'Play-In', data: playIn });
   if (eliminated.length) sections.push({ title: 'Out', data: eliminated });
 
+  // How far each team is from the line that matters to it: the 6th seed (straight into the
+  // playoffs) and the 10th (last play-in spot). Positive = cushion, negative = ground to make up.
+  const gamesFrom = (a: StandingEntry, b?: StandingEntry) => (b ? (a.wins - b.wins + (b.losses - a.losses)) / 2 : 0);
+  const bySeed = (n: number) => entries.find((e) => e.seed === n);
+  const cutLabel = (e: StandingEntry): string | null => {
+    if (entries.length < 11 || e.wins + e.losses === 0) return null;
+    const fmt = (n: number) => Math.abs(n).toFixed(1).replace(/\.0$/, '');
+    if (e.seed <= 6) {
+      const cushion = gamesFrom(e, bySeed(7));
+      return cushion > 0 ? `${fmt(cushion)} clear of play-in` : null;
+    }
+    if (e.seed <= 10) {
+      const back = gamesFrom(bySeed(6)!, e);
+      return back > 0 ? `${fmt(back)} back of top 6` : 'level with top 6';
+    }
+    const back = gamesFrom(bySeed(10)!, e);
+    return back > 0 ? `${fmt(back)} back of play-in` : 'level with play-in';
+  };
+
   const flat: (StandingEntry | { sectionTitle: string })[] = sections.flatMap((s) => [
     { sectionTitle: s.title },
     ...s.data,
@@ -49,29 +69,7 @@ export default function Standings() {
       <ScreenHeader title="Standings" color={palette.chalk} />
 
       <Animated.View entering={FadeIn.duration(300)} style={styles.tabs}>
-        {TABS.map((tab) => {
-          const active = tab.key === conf;
-          return (
-            <Pressable
-              key={tab.key}
-              onPress={() => setConf(tab.key)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              style={({ pressed }) => [
-                styles.tab,
-                {
-                  backgroundColor: active
-                    ? withAlpha(palette.chalk, 0.12)
-                    : withAlpha(palette.chalk, pressed ? 0.06 : 0.04),
-                  borderColor: active ? withAlpha(palette.chalk, 0.3) : 'transparent',
-                },
-              ]}>
-              <Text style={[styles.tabLabel, { color: active ? palette.chalk : palette.muted }]}>
-                {tab.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+        <Segmented options={TABS} value={conf} onChange={(key) => setConf(key)} segmentWidth={120} />
       </Animated.View>
 
       {isPending ? (
@@ -91,7 +89,7 @@ export default function Standings() {
               return <SectionDivider title={item.sectionTitle} />;
             }
             const rowIndex = flat.filter((f) => !('sectionTitle' in f)).indexOf(item);
-            return <TeamRow entry={item} index={rowIndex} />;
+            return <TeamRow entry={item} index={rowIndex} cut={cutLabel(item)} />;
           }}
         />
       )}
@@ -124,13 +122,13 @@ function SectionDivider({ title }: { title: string }) {
   );
 }
 
-function TeamRow({ entry, index }: { entry: StandingEntry; index: number }) {
+function TeamRow({ entry, index, cut }: { entry: StandingEntry; index: number; cut: string | null }) {
   const { favoriteTeamId } = useTeamStore();
   const gbText = entry.gamesBehind === 0 ? '—' : entry.gamesBehind.toFixed(1);
   const pctText = entry.winPct.toFixed(3).replace(/^0/, '');
   const streakColor = entry.streak.startsWith('W') ? '#34D399' : entry.streak.startsWith('L') ? '#F87171' : palette.muted;
   const diff = `${entry.diff > 0 ? '+' : ''}${entry.diff.toFixed(1)}`;
-  const details = [entry.lastTen ? `L10 ${entry.lastTen}` : null, entry.diff !== 0 ? diff : null]
+  const details = [entry.lastTen ? `L10 ${entry.lastTen}` : null, entry.diff !== 0 ? diff : null, cut]
     .filter(Boolean)
     .join(' · ');
 

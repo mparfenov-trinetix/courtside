@@ -136,3 +136,12 @@ export function PodiumIcon({ size = 22, color }: IconProps) {
     </Svg>
   );
 }
+
+export function SearchIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx={11} cy={11} r={6.5} {...stroke(color)} />
+      <Path d="M16 16l4.5 4.5" {...stroke(color)} />
+    </Svg>
+  );
+}
