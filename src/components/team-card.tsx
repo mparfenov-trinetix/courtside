@@ -57,20 +57,6 @@ export function TeamCard({ team, detail, width, tilt }: Props) {
     ],
   }));
 
-  // The shadow slides away from the side that's lifted, as if lit from above.
-  const shadowStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: -x.value * 12 },
-      { translateY: 14 - y.value * 12 },
-      { scale: 0.92 },
-    ],
-    opacity: 0.5 + 0.18 * Math.max(Math.abs(x.value), Math.abs(y.value)),
-  }));
-
-  const glowStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value * 5 }, { translateY: y.value * 5 }, { scale: 1.01 }],
-  }));
-
   // Logo floats above the card surface: it moves a little further than the card.
   const logoStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: x.value * 5 }, { translateY: y.value * 5 }],
@@ -99,29 +85,15 @@ export function TeamCard({ team, detail, width, tilt }: Props) {
         accessible
         accessibilityRole="image"
         accessibilityLabel={`${team.displayName} team card${detail?.record ? `, record ${detail.record}` : ''}`}>
-        {/* Colored glow and the moving drop shadow, both behind the card */}
+        {/* The shadow lives on the same rotating layer as the card, so it tilts with it and can't be cut by it;
+            the inner view does the clipping, because a clipped view can't cast a shadow. */}
         <Animated.View
-          pointerEvents="none"
           style={[
-            StyleSheet.absoluteFill,
-            { borderRadius: RADIUS, boxShadow: `0 0 60px ${withAlpha(theme.accent, 0.35)}` },
-            glowStyle,
-          ]}
-        />
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              borderRadius: RADIUS,
-              backgroundColor: 'rgba(0,0,0,0.35)',
-              boxShadow: '0 24px 48px rgba(0,0,0,0.75)',
-            },
-            shadowStyle,
-          ]}
-        />
-
-        <Animated.View style={[styles.card, { borderRadius: RADIUS }, cardStyle]}>
+            styles.card,
+            { borderRadius: RADIUS, backgroundColor: theme.primary, boxShadow: '0 18px 32px rgba(0,0,0,0.45)' },
+            cardStyle,
+          ]}>
+          <View style={styles.clip}>
           <LinearGradient
             colors={[mix(theme.primary, '#FFFFFF', 0.08), theme.primary, mix(theme.primary, theme.secondary, 0.4)]}
             locations={[0, 0.55, 1]}
@@ -177,6 +149,7 @@ export function TeamCard({ team, detail, width, tilt }: Props) {
             pointerEvents="none"
             style={[StyleSheet.absoluteFill, styles.innerBorder, { borderRadius: RADIUS, borderColor: withAlpha(theme.onPrimary, 0.22) }]}
           />
+          </View>
         </Animated.View>
       </Animated.View>
     </GestureDetector>
@@ -287,7 +260,11 @@ function CornerGlint({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
+  },
+  clip: {
+    flex: 1,
     overflow: 'hidden',
+    borderRadius: RADIUS,
   },
   logoWrap: {
     position: 'absolute',

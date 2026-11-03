@@ -1,5 +1,4 @@
-import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useLeagueTeamStats } from '@/hooks/queries';
@@ -8,8 +7,6 @@ import { fonts, palette, withAlpha } from '@/lib/theme';
 
 const TILES: TeamMetric['key'][] = ['ppg', 'rpg', 'apg', 'spg', 'bpg', 'tov'];
 const RATES: TeamMetric['key'][] = ['fgPct', 'threePct', 'ftPct', 'efgPct'];
-
-const openLeaders = (stat: TeamMetric['key']) => router.navigate({ pathname: '/team-leaders', params: { stat } });
 
 const rankColor = (rank: number) => (rank <= 10 ? '#34D399' : rank > 20 ? '#F87171' : palette.muted);
 
@@ -20,17 +17,17 @@ export function TeamSeasonStats({ teamId, accent }: { teamId: string; accent: st
 
   return (
     <Animated.View entering={FadeInDown.delay(90).duration(300)} style={styles.wrap}>
-      <Text style={styles.title}>Team season · league rank · tap to see the league</Text>
+      <Text style={styles.title}>Team season · league rank</Text>
       <View style={styles.grid}>
         {TILES.map((key) => {
           const m = metricByKey(key);
           const rank = rankOf(rows, teamId, m)!;
           return (
-            <Pressable key={key} onPress={() => openLeaders(key)} accessibilityRole="button" style={({ pressed }) => [styles.tile, pressed && { opacity: 0.7 }]}>
+            <View key={key} style={styles.tile}>
               <Text style={[styles.tileValue, { color: accent }]}>{me[key].toFixed(1)}</Text>
               <Text style={styles.tileLabel}>{m.short}</Text>
               <Text style={[styles.tileRank, { color: rankColor(rank) }]}>{ordinal(rank)}</Text>
-            </Pressable>
+            </View>
           );
         })}
       </View>
@@ -39,17 +36,13 @@ export function TeamSeasonStats({ teamId, accent }: { teamId: string; accent: st
           const m = metricByKey(key);
           const rank = rankOf(rows, teamId, m)!;
           return (
-            <Pressable
-              key={key}
-              onPress={() => openLeaders(key)}
-              accessibilityRole="button"
-              style={({ pressed }) => [styles.rateRow, i < RATES.length - 1 && styles.rateBorder, pressed && { opacity: 0.7 }]}>
+            <View key={key} style={[styles.rateRow, i < RATES.length - 1 && styles.rateBorder]}>
               <Text style={styles.rateLabel}>{m.label}</Text>
               <Text style={styles.rateValue}>{formatMetric(m, me[key])}</Text>
               <View style={[styles.rank, { backgroundColor: rank > 10 && rank <= 20 ? withAlpha(palette.chalk, 0.08) : withAlpha(rankColor(rank), 0.16) }]}>
                 <Text style={[styles.rankText, { color: rankColor(rank) }]}>{ordinal(rank)}</Text>
               </View>
-            </Pressable>
+            </View>
           );
         })}
       </View>

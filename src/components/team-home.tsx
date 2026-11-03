@@ -1,31 +1,37 @@
-import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, {
+  Extrapolation,
   FadeIn,
   FadeInDown,
+  interpolate,
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TeamMark } from '@/components/team-mark';
+import { MyCupCard } from '@/components/cup/my-cup-card';
 import { CompareIcon, PeopleIcon, SearchIcon, StarIcon } from '@/components/icons';
-import { cardHeight, TeamCard } from '@/components/team-card';
 import { NextGame } from '@/components/next-game';
 import { ScoresStrip } from '@/components/scores-strip';
 import { SeasonSeries } from '@/components/season-series';
+import { cardHeight, TeamCard } from '@/components/team-card';
 import { TeamSeasonStats } from '@/components/team-season-stats';
-import { Watchlist } from '@/components/watchlist';
 import { IconButton, LoadingState, ScreenHeader } from '@/components/ui';
+import { Watchlist } from '@/components/watchlist';
 import { useTeam, useTeamDetail, useTeamSchedule } from '@/hooks/queries';
 import { useRefresh } from '@/hooks/use-refresh';
 import { useTilt } from '@/hooks/use-tilt';
 import type { Game } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
+import { openDetail } from '@/lib/nav';
 
 /**
  * The team card page. As the drawer's "Team card" screen it shows the current team and a menu button;
@@ -44,19 +50,28 @@ export function TeamHome({ teamId, pushed = false }: { teamId?: string | null; p
   const cardWidth = Math.round(Math.min(width * 0.78, 360, (height - insets.top - insets.bottom - 230) / 1.4));
   const tilt = useTilt({ width: cardWidth, height: cardHeight(cardWidth) }, { scrollSafe: true });
   const refreshControl = useRefresh([['team'], ['schedule'], ['leagueTeamStats'], ['scoreboard']]);
-  // Destructure shared values so useAnimatedStyle closures don't capture the gesture
-  const tiltX = tilt.x;
-  const tiltY = tilt.y;
+
+  // The header is empty while the card is on screen; once it has scrolled away the team's name takes over.
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.set(e.contentOffset.y);
+  });
+  // The drawer's "Team card" screen is reused for every team, so a new team must start at the top.
+  // Keying the ScrollView remounts it at offset 0; the shared value is reset to match.
+  useEffect(() => {
+    scrollY.set(0);
+  }, [teamId, scrollY]);
+  const cardH = cardHeight(cardWidth);
+  const titleStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.get(), [cardH * 0.55, cardH * 0.85], [0, 1], Extrapolation.CLAMP),
+    transform: [{ translateY: interpolate(scrollY.get(), [cardH * 0.55, cardH * 0.85], [8, 0], Extrapolation.CLAMP) }],
+  }));
 
   const bg = useSharedValue<string>(theme.background);
   useEffect(() => {
     bg.value = withTiming(theme.background, { duration: 500 });
   }, [theme.background, bg]);
   const bgStyle = useAnimatedStyle(() => ({ backgroundColor: bg.value }));
-
-  const lettersStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -tiltX.value * 8 }, { translateY: -tiltY.value * 5 }],
-  }));
 
   const completedGames = useMemo(() => {
     if (!schedule) return [];
@@ -78,23 +93,13 @@ export function TeamHome({ teamId, pushed = false }: { teamId?: string | null; p
 
   return (
     <Animated.View style={[styles.root, bgStyle]}>
-      <Animated.Text
-        key={`letters-${team.id}`}
-        entering={FadeIn.duration(600)}
-        style={[
-          styles.letters,
-          { color: withAlpha(theme.accent, 0.09), fontSize: width * 0.62, top: height * 0.2 },
-          lettersStyle,
-        ]}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants">
-        {team.abbreviation}
-      </Animated.Text>
-
       <ScreenHeader
         onBack={pushed ? () => router.back() : undefined}
+        title={
+          <Animated.View style={[styles.headerTitle, titleStyle]} pointerEvents="none">
+            <TeamMark team={team} />
+          </Animated.View>
+        }
         right={
           pushed ? (
             team.id === favoriteTeamId ? null : (
@@ -128,7 +133,10 @@ export function TeamHome({ teamId, pushed = false }: { teamId?: string | null; p
         }
       />
 
-      <ScrollView
+      <Animated.ScrollView
+        key={team.id}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}>
@@ -147,6 +155,8 @@ export function TeamHome({ teamId, pushed = false }: { teamId?: string | null; p
         <TeamSeasonStats teamId={team.id} accent={theme.accent} />
 
         {schedule && schedule.length > 0 && <NextGame schedule={schedule} theme={theme} />}
+
+        <MyCupCard teamId={team.id} />
 
         {pushed && rival && schedule && <SeasonSeries schedule={schedule} team={team} rival={rival} accent={theme.accent} />}
 
@@ -185,7 +195,7 @@ export function TeamHome({ teamId, pushed = false }: { teamId?: string | null; p
             ))}
           </Animated.View>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
     </Animated.View>
   );
 }
@@ -209,7 +219,7 @@ function GameRow({ game, theme, index }: { game: Game; theme: ReturnType<typeof 
   return (
     <Animated.View entering={FadeInDown.delay(140 + index * 35).duration(260)}>
       <Pressable
-        onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })}
+        onPress={() => openDetail({ pathname: '/game/[id]', params: { id: game.id } })}
         accessibilityRole="button"
         accessibilityLabel={`${game.result} vs ${game.opponent}`}
         style={({ pressed }) => [styles.gameRow, pressed && { opacity: 0.75 }]}>
@@ -252,14 +262,10 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
-  letters: {
-    position: 'absolute',
-    left: -10,
-    right: -10,
-    textAlign: 'center',
-    fontFamily: 'BigShouldersDisplay_900Black',
-  },
   headerActions: { flexDirection: 'row', gap: 8 },
+  headerTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' },
+  // The source image is square with the lettering centered, so it is drawn square and the empty space trimmed with margins.
+  headerWordmark: { width: 150, height: 150, marginVertical: -56 },
   scrollContent: {
     gap: 0,
   },
@@ -293,7 +299,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 22,
     marginHorizontal: 24,
-    marginBottom: 8,
+    marginVertical: 8,
   },
   rosterText: {
     fontFamily: fonts.bodySemi,
