@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
-import { away, home } from '@/storybook/fixtures';
+import { away, home } from './fixtures';
 
 const meta = { title: 'Foundations/Theme' } satisfies Meta;
 export default meta;

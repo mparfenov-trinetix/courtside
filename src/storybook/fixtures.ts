@@ -9,8 +9,7 @@ import {
   type Game,
   type GameLogEntry,
 } from '@/lib/espn';
-import { deriveFlow } from '@/lib/game-model';
-import { deriveQuarterStats } from '@/lib/quarter-stats';
+import { deriveFlow, deriveQuarterStats } from '@/lib/game';
 import { matchupColors } from '@/lib/theme';
 
 export const game = normalizeGameSummary(gameJson as never, '401909912');

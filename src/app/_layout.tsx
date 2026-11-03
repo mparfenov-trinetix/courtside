@@ -19,14 +19,13 @@ import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { WidgetSync } from '@/components/widget-sync';
-import { NavDepthTracker } from '@/components/nav-depth-tracker';
-import { DataHealthBanner } from '@/components/data-health-banner';
+import { WidgetSync } from '@/widgets/widget-sync';
+import { NavDepthTracker } from '@/navigation';
+import { DataHealthBanner } from '@/components';
 import { reportIssue } from '@/lib/data-health';
 import { currentSeason, setHealthReporter } from '@/lib/espn';
 import { palette } from '@/lib/theme';
-import { TeamProvider } from '@/state/team-store';
-import { WatchlistProvider } from '@/state/watchlist-store';
+import { TeamProvider , WatchlistProvider } from '@/state';
 
 // Keep the native splash up until the intro screen has painted its first frame,
 // so the hand-off from native splash to the JS intro animation is seamless.

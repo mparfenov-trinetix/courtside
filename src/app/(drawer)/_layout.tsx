@@ -5,11 +5,10 @@ import type { ComponentType } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, GridIcon, PeopleIcon, PodiumIcon, StandingsIcon, StarIcon, TrophyIcon } from '@/components/icons';
-import { NbaLogo } from '@/components/nba-logo';
-import { useTeam } from '@/hooks/queries';
+import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, GridIcon, PeopleIcon, PodiumIcon, StandingsIcon, StarIcon, TrophyIcon , NbaLogo } from '@/components';
+import { useTeam } from '@/hooks';
 import { fonts, logoOn, palette, teamTheme, withAlpha } from '@/lib/theme';
-import { useTeamStore } from '@/state/team-store';
+import { useTeamStore } from '@/state';
 
 // Only when Metro was started with `npm run storybook`.
 const STORYBOOK = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === 'true';
