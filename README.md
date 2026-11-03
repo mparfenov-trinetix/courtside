@@ -22,10 +22,10 @@ npx expo run:ios        # or run:android
 
 ## Where things live
 
-- `src/app/index.tsx`: intro animation (ball bounce, court lines, wordmark)
-- `src/app/onboarding.tsx`: favorite team picker
-- `src/app/(drawer)/`: drawer menu, home card, all teams, roster
-- `src/components/team-card.tsx`: the tilting card (shadow, sheen, rim lights, corner glints)
-- `src/hooks/use-tilt.ts`: gravity sensor + drag-to-tilt; flip `INVERT_X` / `INVERT_Y` if the card leans the wrong way
-- `src/lib/espn.ts`: ESPN client, every response normalized into small local types
-- `src/lib/theme.ts`: palette, fonts and per-team color theming
+- `src/features/intro`: intro animation (ball bounce, court lines, wordmark)
+- `src/features/onboarding`: favorite team picker
+- `src/app/(drawer)/`: drawer layout; screens live in `src/features/{home,team,...}/screens`
+- `src/features/team/components/TeamCard`: the tilting card (shadow, sheen, rim lights, corner glints)
+- `src/hooks/useTilt.ts`: gravity sensor + drag-to-tilt; flip `INVERT_X` / `INVERT_Y` if the card leans the wrong way
+- `src/lib/espn/`: ESPN client, every response normalized into small local types
+- `src/lib/theme/`: palette, fonts and per-team color theming
