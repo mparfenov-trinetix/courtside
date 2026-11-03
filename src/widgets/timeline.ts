@@ -1,5 +1,5 @@
 import type { Game, Team, TeamDetail } from '@/lib/espn';
-import type { NextGameProps } from '@/widgets/next-game-widget';
+import type { NextGameProps } from './next-game-widget';
 
 /** The widget switches to the following game this long after tip-off. */
 const GAME_LENGTH_MS = 3 * 60 * 60 * 1000;

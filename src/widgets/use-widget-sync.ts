@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 
-import { useTeam, useTeamDetail, useTeamSchedule } from '@/hooks/queries';
-import { useTeamStore } from '@/state/team-store';
-import { syncNextGameWidget } from '@/widgets/sync';
+import { useTeam, useTeamDetail, useTeamSchedule } from '@/hooks';
+import { useTeamStore } from '@/state';
+import { syncWidgets } from './sync';
 
 /** Keeps the home-screen widget on your favorite team's upcoming games, whenever that data changes. */
 export function useWidgetSync() {
@@ -12,6 +12,6 @@ export function useWidgetSync() {
   const { data: schedule } = useTeamSchedule(favoriteTeamId);
 
   useEffect(() => {
-    if (team && schedule) syncNextGameWidget(team, detail, schedule);
+    if (team && schedule) syncWidgets(team, detail, schedule);
   }, [team, detail, schedule]);
 }

@@ -8,6 +8,7 @@ import {
   kerning,
   lineLimit,
   minimumScaleFactor,
+  multilineTextAlignment,
   padding,
   resizable,
   widgetURL,
@@ -39,6 +40,9 @@ export type NextGameProps = {
   gameId: string;
   /** For the footer: stage like "NBA Cup" or "Round 1", when there is one. */
   tag: string;
+  /** Only the gallery sample sets these: fixed text in place of the live clock, which a sample can't have. */
+  timeText?: string;
+  countdownText?: string;
 };
 
 export const EMPTY_PROPS: NextGameProps = {
@@ -58,6 +62,31 @@ export const EMPTY_PROPS: NextGameProps = {
   live: false,
   gameId: '',
   tag: '',
+};
+
+/**
+ * What the widget gallery and a freshly installed (never opened) widget show: a plausible fixture instead of an empty card.
+ * The app replaces it with the real timeline as soon as it runs.
+ */
+export const SAMPLE_PROPS: NextGameProps = {
+  teamAbbr: 'DEN',
+  teamName: 'Denver Nuggets',
+  record: '4-2',
+  bg: '#0D1B2E',
+  bg2: '#1B3A5F',
+  accent: '#FEC524',
+  logo: '',
+  oppLogo: '',
+  oppAbbr: 'TOR',
+  oppName: 'Toronto Raptors',
+  home: true,
+  iso: '2030-01-01T02:00:00Z',
+  day: 'THU, NOV 5',
+  live: false,
+  gameId: '',
+  tag: '',
+  timeText: '7:00 PM',
+  countdownText: 'in 1 day, 6 hr',
 };
 
 /**
@@ -141,7 +170,11 @@ const NextGameWidget = (props: NextGameProps, environment: WidgetEnvironment) =>
         <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(0.6), foregroundStyle(dim), lineLimit(1), minimumScaleFactor(0.7)]}>
           {props.live ? 'TIP-OFF' : props.day.toUpperCase()}
         </Text>
-        <Text modifiers={[font({ size: 20, weight: 'heavy' }), foregroundStyle(props.live ? red : props.accent)]} date={when} dateStyle="time" />
+        props.timeText ? (
+          <Text modifiers={[font({ size: 20, weight: 'heavy' }), foregroundStyle(props.accent)]}>{props.timeText}</Text>
+        ) : (
+          <Text modifiers={[font({ size: 20, weight: 'heavy' }), foregroundStyle(props.live ? red : props.accent)]} date={when} dateStyle="time" />
+        )
       </VStack>
     );
   }
@@ -159,11 +192,27 @@ const NextGameWidget = (props: NextGameProps, environment: WidgetEnvironment) =>
           <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(0.8), foregroundStyle(dim), lineLimit(1)]}>
             {props.live ? 'TIP-OFF' : props.day.toUpperCase()}
           </Text>
-          <Text modifiers={[font({ size: 30, weight: 'heavy' }), foregroundStyle(props.live ? red : props.accent)]} date={when} dateStyle="time" />
+          props.timeText ? (
+            <Text modifiers={[font({ size: 30, weight: 'heavy' }), foregroundStyle(props.accent)]}>{props.timeText}</Text>
+          ) : (
+            <Text modifiers={[font({ size: 30, weight: 'heavy' }), foregroundStyle(props.live ? red : props.accent)]} date={when} dateStyle="time" />
+          )
           {props.live ? (
             <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(dim)]}>Tap for the live score</Text>
+          ) : props.countdownText ? (
+            <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(dim), lineLimit(1)]}>{props.countdownText}</Text>
           ) : (
-            <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(dim), lineLimit(1)]} date={when} dateStyle="relative" />
+            <Text
+              modifiers={[
+                font({ size: 11, weight: 'semibold' }),
+                foregroundStyle(dim),
+                lineLimit(1),
+                multilineTextAlignment('trailing'),
+                frame({ maxWidth: 120, alignment: 'trailing' }),
+              ]}
+              date={when}
+              dateStyle="relative"
+            />
           )}
         </VStack>
       </HStack>
@@ -172,4 +221,4 @@ const NextGameWidget = (props: NextGameProps, environment: WidgetEnvironment) =>
   );
 };
 
-export default createWidget<NextGameProps>('NextGameWidget', NextGameWidget, EMPTY_PROPS);
+export default createWidget<NextGameProps>('NextGameWidget', NextGameWidget, SAMPLE_PROPS);
