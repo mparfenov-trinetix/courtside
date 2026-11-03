@@ -1,0 +1,6 @@
+name = "courtside-gateway"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# Deploy with `npm run deploy`, then point the app at it:
+#   EXPO_PUBLIC_ESPN_PROXY=https://courtside-gateway.<your-subdomain>.workers.dev/espn

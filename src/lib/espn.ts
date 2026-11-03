@@ -58,8 +58,28 @@ export function setHealthReporter(fn: HealthReporter) {
   report = fn;
 }
 
+/**
+ * Optional caching gateway (see gateway/). When EXPO_PUBLIC_ESPN_PROXY is set, calls to ESPN go through
+ * it: `<proxy>/<source>/<path>` where the source stands in for the ESPN base URL. Unset = straight to ESPN.
+ */
+const PROXY_SOURCES: [prefix: string, source: string][] = [
+  ['https://site.api.espn.com/apis/site/v2/sports/basketball/nba', 'site'],
+  ['https://site.web.api.espn.com/apis/v2/sports/basketball/nba', 'web2'],
+  ['https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba', 'web3'],
+  ['https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba', 'core'],
+  ['https://site.web.api.espn.com/apis/common/v3/search', 'search'],
+];
+
+export function viaProxy(url: string, proxy: string | undefined): string {
+  if (!proxy) return url;
+  for (const [prefix, source] of PROXY_SOURCES) {
+    if (url.startsWith(prefix)) return `${proxy.replace(/\/+$/, '')}/${source}${url.slice(prefix.length) || '/'}`;
+  }
+  return url;
+}
+
 async function getJson(url: string): Promise<Json> {
-  const res = await fetch(url);
+  const res = await fetch(viaProxy(url, process.env.EXPO_PUBLIC_ESPN_PROXY));
   if (!res.ok) throw new Error(`ESPN returned ${res.status} for ${url}`);
   return res.json();
 }
