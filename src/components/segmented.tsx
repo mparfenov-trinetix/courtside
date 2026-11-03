@@ -60,6 +60,7 @@ export function Segmented<K extends string>({
           }}
           accessibilityRole="tab"
           accessibilityState={{ selected: i === index }}
+          hitSlop={compact ? { top: 8, bottom: 8 } : undefined}
           style={[styles.button, compact && styles.buttonCompact, { width: segmentWidth }]}>
           <Label text={o.label} index={i} position={position} compact={compact} />
         </Pressable>

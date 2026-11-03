@@ -50,7 +50,15 @@ export function ScoreHero({
     <View>
       <Animated.View entering={FadeIn.duration(350)} style={styles.scoreHeader}>
         <TeamScore team={away} />
-        <View style={styles.scoreCenter}>
+        <View
+          style={styles.scoreCenter}
+          accessible
+          accessibilityLiveRegion="polite"
+          accessibilityLabel={
+            hasStarted
+              ? `${away.team.displayName} ${away.score}, ${home.team.displayName} ${home.score}. ${status}`
+              : `${away.team.displayName} at ${home.team.displayName}. ${status}`
+          }>
           {hasStarted ? (
             <View style={styles.bigScore}>
               <RollingNumber value={away.score} fontSize={32} style={styles.vsScore} />

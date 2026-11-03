@@ -171,7 +171,12 @@ export function ShotChart({
         />
       </View>
 
-      <View style={styles.court} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <View
+        style={styles.court}
+        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={`Shot chart for ${activeId ? 'the selected player' : team.team.displayName}: ${fgm} of ${shots.length} shots made, ${tpm} of ${tpa} from three.`}>
         {width > 0 && (
           <Svg width={width} height={height}>
             <Rect x={0} y={0} width={width} height={height} fill={withAlpha(palette.maple, 0.07)} />

@@ -137,7 +137,14 @@ export function MarginChart({
       </View>
 
       <GestureDetector gesture={gesture}>
-        <View style={styles.chart} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+        <View
+          style={styles.chart}
+          onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={
+            shownMargin === 0 ? 'Score margin chart. The game is tied.' : `Score margin chart. ${leader.team.displayName} ahead by ${Math.abs(shownMargin)}.`
+          }>
           {width > 0 && (
             <>
               <Svg width={width} height={HEIGHT}>

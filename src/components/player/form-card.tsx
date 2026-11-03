@@ -54,7 +54,11 @@ export function FormCard({ log, accent }: { log: GameLogEntry[]; accent: string 
       </View>
 
       <View style={styles.card}>
-        <View style={styles.chart}>
+        <View
+          style={styles.chart}
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={`Points in the last ${recent.length} games, oldest first: ${recent.map((g) => g.pts).join(', ')}. Season average ${season.toFixed(1)}.`}>
           <View style={[styles.avgLine, { bottom: 28 + seasonY }]}>
             <View style={styles.avgDash} />
             <Text style={styles.avgLabel}>{season.toFixed(1)} avg</Text>

@@ -145,7 +145,12 @@ export function WinProbability({
       </View>
 
       <GestureDetector gesture={gesture}>
-        <View style={styles.chart} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+        <View
+          style={styles.chart}
+          onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={`Win probability chart. ${leader.team.displayName} ${leaderPct} percent to win${live ? ', live' : ''}.`}>
           {width > 0 && (
             <>
               <Svg width={width} height={HEIGHT}>

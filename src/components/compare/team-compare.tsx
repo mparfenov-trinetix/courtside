@@ -76,7 +76,7 @@ export function TeamCompare() {
 
       {rows.length > 0 ? (
         <Animated.View entering={FadeInDown.duration(300)} style={styles.card}>
-          <Radar axes={radarAxes(table!, statsA!, statsB!)} aColor={colors.away} bColor={colors.home} />
+          <Radar axes={radarAxes(table!, statsA!, statsB!)} aColor={colors.away} bColor={colors.home} aName={statsA!.name} bName={statsB!.name} />
           <Text style={styles.radarNote}>Outer ring = best in the league</Text>
           <View style={styles.tally}>
             <Text style={[styles.tallyNum, { color: colors.away }]}>{winsA}</Text>

@@ -83,6 +83,7 @@ export function GameStickyBar({
                   }}
                   accessibilityRole="tab"
                   accessibilityState={{ selected: active }}
+                  hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}
                   style={[styles.chip, active && styles.chipActive]}>
                   <Text style={[styles.chipLabel, active && { color: palette.chalk }]}>{o.label}</Text>
                 </Pressable>

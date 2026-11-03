@@ -186,7 +186,7 @@ export default function Compare() {
 
         {rows.length > 0 ? (
           <Animated.View key={scope} entering={FadeInDown.duration(300)} style={styles.card}>
-            {axes && <Radar axes={axes} aColor={colors.away} bColor={colors.home} />}
+            {axes && <Radar axes={axes} aColor={colors.away} bColor={colors.home} aName={slotA?.name} bName={slotB?.name} />}
             <View style={styles.tally}>
               <Text style={[styles.tallyNum, { color: colors.away }]}>{winsA}</Text>
               <Text style={styles.tallyLabel}>categories won</Text>

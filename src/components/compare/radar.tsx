@@ -10,7 +10,21 @@ export type RadarAxis = { label: string; a: number; b: number };
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
 
 /** Two shapes on shared spokes: wider on a spoke means better there. */
-export function Radar({ axes, aColor, bColor, size = 280 }: { axes: RadarAxis[]; aColor: string; bColor: string; size?: number }) {
+export function Radar({
+  axes,
+  aColor,
+  bColor,
+  size = 280,
+  aName = 'First',
+  bName = 'Second',
+}: {
+  axes: RadarAxis[];
+  aColor: string;
+  bColor: string;
+  size?: number;
+  aName?: string;
+  bName?: string;
+}) {
   const c = size / 2;
   const R = size / 2 - 44;
   const n = axes.length;
@@ -22,7 +36,14 @@ export function Radar({ axes, aColor, bColor, size = 280 }: { axes: RadarAxis[];
   const shape = (key: 'a' | 'b') => axes.map((ax, i) => point(i, R * clamp(ax[key]))).join(' ');
 
   return (
-    <Animated.View entering={ZoomIn.springify().damping(16).stiffness(140)} style={[styles.wrap, { width: size, height: size }]}>
+    <Animated.View
+      entering={ZoomIn.springify().damping(16).stiffness(140)}
+      style={[styles.wrap, { width: size, height: size }]}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={`Comparison chart. ${axes
+        .map((ax) => `${ax.label}: ${aName} ${Math.round(clamp(ax.a) * 100)} percent, ${bName} ${Math.round(clamp(ax.b) * 100)} percent`)
+        .join('. ')}.`}>
       <Svg width={size} height={size}>
         {[0.25, 0.5, 0.75, 1].map((f) => (
           <Polygon key={f} points={ring(f)} fill="none" stroke={withAlpha(palette.chalk, f === 1 ? 0.22 : 0.1)} strokeWidth={1} />

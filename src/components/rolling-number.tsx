@@ -20,7 +20,7 @@ function Reel({ digit, fontSize, style }: { digit: number; fontSize: number; sty
     <View style={{ height, overflow: 'hidden' }}>
       <Animated.View style={reel}>
         {DIGITS.map((d) => (
-          <Text key={d} style={[style, styles.digit, { fontSize, height, lineHeight: height }]}>
+          <Text key={d} allowFontScaling={false} style={[style, styles.digit, { fontSize, height, lineHeight: height }]}>
             {d}
           </Text>
         ))}
