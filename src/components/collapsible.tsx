@@ -1,8 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import Animated, { FadeIn, LinearTransition, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
+import { Expandable } from '@/components/expandable';
 import { ChevronIcon } from '@/components/icons';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
@@ -25,7 +26,7 @@ export function Collapsible({
   }));
 
   return (
-    <Animated.View layout={LinearTransition.duration(220)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Pressable
         onPress={() => {
           Haptics.selectionAsync();
@@ -40,7 +41,7 @@ export function Collapsible({
           <ChevronIcon color={palette.muted} />
         </Animated.View>
       </Pressable>
-      {open && <Animated.View entering={FadeIn.duration(220)}>{children}</Animated.View>}
+      <Expandable open={open}>{children}</Expandable>
     </Animated.View>
   );
 }

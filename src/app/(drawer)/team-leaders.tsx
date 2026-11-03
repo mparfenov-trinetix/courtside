@@ -12,6 +12,7 @@ import type { Team, TeamStatRow } from '@/lib/espn';
 import { TEAM_METRICS, formatMetric, metricByKey, ordinal, type TeamMetric } from '@/lib/team-stats';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
+import { openDetail } from '@/lib/nav';
 
 const TAB_LABEL: Partial<Record<TeamMetric['key'], string>> = { oppPpg: 'Opp PPG', oppFgPct: 'Opp FG%' };
 const FULL: Record<TeamMetric['key'], string> = {
@@ -138,7 +139,7 @@ function TeamRow({
 
   return (
     <Pressable
-      onPress={() => router.push(`/team/${row.teamId}` as Href)}
+      onPress={() => openDetail(`/team/${row.teamId}` as Href)}
       accessibilityRole="button"
       accessibilityLabel={`${ordinal(rank)}, ${row.name}, ${formatMetric(metric, row[metric.key])}`}
       style={({ pressed }) => pressed && { opacity: 0.7 }}>

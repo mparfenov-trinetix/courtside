@@ -1,10 +1,10 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import type { Game, Team } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { openDetail } from '@/lib/nav';
 
 const WIN = '#34D399';
 const LOSS = '#F87171';
@@ -55,7 +55,7 @@ export function SeasonSeries({
           return (
             <Pressable
               key={g.id}
-              onPress={() => router.push({ pathname: '/game/[id]', params: { id: g.id } })}
+              onPress={() => openDetail({ pathname: '/game/[id]', params: { id: g.id } })}
               accessibilityRole="button"
               style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
               <Text style={styles.date}>{when}</Text>

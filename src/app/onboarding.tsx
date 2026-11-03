@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { NbaLogo } from '@/components/nba-logo';
 import { useTeams } from '@/hooks/queries';
 import type { Team } from '@/lib/espn';
 import { fonts, logoOn, palette, teamTheme, withAlpha } from '@/lib/theme';
@@ -68,6 +69,7 @@ export default function Onboarding() {
           }}
           ListHeaderComponent={
             <View style={styles.header}>
+              <NbaLogo size={44} />
               <Text style={styles.title}>Pick your team</Text>
               <Text style={styles.subtitle}>It becomes your home card. You can switch any time from the menu.</Text>
             </View>
@@ -170,6 +172,7 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 12,
+    gap: 10,
   },
   title: {
     fontFamily: fonts.display,

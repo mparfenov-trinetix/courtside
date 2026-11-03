@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -9,6 +8,7 @@ import { useScoreboardByDate } from '@/hooks/queries';
 import { nbaToday, toDateKey } from '@/lib/date';
 import { involvesTeam, type ScoreboardGame, type ScoreboardTeam } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { openDetail } from '@/lib/nav';
 
 export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highlightTeamId?: string | null }) {
   const dateKey = useMemo(() => toDateKey(nbaToday()), []);
@@ -40,7 +40,7 @@ export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highl
           return (
             <Pressable
               key={g.id}
-              onPress={() => router.push({ pathname: '/game/[id]', params: { id: g.id } })}
+              onPress={() => openDetail({ pathname: '/game/[id]', params: { id: g.id } })}
               accessibilityRole="button"
               style={({ pressed }) => [
                 styles.card,

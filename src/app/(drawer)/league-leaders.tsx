@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -10,6 +9,7 @@ import { useLeagueLeaders, useTeams } from '@/hooks/queries';
 import { useRefresh } from '@/hooks/use-refresh';
 import type { LeaderEntry } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { openDetail } from '@/lib/nav';
 
 type Category = 'ppg' | 'rpg' | 'apg' | 'stpg' | 'bpg' | 'mpg' | 'pfpg';
 
@@ -128,7 +128,7 @@ function LeaderRow({ entry, rank, index }: { entry: LeaderEntry; rank: number; i
 
   return (
     <Pressable
-      onPress={() => canNavigate && router.push({ pathname: '/player/[id]', params: { id: entry.athleteId, teamId: entry.teamId } })}
+      onPress={() => canNavigate && openDetail({ pathname: '/player/[id]', params: { id: entry.athleteId, teamId: entry.teamId } })}
       style={({ pressed }) => pressed && canNavigate ? { opacity: 0.7 } : undefined}>
     <Animated.View
       entering={FadeInDown.delay(Math.min(index, 8) * 30).duration(280).easing(Easing.out(Easing.cubic))}

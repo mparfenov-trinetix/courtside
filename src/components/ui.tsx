@@ -18,7 +18,8 @@ export function ScreenHeader({
   right,
   onBack,
 }: {
-  title?: string;
+  /** Text, or a custom node (e.g. one that fades in on scroll). */
+  title?: ReactNode;
   color?: string;
   right?: ReactNode;
   /** When set, shows a back arrow instead of the drawer menu button (for pushed screens). */
@@ -36,9 +37,13 @@ export function ScreenHeader({
         style={({ pressed }) => [styles.iconButton, { backgroundColor: withAlpha('#FFFFFF', pressed ? 0.16 : 0.08) }]}>
         {onBack ? <ArrowLeftIcon color={color} /> : <MenuIcon color={color} />}
       </Pressable>
-      <Text style={[styles.title, { color }]} numberOfLines={1}>
-        {title}
-      </Text>
+      {typeof title === 'string' || title == null ? (
+        <Text style={[styles.title, { color }]} numberOfLines={1}>
+          {title}
+        </Text>
+      ) : (
+        <View style={styles.titleNode}>{title}</View>
+      )}
       <View style={styles.right}>{right}</View>
     </View>
   );
@@ -106,6 +111,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayBold,
     fontSize: 24,
   },
+  titleNode: { flex: 1, justifyContent: 'center' },
   right: {
     minWidth: 42,
     alignItems: 'flex-end',

@@ -137,11 +137,30 @@ export function PodiumIcon({ size = 22, color }: IconProps) {
   );
 }
 
+export function BracketIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M4 5h5v5H4zM4 14h5v5H4zM15 9.5h5v5h-5z" {...stroke(color)} />
+      <Path d="M9 7.5h2.5v9H9M11.5 12H15" {...stroke(color)} />
+    </Svg>
+  );
+}
+
 export function SearchIcon({ size = 22, color }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Circle cx={11} cy={11} r={6.5} {...stroke(color)} />
       <Path d="M16 16l4.5 4.5" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+export function CupIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M7 4h10v5a5 5 0 0 1-10 0V4z" {...stroke(color)} />
+      <Path d="M7 6H4.5a1.5 1.5 0 0 0 0 3H7M17 6h2.5a1.5 1.5 0 0 1 0 3H17" {...stroke(color)} />
+      <Path d="M12 14v3M8.5 20h7M10 17h4" {...stroke(color)} />
     </Svg>
   );
 }

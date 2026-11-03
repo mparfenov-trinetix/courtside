@@ -1,6 +1,5 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +10,7 @@ import { useRefresh } from '@/hooks/use-refresh';
 import type { Player } from '@/lib/espn';
 import { fonts, logoOn, palette, teamTheme, withAlpha, type TeamTheme } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
+import { openDetail } from '@/lib/nav';
 
 export default function Roster() {
   const insets = useSafeAreaInsets();
@@ -22,7 +22,7 @@ export default function Roster() {
 
   const navigateToPlayer = (player: Player) => {
     Haptics.selectionAsync();
-    router.push({ pathname: '/player/[id]', params: { id: player.id, teamId: currentTeamId ?? '' } });
+    openDetail({ pathname: '/player/[id]', params: { id: player.id, teamId: currentTeamId ?? '' } });
   };
 
   return (

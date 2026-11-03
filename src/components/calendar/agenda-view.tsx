@@ -1,12 +1,13 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { useState, type ReactElement } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CupBadge } from '@/components/cup/cup-badge';
 import type { Game } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { openDetail } from '@/lib/nav';
 
 const WIN = '#34D399';
 const LOSS = '#F87171';
@@ -104,7 +105,7 @@ function GameRow({ game, accent }: { game: Game; accent: string }) {
   const isToday = new Date().toDateString() === d.toDateString();
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })}
+      onPress={() => openDetail({ pathname: '/game/[id]', params: { id: game.id } })}
       accessibilityRole="button"
       style={({ pressed }) => [styles.row, isToday && { borderColor: withAlpha(accent, 0.6) }, pressed && { opacity: 0.7 }]}>
       <View style={styles.date}>
@@ -121,7 +122,10 @@ function GameRow({ game, accent }: { game: Game; accent: string }) {
           <Text style={styles.at}>{game.home ? 'vs ' : '@ '}</Text>
           {game.opponent}
         </Text>
-        <Text style={styles.sub}>{isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'long' })}</Text>
+        <View style={styles.subRow}>
+          <Text style={styles.sub}>{isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'long' })}</Text>
+          {game.cup ? <CupBadge stage={game.cup} /> : null}
+        </View>
       </View>
       {game.completed && game.result ? (
         <View style={styles.result}>
@@ -170,6 +174,7 @@ const styles = StyleSheet.create({
   opp: { fontFamily: fonts.bodySemi, fontSize: 16, color: palette.chalk },
   at: { color: palette.muted, fontFamily: fonts.body },
   sub: { fontFamily: fonts.body, fontSize: 12, color: palette.muted },
+  subRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   result: { alignItems: 'flex-end', gap: 2 },
   resultTag: {
     fontFamily: fonts.bodyBold,

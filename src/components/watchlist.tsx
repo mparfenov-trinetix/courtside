@@ -8,6 +8,7 @@ import { usePlayerGameLog, usePlayerStats } from '@/hooks/queries';
 import { headshotUrl } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { useWatchlist, type WatchedPlayer } from '@/state/watchlist-store';
+import { openDetail } from '@/lib/nav';
 
 /** Home card section: only the watched players who play for the team on screen. */
 export function Watchlist({ accent, teamId, teamAbbr }: { accent: string; teamId: string; teamAbbr?: string }) {
@@ -57,7 +58,7 @@ export function WatchRow({
 
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/player/[id]', params: { id: player.id, teamId: player.teamId } })}
+      onPress={() => openDetail({ pathname: '/player/[id]', params: { id: player.id, teamId: player.teamId } })}
       accessibilityRole="button"
       style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}>
       <View style={[styles.avatar, { backgroundColor: withAlpha(accent, 0.25) }]}>

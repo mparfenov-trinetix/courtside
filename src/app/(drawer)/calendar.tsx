@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -7,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AgendaView } from '@/components/calendar/agenda-view';
 import { MonthView, startOfMonth } from '@/components/calendar/month-view';
+import { CupBadge } from '@/components/cup/cup-badge';
 import { FlashOverlay, Tick } from '@/components/live-flash';
 import { Segmented, slideIn } from '@/components/segmented';
 import { ErrorState, LoadingState, ScreenHeader } from '@/components/ui';
@@ -16,6 +16,7 @@ import { involvesTeam, type ScoreboardGame } from '@/lib/espn';
 import { nbaToday, toDateKey } from '@/lib/date';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
+import { openDetail } from '@/lib/nav';
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -252,7 +253,7 @@ function GameCard({ game, mine, accent, abbr }: { game: ScoreboardGame; mine: bo
 
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.id } })}
+      onPress={() => openDetail({ pathname: '/game/[id]', params: { id: game.id } })}
       accessibilityRole="button"
       style={({ pressed }) => [
         styles.card,
@@ -268,6 +269,7 @@ function GameCard({ game, mine, accent, abbr }: { game: ScoreboardGame; mine: bo
 
       <View style={styles.cardStatus}>
         <Tick style={[styles.statusText, { color: statusColor }]} value={status} />
+        {game.cup ? <CupBadge stage={game.cup} /> : null}
         {mine && abbr ? <Text style={[styles.mineTag, { color: accent }]}>★ {abbr}</Text> : null}
         {inProgress && <View style={styles.liveDot} />}
       </View>

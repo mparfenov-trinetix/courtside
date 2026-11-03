@@ -1,11 +1,11 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import type { Game } from '@/lib/espn';
 import { fonts, palette, type TeamTheme, withAlpha } from '@/lib/theme';
+import { openDetail } from '@/lib/nav';
 
 const GAME_WINDOW_MS = 3.5 * 60 * 60 * 1000;
 
@@ -57,7 +57,7 @@ export function NextGame({ schedule, theme }: { schedule: Game[]; theme: TeamThe
     <Animated.View entering={FadeInDown.delay(80).duration(300)} style={styles.wrap}>
       <Text style={styles.label}>{live ? 'Playing now' : 'Next game'}</Text>
       <Pressable
-        onPress={() => router.push({ pathname: '/game/[id]', params: { id: next.id } })}
+        onPress={() => openDetail({ pathname: '/game/[id]', params: { id: next.id } })}
         accessibilityRole="button"
         accessibilityLabel={`${next.home ? 'vs' : 'at'} ${next.opponent}, ${when}`}
         style={({ pressed }) => [

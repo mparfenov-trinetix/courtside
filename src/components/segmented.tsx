@@ -2,12 +2,12 @@ import * as Haptics from 'expo-haptics';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
-  FadeInLeft,
-  FadeInRight,
+  Easing,
+  Keyframe,
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 
@@ -40,7 +40,7 @@ export function Segmented<K extends string>({
   const position = useSharedValue(index);
 
   useEffect(() => {
-    position.set(withSpring(index, { damping: 18, stiffness: 220, mass: 0.8 }));
+    position.set(withTiming(index, { duration: 240, easing: Easing.out(Easing.cubic) }));
   }, [index, position]);
 
   const thumb = useAnimatedStyle(() => ({
@@ -99,6 +99,12 @@ const styles = StyleSheet.create({
   labelCompact: { fontSize: 12 },
 });
 
-/** Entering animation for content below a `Segmented`: slides in from the side it moved toward. */
+/**
+ * Entering animation for content below a `Segmented` (and the game tabs): a quick fade with a short
+ * slide from the side it moved toward. Eased, not sprung, so nothing overshoots.
+ */
 export const slideIn = (direction: 1 | -1) =>
-  (direction === 1 ? FadeInRight : FadeInLeft).duration(260).springify().damping(20).stiffness(200);
+  new Keyframe({
+    0: { opacity: 0, transform: [{ translateX: direction * 20 }] },
+    100: { opacity: 1, transform: [{ translateX: 0 }], easing: Easing.out(Easing.cubic) },
+  }).duration(220);

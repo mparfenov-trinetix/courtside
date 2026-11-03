@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SearchIcon } from '@/components/icons';
 import { usePlayerSearch, useTeams } from '@/hooks/queries';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { openDetail } from '@/lib/nav';
 
 const RECENT_KEY = 'courtside:recent-search';
 const MAX_RECENT = 8;
@@ -18,8 +19,8 @@ type Hit =
   | { kind: 'player'; id: string; title: string; subtitle: string; image?: string; teamId?: string };
 
 function open(hit: Hit) {
-  if (hit.kind === 'team') router.push(`/team/${hit.id}` as Href);
-  else router.push({ pathname: '/player/[id]', params: { id: hit.id, teamId: hit.teamId ?? '' } });
+  if (hit.kind === 'team') openDetail(`/team/${hit.id}` as Href);
+  else openDetail({ pathname: '/player/[id]', params: { id: hit.id, teamId: hit.teamId ?? '' } });
 }
 
 /** One box for teams and players, with the last few things you opened when it's empty. */
