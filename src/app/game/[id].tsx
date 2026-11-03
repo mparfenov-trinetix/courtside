@@ -99,9 +99,6 @@ export default function GameScreen() {
     return { ...lineToStats(sumLine(t.team.id)), MIN: String(Math.round(mins / 60)), '+/-': '–' };
   };
 
-  const qScore = (t: BoxScoreTeam) =>
-    selPeriods ? selPeriods.reduce((acc, n) => acc + (t.linescores[n - 1] ?? 0), 0) : t.score;
-
   const changeTab = (next: GameTab) => {
     setSlide(TAB_ORDER.indexOf(next) > TAB_ORDER.indexOf(tab) ? 1 : -1);
     setTab(next);
@@ -156,11 +153,6 @@ export default function GameScreen() {
               options={options}
               optionKey={option.key}
               onOption={setPeriodKey}
-              periodScore={
-                filtered
-                  ? { away: [away.team.abbreviation, qScore(away)], home: [home.team.abbreviation, qScore(home)] }
-                  : null
-              }
             />
           )}
         </View>

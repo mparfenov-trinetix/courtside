@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import type { PeriodOption } from '@/lib/game-model';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -26,7 +26,6 @@ export function GameStickyBar({
   options,
   optionKey,
   onOption,
-  periodScore,
 }: {
   tab: GameTab;
   onTab: (t: GameTab) => void;
@@ -34,8 +33,6 @@ export function GameStickyBar({
   options: PeriodOption[];
   optionKey: string;
   onOption: (key: string) => void;
-  /** Score for the selected period, e.g. { away: ['CHI', 23], home: ['PHI', 36] }. */
-  periodScore: { away: [string, number]; home: [string, number] } | null;
 }) {
   const [width, setWidth] = useState(0);
   const index = TABS.findIndex((t) => t.key === tab);
@@ -90,11 +87,6 @@ export function GameStickyBar({
               );
             })}
           </ScrollView>
-          {periodScore && (
-            <Animated.Text entering={FadeIn.duration(200)} style={styles.periodScore}>
-              {periodScore.away[0]} {periodScore.away[1]} – {periodScore.home[1]} {periodScore.home[0]}
-            </Animated.Text>
-          )}
         </View>
       )}
     </View>
@@ -107,7 +99,7 @@ const styles = StyleSheet.create({
   tab: { flex: 1, alignItems: 'center', paddingVertical: 12 },
   tabLabel: { fontFamily: fonts.bodySemi, fontSize: 14, color: palette.muted },
   underline: { position: 'absolute', bottom: 0, left: 0, height: 2, borderRadius: 1 },
-  periods: { flexDirection: 'row', alignItems: 'center', paddingBottom: 8 },
+  periods: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   chipScroll: { flexShrink: 1 },
   chips: { gap: 6, paddingHorizontal: 16 },
   chip: {
@@ -120,5 +112,4 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: withAlpha(palette.chalk, 0.14), borderColor: withAlpha(palette.chalk, 0.28) },
   chipLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
-  periodScore: { fontFamily: fonts.bodyBold, fontSize: 12, color: palette.chalk, paddingRight: 16, marginLeft: 'auto' },
 });
