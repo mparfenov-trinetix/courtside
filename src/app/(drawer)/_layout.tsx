@@ -5,10 +5,14 @@ import type { ComponentType } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CalendarIcon, CardIcon, CompareIcon, GridIcon, PeopleIcon, PodiumIcon, StandingsIcon, StarIcon, TrophyIcon } from '@/components/icons';
+import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, GridIcon, PeopleIcon, PodiumIcon, StandingsIcon, StarIcon, TrophyIcon } from '@/components/icons';
+import { NbaLogo } from '@/components/nba-logo';
 import { useTeam } from '@/hooks/queries';
 import { fonts, logoOn, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
+
+// Only when Metro was started with `npm run storybook`.
+const STORYBOOK = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === 'true';
 
 export default function DrawerLayout() {
   const { hydrated, favoriteTeamId, currentTeamId } = useTeamStore();
@@ -34,6 +38,8 @@ export default function DrawerLayout() {
       <Drawer.Screen name="league-leaders" options={{ title: 'League Leaders' }} />
       <Drawer.Screen name="team-leaders" options={{ title: 'Team Leaders' }} />
       <Drawer.Screen name="standings" options={{ title: 'Standings' }} />
+      <Drawer.Screen name="playoffs" options={{ title: 'Playoffs' }} />
+      <Drawer.Screen name="cup" options={{ title: 'NBA Cup' }} />
       <Drawer.Screen name="calendar" options={{ title: 'Calendar' }} />
       <Drawer.Screen name="compare" options={{ title: 'Compare' }} />
       <Drawer.Screen name="watchlist" options={{ title: 'Watchlist' }} />
@@ -55,6 +61,8 @@ const ITEMS: MenuItem[] = [
   { route: 'league-leaders', href: '/league-leaders', label: 'League Leaders', Icon: TrophyIcon },
   { route: 'team-leaders', href: '/team-leaders' as Href, label: 'Team Leaders', Icon: PodiumIcon },
   { route: 'standings', href: '/standings', label: 'Standings', Icon: StandingsIcon },
+  { route: 'playoffs', href: '/playoffs' as Href, label: 'Playoffs', Icon: BracketIcon },
+  { route: 'cup', href: '/cup' as Href, label: 'NBA Cup', Icon: CupIcon },
   { route: 'calendar', href: '/calendar' as Href, label: 'Calendar', Icon: CalendarIcon },
   { route: 'compare', href: '/compare' as Href, label: 'Compare', Icon: CompareIcon },
   { route: 'watchlist', href: '/watchlist' as Href, label: 'Watchlist', Icon: StarIcon },
@@ -135,11 +143,25 @@ function Menu(props: DrawerContentComponentProps) {
           <StarIcon color={withAlpha(palette.chalk, 0.7)} />
           <Text style={[styles.itemLabel, { color: withAlpha(palette.chalk, 0.7) }]}>Change favorite team</Text>
         </Pressable>
+
+        {STORYBOOK && (
+          <Pressable
+            onPress={() => {
+              props.navigation.closeDrawer();
+              router.push('/storybook' as Href);
+            }}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.item, pressed && { backgroundColor: withAlpha('#FFFFFF', 0.06) }]}>
+            <GridIcon color={withAlpha(palette.chalk, 0.7)} />
+            <Text style={[styles.itemLabel, { color: withAlpha(palette.chalk, 0.7) }]}>Storybook</Text>
+          </Pressable>
+        )}
       </DrawerContentScrollView>
 
-      <Text style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-        Team data from ESPN’s public API
-      </Text>
+      <View style={[styles.footerRow, { paddingBottom: insets.bottom + 16 }]}>
+        <NbaLogo size={30} />
+        <Text style={styles.footer}>Team data from ESPN’s public API</Text>
+      </View>
     </View>
   );
 }
@@ -199,8 +221,9 @@ const styles = StyleSheet.create({
     marginVertical: 12,
     marginHorizontal: 14,
   },
+  footerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 26 },
   footer: {
-    paddingHorizontal: 26,
+    flex: 1,
     fontFamily: fonts.body,
     fontSize: 12,
     color: palette.muted,

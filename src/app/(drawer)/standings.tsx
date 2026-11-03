@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { router, type Href } from 'expo-router';
+import type { Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -7,29 +7,55 @@ import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Segmented } from '@/components/segmented';
+import { SeasonButton, SeasonSheet } from '@/components/seasons/season-picker';
 import { ErrorState, LoadingState, ScreenHeader } from '@/components/ui';
 import { useStandings } from '@/hooks/queries';
 import { useRefresh } from '@/hooks/use-refresh';
-import type { StandingEntry } from '@/lib/espn';
+import { currentSeason, type StandingEntry } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state/team-store';
+import { openDetail } from '@/lib/nav';
 
-type Conference = 'east' | 'west';
+type Conference = 'league' | 'east' | 'west';
 
 const COL = { w: 30, l: 30, pct: 44, gb: 38, strk: 40 };
 
 const TABS: { key: Conference; label: string }[] = [
+  { key: 'league', label: 'League' },
   { key: 'east', label: 'Eastern' },
   { key: 'west', label: 'Western' },
 ];
 
+/** Standings for any recent season. Playoffs, play-in and the NBA Cup have their own screens. */
 export default function Standings() {
+  const [season, setSeason] = useState(currentSeason());
+  const [picking, setPicking] = useState(false);
+
+  return (
+    <View style={[styles.root, { backgroundColor: palette.arena }]}>
+      <ScreenHeader title="Standings" color={palette.chalk} right={<SeasonButton season={season} onPress={() => setPicking(true)} />} />
+      {/* Keyed by season, so switching replays the entrance instead of silently swapping data */}
+      <Animated.View key={season} entering={FadeIn.duration(240)} style={{ flex: 1 }}>
+        <StandingsTable season={season} />
+      </Animated.View>
+      <SeasonSheet visible={picking} season={season} onPick={setSeason} onClose={() => setPicking(false)} />
+    </View>
+  );
+}
+
+function StandingsTable({ season }: { season: number }) {
   const insets = useSafeAreaInsets();
   const [conf, setConf] = useState<Conference>('east');
-  const { data, isPending, error, refetch } = useStandings();
+  const past = season !== currentSeason();
+  const { data, isPending, error, refetch } = useStandings(season);
   const refreshControl = useRefresh([['standings']]);
 
-  const entries: StandingEntry[] = data?.[conf] ?? [];
+  // "League" is all 30 teams ranked together by win %, then wins, then point differential.
+  const league: StandingEntry[] = [...(data?.east ?? []), ...(data?.west ?? [])]
+    .sort((a, b) => b.winPct - a.winPct || b.wins - a.wins || b.diff - a.diff)
+    .map((e, i) => ({ ...e, seed: i + 1 }));
+  const isLeague = conf === 'league';
+  const entries: StandingEntry[] = isLeague ? league : (data?.[conf] ?? []);
 
   type Section = { title: string; data: StandingEntry[] };
   const sections: Section[] = [];
@@ -45,7 +71,8 @@ export default function Standings() {
   const gamesFrom = (a: StandingEntry, b?: StandingEntry) => (b ? (a.wins - b.wins + (b.losses - a.losses)) / 2 : 0);
   const bySeed = (n: number) => entries.find((e) => e.seed === n);
   const cutLabel = (e: StandingEntry): string | null => {
-    if (entries.length < 11 || e.wins + e.losses === 0) return null;
+    // The cut-line notes are about a race still being run, so they only make sense for the current season.
+    if (past || isLeague || entries.length < 11 || e.wins + e.losses === 0) return null;
     const fmt = (n: number) => Math.abs(n).toFixed(1).replace(/\.0$/, '');
     if (e.seed <= 6) {
       const cushion = gamesFrom(e, bySeed(7));
@@ -59,17 +86,14 @@ export default function Standings() {
     return back > 0 ? `${fmt(back)} back of play-in` : 'level with play-in';
   };
 
-  const flat: (StandingEntry | { sectionTitle: string })[] = sections.flatMap((s) => [
-    { sectionTitle: s.title },
-    ...s.data,
-  ]);
+  const flat: (StandingEntry | { sectionTitle: string })[] = isLeague
+    ? entries
+    : sections.flatMap((s) => [{ sectionTitle: s.title }, ...s.data]);
 
   return (
-    <View style={[styles.root, { backgroundColor: palette.arena }]}>
-      <ScreenHeader title="Standings" color={palette.chalk} />
-
+    <View style={styles.root}>
       <Animated.View entering={FadeIn.duration(300)} style={styles.tabs}>
-        <Segmented options={TABS} value={conf} onChange={(key) => setConf(key)} segmentWidth={120} />
+        <Segmented options={TABS} value={conf} onChange={(key) => setConf(key)} segmentWidth={96} />
       </Animated.View>
 
       {isPending ? (
@@ -128,7 +152,7 @@ function TeamRow({ entry, index, cut }: { entry: StandingEntry; index: number; c
   const pctText = entry.winPct.toFixed(3).replace(/^0/, '');
   const streakColor = entry.streak.startsWith('W') ? '#34D399' : entry.streak.startsWith('L') ? '#F87171' : palette.muted;
   const diff = `${entry.diff > 0 ? '+' : ''}${entry.diff.toFixed(1)}`;
-  const details = [entry.lastTen ? `L10 ${entry.lastTen}` : null, entry.diff !== 0 ? diff : null, cut]
+  const details = [entry.lastTen && entry.wins + entry.losses >= 10 ? `Last 10: ${entry.lastTen}` : null, entry.diff !== 0 ? `${diff} pts/g` : null]
     .filter(Boolean)
     .join(' · ');
 
@@ -138,7 +162,7 @@ function TeamRow({ entry, index, cut }: { entry: StandingEntry; index: number; c
       <Pressable
         onPress={() => {
           Haptics.selectionAsync();
-          router.push(`/team/${entry.teamId}` as Href);
+          openDetail(`/team/${entry.teamId}` as Href);
         }}
         accessibilityRole="button"
         accessibilityLabel={`Open ${entry.teamName}`}
@@ -155,6 +179,7 @@ function TeamRow({ entry, index, cut }: { entry: StandingEntry; index: number; c
             {entry.teamId === favoriteTeamId ? '  ★' : ''}
           </Text>
           {details ? <Text style={styles.teamDetail} numberOfLines={1}>{details}</Text> : null}
+          {cut ? <Text style={styles.teamCut} numberOfLines={1}>{cut}</Text> : null}
         </View>
         <Text style={[styles.stat, { width: COL.w }]}>{entry.wins}</Text>
         <Text style={[styles.stat, { width: COL.l }]}>{entry.losses}</Text>
@@ -172,6 +197,7 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: 'row',
+    justifyContent: 'center',
     gap: 8,
     paddingHorizontal: 16,
     marginBottom: 4,
@@ -249,6 +275,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 11,
     color: palette.muted,
+    marginTop: 1,
+  },
+  teamCut: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 11,
+    color: withAlpha(palette.chalk, 0.55),
     marginTop: 1,
   },
   stat: {
