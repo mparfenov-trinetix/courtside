@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon } from '@/components/icons';
 import { Tick } from '@/components/live-flash';
+import { RollingNumber } from '@/components/rolling-number';
 import { UpdatedAgo } from '@/components/updated-ago';
 import type { BoxScoreTeam } from '@/lib/espn';
 import { periodLabel } from '@/lib/game-model';
@@ -50,7 +51,15 @@ export function ScoreHero({
       <Animated.View entering={FadeIn.duration(350)} style={styles.scoreHeader}>
         <TeamScore team={away} />
         <View style={styles.scoreCenter}>
-          <Tick style={styles.vsScore} value={hasStarted ? `${away.score}–${home.score}` : 'vs'} />
+          {hasStarted ? (
+            <View style={styles.bigScore}>
+              <RollingNumber value={away.score} fontSize={32} style={styles.vsScore} />
+              <Text style={styles.vsScore}>–</Text>
+              <RollingNumber value={home.score} fontSize={32} style={styles.vsScore} />
+            </View>
+          ) : (
+            <Text style={styles.vsScore}>vs</Text>
+          )}
           {live ? <LivePill label={status} /> : <Text style={styles.gameStatus}>{status}</Text>}
         </View>
         <TeamScore team={home} right />
@@ -181,9 +190,9 @@ export function GameTopBar({
               {away.team.logoDark || away.team.logo ? (
                 <Image source={away.team.logoDark || away.team.logo} style={styles.miniLogo} contentFit="contain" />
               ) : null}
-              <Tick style={styles.miniNum} value={hasStarted ? away.score : '–'} />
+              <RollingNumber value={hasStarted ? away.score : '–'} fontSize={24} style={styles.miniNum} />
               <Text style={styles.miniDash}>–</Text>
-              <Tick style={styles.miniNum} value={hasStarted ? home.score : '–'} />
+              <RollingNumber value={hasStarted ? home.score : '–'} fontSize={24} style={styles.miniNum} />
               {home.team.logoDark || home.team.logo ? (
                 <Image source={home.team.logoDark || home.team.logo} style={styles.miniLogo} contentFit="contain" />
               ) : null}
@@ -207,6 +216,7 @@ const styles = StyleSheet.create({
   teamAbbr: { fontFamily: fonts.display, fontSize: 24, color: palette.chalk },
   scoreCenter: { alignItems: 'center', gap: 4 },
   vsScore: { fontFamily: fonts.display, fontSize: 32, color: palette.chalk },
+  bigScore: { flexDirection: 'row', alignItems: 'center' },
   gameStatus: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.5, textTransform: 'uppercase' },
 
   linescoreWrap: { paddingHorizontal: 16, marginBottom: 12 },

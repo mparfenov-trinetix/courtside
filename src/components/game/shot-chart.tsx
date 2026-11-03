@@ -2,8 +2,10 @@ import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, G, Line, Path, Rect } from 'react-native-svg';
 
+import { Segmented } from '@/components/segmented';
 import type { BoxScorePlayer, BoxScoreTeam, Play } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
@@ -25,6 +27,31 @@ function zoneOf(s: Shot): Zone {
   if (dist <= 4.5) return 'At rim';
   if (Math.abs(s.x - HOOP.x) <= 8 && s.y <= 19) return 'Paint';
   return 'Mid-range';
+}
+
+const HOT = '#F97316';
+const COLD = '#60A5FA';
+const CELL = 3; // feet per heatmap cell
+
+type Cell = { cx: number; cy: number; made: number; att: number };
+
+/**
+ * Bins shots into a grid and colors each cell by how much better or worse the shooting is there
+ * than the shooter's overall rate. Cells with few shots are pulled toward that overall rate so a
+ * single make doesn't light up the map.
+ */
+function binShots(shots: Shot[]): { cells: Cell[]; base: number } {
+  const base = shots.length ? shots.filter((s) => s.made).length / shots.length : 0;
+  const grid = new Map<string, Cell>();
+  for (const s of shots) {
+    const cx = Math.min(Math.floor(s.x / CELL), Math.ceil(COURT_W / CELL) - 1);
+    const cy = Math.min(Math.floor(s.y / CELL), Math.ceil(COURT_H / CELL) - 1);
+    const cell = grid.get(`${cx}:${cy}`) ?? { cx, cy, made: 0, att: 0 };
+    cell.att += 1;
+    if (s.made) cell.made += 1;
+    grid.set(`${cx}:${cy}`, cell);
+  }
+  return { cells: [...grid.values()], base };
 }
 
 const pct = (m: number, a: number) => (a > 0 ? `${Math.round((m / a) * 100)}%` : '–');
@@ -49,6 +76,7 @@ export function ShotChart({
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [showMakes, setShowMakes] = useState(true);
   const [showMisses, setShowMisses] = useState(true);
+  const [view, setView] = useState<'shots' | 'heat'>('shots');
 
   const team = side === 'home' ? home : away;
   const color = side === 'home' ? homeColor : awayColor;
@@ -78,6 +106,7 @@ export function ShotChart({
   const activeId = playerId && counts.has(playerId) ? playerId : null;
   const shots = activeId ? teamShots.filter((s) => s.shooterId === activeId) : teamShots;
   const visible = shots.filter((s) => (s.made ? showMakes : showMisses));
+  const heat = binShots(shots);
 
   const fgm = shots.filter((s) => s.made).length;
   const tpm = shots.filter((s) => s.made && s.three).length;
@@ -160,7 +189,30 @@ export function ShotChart({
             <Line x1={X(22)} y1={Y(4)} x2={X(28)} y2={Y(4)} stroke={line} strokeWidth={2.5} />
             <Circle cx={X(HOOP.x)} cy={Y(HOOP.y)} r={0.75 * scale} fill="none" stroke={withAlpha(palette.maple, 0.9)} strokeWidth={1.5} />
 
-            {visible.map((s) => {
+            {view === 'heat' &&
+              heat.cells.map((c) => {
+                const base = heat.base;
+                const K = 2;
+                const smoothed = (c.made + K * base) / (c.att + K);
+                const diff = smoothed - base;
+                const strength = Math.min(1, Math.abs(diff) / 0.22);
+                // Volume matters too: a lone attempt stays faint however it went.
+                const volume = Math.min(1, 0.35 + c.att / 4);
+                return (
+                  <Rect
+                    key={`${c.cx}:${c.cy}`}
+                    x={X(c.cx * CELL) + 0.5}
+                    y={Y((c.cy + 1) * CELL) + 0.5}
+                    width={CELL * scale - 1}
+                    height={CELL * scale - 1}
+                    rx={4}
+                    fill={diff >= 0 ? HOT : COLD}
+                    opacity={Math.max(0.12, strength * 0.85 * volume)}
+                  />
+                );
+              })}
+
+            {view === 'shots' && visible.map((s) => {
               const cx = X(s.x);
               const cy = Y(s.y);
               return s.made ? (
@@ -180,14 +232,39 @@ export function ShotChart({
       </View>
 
       <View style={styles.legend}>
-        <Pressable onPress={() => setShowMakes((v) => !v)} style={[styles.legendItem, !showMakes && { opacity: 0.4 }]}>
-          <View style={[styles.legendDot, { backgroundColor: color }]} />
-          <Text style={styles.legendText}>Made</Text>
-        </Pressable>
-        <Pressable onPress={() => setShowMisses((v) => !v)} style={[styles.legendItem, !showMisses && { opacity: 0.4 }]}>
-          <Text style={styles.legendX}>✕</Text>
-          <Text style={styles.legendText}>Missed</Text>
-        </Pressable>
+        <Segmented
+          options={[
+            { key: 'shots', label: 'Shots' },
+            { key: 'heat', label: 'Heat' },
+          ]}
+          value={view}
+          onChange={(key) => setView(key)}
+          segmentWidth={64}
+          compact
+        />
+        {view === 'shots' ? (
+          <View style={styles.legendRight}>
+            <Pressable onPress={() => setShowMakes((v) => !v)} style={[styles.legendItem, !showMakes && { opacity: 0.4 }]}>
+              <View style={[styles.legendDot, { backgroundColor: color }]} />
+              <Text style={styles.legendText}>Made</Text>
+            </Pressable>
+            <Pressable onPress={() => setShowMisses((v) => !v)} style={[styles.legendItem, !showMisses && { opacity: 0.4 }]}>
+              <Text style={styles.legendX}>✕</Text>
+              <Text style={styles.legendText}>Missed</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Animated.View entering={FadeIn.duration(200)} style={styles.legendRight}>
+            <Text style={styles.legendText}>Colder</Text>
+            <LinearGradient
+              colors={[COLD, withAlpha(palette.chalk, 0.15), HOT]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.heatBar}
+            />
+            <Text style={styles.legendText}>Hotter</Text>
+          </Animated.View>
+        )}
       </View>
 
       <Text style={styles.sectionTitle}>By zone</Text>
@@ -297,7 +374,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: palette.muted,
   },
-  legend: { flexDirection: 'row', gap: 18, justifyContent: 'center', marginTop: 10 },
+  legend: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
+  legendRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  heatBar: { width: 72, height: 8, borderRadius: 4 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 11, height: 11, borderRadius: 6, borderWidth: 1, borderColor: palette.chalk },
   legendX: { fontFamily: fonts.bodyBold, fontSize: 12, color: withAlpha(palette.chalk, 0.8) },

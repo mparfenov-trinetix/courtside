@@ -1,13 +1,16 @@
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedProps, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { ClipPath, Defs, Line, Path, Rect } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { polylineLength, useDrawIn } from '@/components/game/draw-in';
 import type { BoxScoreTeam, Play } from '@/lib/espn';
 import { periodLabel, type Flow } from '@/lib/game-model';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 const HEIGHT = 120;
 const MAX_POINTS = 220;
@@ -84,6 +87,15 @@ export function MarginChart({
     },
   });
 
+  const maxAbs = Math.max(10, Math.ceil(Math.max(0, ...series.map((p) => Math.abs(p.margin))) / 5) * 5);
+  const mid = HEIGHT / 2;
+  const lineLength = polylineLength(
+    series.map((pt, i) => ({ x: (i / Math.max(1, count - 1)) * width, y: mid - (pt.margin / maxAbs) * (mid - 6) })),
+  );
+  const draw = useDrawIn(width > 0);
+  const lineProps = useAnimatedProps(() => ({ strokeDashoffset: (1 - draw.get()) * lineLength }));
+  const fillProps = useAnimatedProps(() => ({ opacity: draw.get() }));
+
   const cursorStyle = useAnimatedStyle(() => ({
     opacity: cursorOpacity.get(),
     transform: [{ translateX: cursorX.get() }],
@@ -91,8 +103,6 @@ export function MarginChart({
 
   if (count < 2) return null;
 
-  const maxAbs = Math.max(10, Math.ceil(Math.max(...series.map((p) => Math.abs(p.margin))) / 5) * 5);
-  const mid = HEIGHT / 2;
   const xAt = (i: number) => (i / (count - 1)) * width;
   const yAt = (m: number) => mid - (m / maxAbs) * (mid - 6);
   const line = series.map((pt, i) => `${i === 0 ? 'M' : 'L'}${xAt(i).toFixed(1)},${yAt(pt.margin).toFixed(1)}`).join(' ');
@@ -140,13 +150,21 @@ export function MarginChart({
                   </ClipPath>
                 </Defs>
                 {band && <Rect x={band.x} y={0} width={band.w} height={HEIGHT} fill={withAlpha(palette.chalk, 0.07)} />}
-                <Path d={area} fill={withAlpha(homeColor, 0.5)} clipPath="url(#mTop)" />
-                <Path d={area} fill={withAlpha(awayColor, 0.5)} clipPath="url(#mBottom)" />
+                <AnimatedPath animatedProps={fillProps} d={area} fill={withAlpha(homeColor, 0.5)} clipPath="url(#mTop)" />
+                <AnimatedPath animatedProps={fillProps} d={area} fill={withAlpha(awayColor, 0.5)} clipPath="url(#mBottom)" />
                 <Line x1={0} y1={mid} x2={width} y2={mid} stroke={withAlpha(palette.chalk, 0.25)} strokeDasharray="3,4" strokeWidth={1} />
                 {boundaries.map((b) => (
                   <Line key={b.period} x1={b.x} y1={0} x2={b.x} y2={HEIGHT} stroke={withAlpha(palette.chalk, 0.12)} strokeWidth={1} />
                 ))}
-                <Path d={line} stroke={palette.chalk} strokeWidth={1.75} fill="none" strokeLinejoin="round" />
+                <AnimatedPath
+                  animatedProps={lineProps}
+                  d={line}
+                  stroke={palette.chalk}
+                  strokeWidth={1.75}
+                  fill="none"
+                  strokeLinejoin="round"
+                  strokeDasharray={[lineLength, lineLength]}
+                />
               </Svg>
               <Animated.View pointerEvents="none" style={[styles.cursor, cursorStyle]} />
               <Text style={[styles.sideLabel, { top: 4, color: homeColor }]}>{home.team.abbreviation} +{maxAbs}</Text>
