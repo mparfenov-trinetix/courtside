@@ -9,7 +9,7 @@ import {
 } from '@expo-google-fonts/big-shoulders-display';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { QueryClient, focusManager } from '@tanstack/react-query';
+import { QueryClient, focusManager, type Query } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useFonts } from 'expo-font';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
@@ -19,6 +19,9 @@ import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { DataHealthBanner } from '@/components/data-health-banner';
+import { reportIssue } from '@/lib/data-health';
+import { setHealthReporter } from '@/lib/espn';
 import { palette } from '@/lib/theme';
 import { TeamProvider } from '@/state/team-store';
 import { WatchlistProvider } from '@/state/watchlist-store';
@@ -28,16 +31,37 @@ import { WatchlistProvider } from '@/state/watchlist-store';
 SplashScreen.preventAutoHideAsync();
 
 const DAY = 24 * 60 * 60 * 1000;
+const WEEK = 7 * DAY;
+
+setHealthReporter(reportIssue);
 
 // gcTime must be at least the persister's maxAge or restored data is discarded.
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 2, gcTime: DAY } },
+  defaultOptions: { queries: { retry: 2, gcTime: WEEK } },
 });
 
 const persister = createAsyncStoragePersister({ storage: AsyncStorage, key: 'courtside:query-cache' });
 
-// Only slow-changing, small payloads are worth restoring on launch; game summaries are big and live.
-const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'leagueTeamStats']);
+// Slow-changing, small payloads are restored on launch. Game summaries are big and live games change,
+// but a *finished* game never does, so the latest few of those are kept too and open instantly, offline.
+const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'playerCareer', 'leagueTeamStats']);
+const KEPT_FINISHED_GAMES = 8;
+
+const isFinished = (q: Query) => !!(q.state.data as { completed?: boolean } | undefined)?.completed;
+
+function shouldPersist(q: Query): boolean {
+  if (q.state.status !== 'success') return false;
+  const kind = String(q.queryKey[0]);
+  if (PERSISTED.has(kind)) return true;
+  if (kind !== 'game' || !isFinished(q)) return false;
+  const newest = queryClient
+    .getQueryCache()
+    .findAll({ queryKey: ['game'] })
+    .filter(isFinished)
+    .sort((a, b) => b.state.dataUpdatedAt - a.state.dataUpdatedAt)
+    .slice(0, KEPT_FINISHED_GAMES);
+  return newest.includes(q);
+}
 
 const navTheme = {
   ...DarkTheme,
@@ -68,10 +92,10 @@ export default function RootLayout() {
         client={queryClient}
         persistOptions={{
           persister,
-          maxAge: DAY,
-          buster: 'v3',
+          maxAge: WEEK,
+          buster: 'v4',
           dehydrateOptions: {
-            shouldDehydrateQuery: (q) => q.state.status === 'success' && PERSISTED.has(String(q.queryKey[0])),
+            shouldDehydrateQuery: shouldPersist,
           },
         }}>
         <TeamProvider>
@@ -92,6 +116,7 @@ export default function RootLayout() {
               <Stack.Screen name="team/[id]" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="search" options={{ animation: 'fade' }} />
             </Stack>
+            <DataHealthBanner />
           </ThemeProvider>
           </WatchlistProvider>
         </TeamProvider>

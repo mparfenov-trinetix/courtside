@@ -16,13 +16,8 @@ import { ErrorState, LoadingState } from '@/components/ui';
 import { useGameSummary } from '@/hooks/queries';
 import { useRefresh } from '@/hooks/use-refresh';
 import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
-import {
-  buildPeriodOptions,
-  deriveFlow,
-  numsFromLine,
-  numsFromTotals,
-  playersWithStats,
-} from '@/lib/game-model';
+import { buildPeriodOptions, deriveFlow, numsFromLine, numsFromTotals } from '@/lib/game-model';
+import { playersWithStats } from '@/lib/period-stats';
 import { deriveQuarterStats, emptyLine, lineToStats, sumPeriods, type Line, type QuarterStats } from '@/lib/quarter-stats';
 import { matchupColors, palette, withAlpha } from '@/lib/theme';
 

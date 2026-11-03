@@ -46,7 +46,13 @@ React Query's cache is persisted to AsyncStorage for slow-changing keys only (se
 ```bash
 npx tsc --noEmit
 npx eslint src
+npm test   # node:test against recorded ESPN fixtures in tests/fixtures
 ```
+Tests import `.ts` files directly (Node strips the types), so anything under test must use only `import type`
+for `@/` and relative imports. ESPN normalizers are exported (`normalizeGameSummary`, `normalizeLeagueTeamStats`)
+so they can be tested without the network; `setHealthReporter` feeds the in-app "ESPN's data looks different" banner.
+The game screen is split into `src/components/game/*` tabs; the analytics (runs, lead changes, four factors)
+live in `src/lib/game-model.ts`. Finished games are persisted for offline (see `shouldPersist` in `src/app/_layout.tsx`).
 
 ## Status
 Built and type-checked but not yet run on a device. First job: run it,

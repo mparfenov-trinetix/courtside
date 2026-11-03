@@ -80,7 +80,8 @@ export function useGameSummary(gameId?: string | null) {
     queryKey: ['game', gameId],
     queryFn: () => fetchGameSummary(gameId!),
     enabled: !!gameId,
-    staleTime: 30 * 60 * 1000,
+    // A finished game never changes, so it never needs refetching.
+    staleTime: (query) => (query.state.data?.completed ? Infinity : 30 * 60 * 1000),
     refetchInterval: (query) => (query.state.data?.live ? 15_000 : false),
   });
 }

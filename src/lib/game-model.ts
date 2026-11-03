@@ -1,5 +1,5 @@
-import type { BoxScorePlayer, BoxScoreTeam, Play } from '@/lib/espn';
-import { lineToStats, sumPeriods, type Line, type QuarterStats } from '@/lib/quarter-stats';
+import type { Play } from '@/lib/espn';
+import type { Line } from '@/lib/quarter-stats';
 
 // ─── Box score columns ────────────────────────────────────────────────────────
 
@@ -22,19 +22,6 @@ export function buildPeriodOptions(count: number): PeriodOption[] {
   if (count >= 2) opts.push({ key: 'h1', label: '1H', periods: [1, 2] });
   if (count >= 4) opts.push({ key: 'h2', label: '2H', periods: [3, 4] });
   return opts;
-}
-
-export function playersWithStats(
-  team: BoxScoreTeam,
-  derived: QuarterStats | null,
-  periods: number[] | null,
-): BoxScorePlayer[] {
-  const all = [...team.starters, ...team.bench];
-  if (!periods || !derived) return all;
-  return all
-    .map((player) => ({ player, line: sumPeriods(derived.players, periods, player.id) }))
-    .filter(({ line }) => line.sec > 0)
-    .map(({ player, line }) => ({ ...player, stats: lineToStats(line) }));
 }
 
 // ─── Sorting ──────────────────────────────────────────────────────────────────

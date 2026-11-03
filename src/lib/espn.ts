@@ -47,6 +47,17 @@ export type Roster = {
 
 type Json = Record<string, any>;
 
+/**
+ * ESPN can change a response shape without notice. Normalizers call `report` when a response parses
+ * but looks wrong (no standings rows, no play-by-play for a finished game...). The app registers a
+ * reporter that shows a banner; a null detail means the source is healthy again.
+ */
+type HealthReporter = (source: string, detail: string | null) => void;
+let report: HealthReporter = () => {};
+export function setHealthReporter(fn: HealthReporter) {
+  report = fn;
+}
+
 async function getJson(url: string): Promise<Json> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`ESPN returned ${res.status} for ${url}`);
@@ -283,7 +294,7 @@ export async function fetchLeagueLeaders(): Promise<LeagueLeaders> {
       };
     });
 
-  return {
+  const leaders = {
     ppg: buildEntries('pointsPerGame'),
     rpg: buildEntries('reboundsPerGame'),
     apg: buildEntries('assistsPerGame'),
@@ -292,6 +303,10 @@ export async function fetchLeagueLeaders(): Promise<LeagueLeaders> {
     mpg: buildEntries('minutesPerGame'),
     pfpg: buildEntries('foulsPerGame'),
   };
+  // Early in a season there can be no qualifiers at all; only flag it when some categories fill and others don't.
+  const sizes = Object.values(leaders).map((l) => l.length);
+  report('leaders', Math.max(...sizes) > 0 && Math.min(...sizes) === 0 ? 'some leader categories are empty' : null);
+  return leaders;
 }
 
 // ─── Standings ────────────────────────────────────────────────────────────────
@@ -358,10 +373,12 @@ export async function fetchStandings(): Promise<ConferenceStandings> {
   const east = conferences.find((c) => String(c.name ?? '').includes('Eastern') || c.id === '5');
   const west = conferences.find((c) => String(c.name ?? '').includes('Western') || c.id === '6');
 
-  return {
+  const standings = {
     east: east ? parseConference(east) : [],
     west: west ? parseConference(west) : [],
   };
+  report('standings', standings.east.length < 10 || standings.west.length < 10 ? 'standings table is incomplete' : null);
+  return standings;
 }
 
 // ─── Player stats ─────────────────────────────────────────────────────────────
@@ -463,7 +480,14 @@ export type GameSummary = {
 };
 
 export async function fetchGameSummary(gameId: string): Promise<GameSummary> {
-  const json = await getJson(`${BASE}/summary?event=${gameId}`);
+  const summary = normalizeGameSummary(await getJson(`${BASE}/summary?event=${gameId}`), gameId);
+  const started = summary.completed || summary.live;
+  const noBox = [...summary.home.starters, ...summary.home.bench, ...summary.away.starters, ...summary.away.bench].length === 0;
+  report('game', started && (summary.plays.length === 0 || noBox) ? 'play-by-play or box score missing' : null);
+  return summary;
+}
+
+export function normalizeGameSummary(json: Json, gameId: string): GameSummary {
   const comp: Json = json.header?.competitions?.[0] ?? {};
   const competitors: Json[] = comp.competitors ?? [];
   const statusType: Json = comp.status?.type ?? {};
@@ -874,10 +898,18 @@ export type TeamStatRow = {
  * for derived stats such as 3-point %.
  */
 export async function fetchLeagueTeamStats(): Promise<TeamStatRow[]> {
-  const json = await getJson(
-    `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/statistics/byteam` +
-      `?region=us&lang=en&contentorigin=espn&season=${currentSeason()}&seasontype=2`,
+  const rows = normalizeLeagueTeamStats(
+    await getJson(
+      `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/statistics/byteam` +
+        `?region=us&lang=en&contentorigin=espn&season=${currentSeason()}&seasontype=2`,
+    ),
   );
+  const played = rows.filter((r) => r.gp > 0);
+  report('team stats', rows.length < 25 || (played.length > 0 && played.every((r) => r.ppg === 0)) ? 'team stats table looks empty' : null);
+  return rows;
+}
+
+export function normalizeLeagueTeamStats(json: Json): TeamStatRow[] {
   // Stat names are listed once per category group; each team then has an "Own" and an "Opponent" split.
   const names: Record<string, string[]> = {};
   for (const c of json.categories ?? []) if (Array.isArray(c.names)) names[c.name] = c.names;
