@@ -1,0 +1,175 @@
+import { HStack, Image, Spacer, Text, VStack } from '@expo/ui/swift-ui';
+import {
+  aspectRatio,
+  containerBackground,
+  font,
+  foregroundStyle,
+  frame,
+  kerning,
+  lineLimit,
+  minimumScaleFactor,
+  padding,
+  resizable,
+  widgetURL,
+} from '@expo/ui/swift-ui/modifiers';
+import { createWidget, type WidgetEnvironment } from 'expo-widgets';
+
+/** Everything the widget shows, already formatted by the app: the widget itself can't fetch or compute. */
+export type NextGameProps = {
+  /** The selected team. */
+  teamAbbr: string;
+  teamName: string;
+  record: string;
+  /** The app's own look: dark team-tinted background (top-left to bottom-right) and the team's accent. */
+  bg: string;
+  bg2: string;
+  accent: string;
+  /** Logo file URIs inside the shared widget folder; empty when a logo couldn't be downloaded. */
+  logo: string;
+  oppLogo: string;
+  /** The next fixture; `iso` is empty when the team has no game scheduled. */
+  oppAbbr: string;
+  oppName: string;
+  home: boolean;
+  iso: string;
+  /** "Thu, Nov 5" in the device's language. */
+  day: string;
+  /** Between tip-off and the end of the game: the widget turns red and sends you to the live game. */
+  live: boolean;
+  gameId: string;
+  /** For the footer: stage like "NBA Cup" or "Round 1", when there is one. */
+  tag: string;
+};
+
+export const EMPTY_PROPS: NextGameProps = {
+  teamAbbr: 'NBA',
+  teamName: 'Courtside',
+  record: '',
+  bg: '#0D1B2E',
+  bg2: '#16273F',
+  accent: '#F2F4F7',
+  logo: '',
+  oppLogo: '',
+  oppAbbr: '',
+  oppName: '',
+  home: true,
+  iso: '',
+  day: '',
+  live: false,
+  gameId: '',
+  tag: '',
+};
+
+/**
+ * Home-screen widget: the selected team's next fixture.
+ *
+ * Runs in WidgetKit's own runtime: it must be pure, synchronous, and reference nothing outside this function
+ * (no imports at runtime beyond the components above, no module-level constants, no hooks).
+ */
+const NextGameWidget = (props: NextGameProps, environment: WidgetEnvironment) => {
+  'widget';
+  const small = environment.widgetFamily === 'systemSmall';
+  const white = '#F2F4F7';
+  const dim = '#F2F4F7A6';
+  const has = props.iso !== '';
+  const when = has ? new Date(props.iso) : undefined;
+  const url = has ? 'courtside://game/' + props.gameId : 'courtside://';
+  const background = containerBackground(
+    { type: 'linearGradient', colors: [props.bg2, props.bg], startPoint: { x: 0, y: 0 }, endPoint: { x: 1, y: 1 } },
+    'widget',
+  );
+
+  // A team's logo, or its abbreviation when the logo isn't available.
+  const crest = (file: string, abbr: string, size: number) =>
+    file !== '' ? (
+      <Image uiImage={file} modifiers={[resizable(), aspectRatio({ contentMode: 'fit' }), frame({ width: size, height: size })]} />
+    ) : (
+      <Text modifiers={[font({ size: size * 0.42, weight: 'heavy' }), foregroundStyle(white), frame({ width: size, height: size })]}>{abbr}</Text>
+    );
+
+  const red = '#F87171';
+  const header = (
+    <HStack spacing={5}>
+      {props.live ? <Text modifiers={[font({ size: 8 }), foregroundStyle(red)]}>●</Text> : null}
+      <Text modifiers={[font({ size: 10, weight: 'heavy' }), kerning(1.2), foregroundStyle(props.live ? red : props.accent)]}>
+        {props.live ? 'LIVE NOW' : 'NEXT GAME'}
+      </Text>
+      <Spacer />
+      {props.tag !== '' ? (
+        <Text modifiers={[font({ size: 10, weight: 'bold' }), kerning(0.6), foregroundStyle(dim)]}>{props.tag.toUpperCase()}</Text>
+      ) : null}
+    </HStack>
+  );
+
+  if (!has || !when) {
+    return (
+      <VStack alignment="leading" spacing={4} modifiers={[padding({ all: 2 }), background, widgetURL(url)]}>
+        {header}
+        <Spacer />
+        <HStack spacing={10}>
+          {crest(props.logo, props.teamAbbr, 44)}
+          <VStack alignment="leading" spacing={1}>
+            <Text modifiers={[font({ size: 17, weight: 'heavy' }), foregroundStyle(white), lineLimit(1)]}>{props.teamName}</Text>
+            <Text modifiers={[font({ size: 12 }), foregroundStyle(dim)]}>No game scheduled</Text>
+          </VStack>
+        </HStack>
+        <Spacer />
+      </VStack>
+    );
+  }
+
+  const team = (file: string, abbr: string, sub: string, size: number) => (
+    <VStack spacing={2}>
+      {crest(file, abbr, size)}
+      <Text modifiers={[font({ size: 13, weight: 'heavy' }), foregroundStyle(white), lineLimit(1)]}>{abbr}</Text>
+      <Text modifiers={[font({ size: 10, weight: 'semibold' }), foregroundStyle(dim), lineLimit(1)]}>{sub !== '' ? sub : ' '}</Text>
+    </VStack>
+  );
+  const versus = <Text modifiers={[font({ size: 11, weight: 'heavy' }), kerning(0.8), foregroundStyle(dim)]}>{props.home ? 'VS' : '@'}</Text>;
+
+  if (small) {
+    return (
+      <VStack alignment="leading" spacing={0} modifiers={[padding({ all: 2 }), background, widgetURL(url)]}>
+        {header}
+        <Spacer />
+        <HStack spacing={6}>
+          {team(props.logo, props.teamAbbr, props.record, 38)}
+          {versus}
+          {team(props.oppLogo, props.oppAbbr, props.home ? 'Away' : 'Home', 38)}
+        </HStack>
+        <Spacer />
+        <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(0.6), foregroundStyle(dim), lineLimit(1), minimumScaleFactor(0.7)]}>
+          {props.live ? 'TIP-OFF' : props.day.toUpperCase()}
+        </Text>
+        <Text modifiers={[font({ size: 20, weight: 'heavy' }), foregroundStyle(props.live ? red : props.accent)]} date={when} dateStyle="time" />
+      </VStack>
+    );
+  }
+
+  return (
+    <VStack alignment="leading" spacing={0} modifiers={[padding({ all: 2 }), background, widgetURL(url)]}>
+      {header}
+      <Spacer />
+      <HStack spacing={14}>
+        {team(props.logo, props.teamAbbr, props.record, 52)}
+        {versus}
+        {team(props.oppLogo, props.oppAbbr, props.home ? 'Away' : 'Home', 52)}
+        <Spacer />
+        <VStack alignment="trailing" spacing={2}>
+          <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(0.8), foregroundStyle(dim), lineLimit(1)]}>
+            {props.live ? 'TIP-OFF' : props.day.toUpperCase()}
+          </Text>
+          <Text modifiers={[font({ size: 30, weight: 'heavy' }), foregroundStyle(props.live ? red : props.accent)]} date={when} dateStyle="time" />
+          {props.live ? (
+            <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(dim)]}>Tap for the live score</Text>
+          ) : (
+            <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(dim), lineLimit(1)]} date={when} dateStyle="relative" />
+          )}
+        </VStack>
+      </HStack>
+      <Spacer />
+    </VStack>
+  );
+};
+
+export default createWidget<NextGameProps>('NextGameWidget', NextGameWidget, EMPTY_PROPS);

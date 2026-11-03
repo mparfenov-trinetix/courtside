@@ -19,9 +19,11 @@ import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { WidgetSync } from '@/components/widget-sync';
+import { NavDepthTracker } from '@/components/nav-depth-tracker';
 import { DataHealthBanner } from '@/components/data-health-banner';
 import { reportIssue } from '@/lib/data-health';
-import { setHealthReporter } from '@/lib/espn';
+import { currentSeason, setHealthReporter } from '@/lib/espn';
 import { palette } from '@/lib/theme';
 import { TeamProvider } from '@/state/team-store';
 import { WatchlistProvider } from '@/state/watchlist-store';
@@ -53,6 +55,8 @@ function shouldPersist(q: Query): boolean {
   if (q.state.status !== 'success') return false;
   const kind = String(q.queryKey[0]);
   if (PERSISTED.has(kind)) return true;
+  // Finished seasons never change: their playoffs and Cup are kept for offline too.
+  if ((kind === 'postseason' || kind === 'cup') && Number(q.queryKey[1]) < currentSeason()) return true;
   if (kind !== 'game' || !isFinished(q)) return false;
   const newest = queryClient
     .getQueryCache()
@@ -93,7 +97,7 @@ export default function RootLayout() {
         persistOptions={{
           persister,
           maxAge: WEEK,
-          buster: 'v4',
+          buster: 'v7',
           dehydrateOptions: {
             shouldDehydrateQuery: shouldPersist,
           },
@@ -107,6 +111,11 @@ export default function RootLayout() {
                 headerShown: false,
                 contentStyle: { backgroundColor: palette.arena },
                 animation: 'fade',
+                // Pages under the top one stop rendering until you come back to them.
+                freezeOnBlur: true,
+                // iOS 26 enables a swipe-back from anywhere on screen, which swallows the sideways drag that tilts
+                // a team card (and scrubs charts). The swipe from the left edge still goes back.
+                fullScreenGestureEnabled: false,
               }}>
               <Stack.Screen name="index" options={{ animation: 'none' }} />
               <Stack.Screen name="onboarding" />
@@ -116,6 +125,8 @@ export default function RootLayout() {
               <Stack.Screen name="team/[id]" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="search" options={{ animation: 'fade' }} />
             </Stack>
+            <NavDepthTracker />
+            <WidgetSync />
             <DataHealthBanner />
           </ThemeProvider>
           </WatchlistProvider>
