@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -37,6 +37,7 @@ export function WinProbability({
   awayColor,
   selected,
   live,
+  titleSlot,
 }: {
   plays: Play[];
   winProb: Record<string, number>;
@@ -46,6 +47,8 @@ export function WinProbability({
   awayColor: string;
   selected: number[] | null;
   live: boolean;
+  /** Replaces the "Win probability" title, e.g. with a chart switcher. */
+  titleSlot?: ReactNode;
 }) {
   const [width, setWidth] = useState(0);
   const [sel, setSel] = useState<number | null>(null);
@@ -125,7 +128,7 @@ export function WinProbability({
   return (
     <View style={styles.wrap}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Win probability</Text>
+        {titleSlot ?? <Text style={styles.title}>Win probability</Text>}
         <Text style={styles.readout}>
           {shown
             ? `${periodLabel(shown.play.period)} ${shown.play.clockText} · ${away.team.abbreviation} ${shown.play.awayScore}–${shown.play.homeScore} ${home.team.abbreviation}`

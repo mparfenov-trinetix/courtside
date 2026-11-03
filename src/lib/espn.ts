@@ -403,6 +403,9 @@ export type BoxScoreTeam = {
   bench: BoxScorePlayer[];
   totals: Record<string, string>;
   columnNames: string[];
+  /** Live games only: ESPN's remaining timeouts and foul/bonus state for the current period. */
+  timeoutsRemaining?: number;
+  fouls?: { team: number; period: number; toGive: number; bonus: boolean };
 };
 
 export type Play = {
@@ -510,6 +513,16 @@ export async function fetchGameSummary(gameId: string): Promise<GameSummary> {
       bench: allPlayers.filter((p) => !p.starter && !p.didNotPlay),
       totals: statsRecord(totalsRaw),
       columnNames: names,
+      timeoutsRemaining: typeof c.timeoutsRemaining === 'number' ? c.timeoutsRemaining : undefined,
+      fouls:
+        c.fouls && typeof c.fouls.teamFouls === 'number'
+          ? {
+              team: c.fouls.teamFouls,
+              period: Number(c.fouls.teamFoulsCurrent ?? 0),
+              toGive: Number(c.fouls.foulsToGive ?? 0),
+              bonus: !!c.fouls.bonusState && c.fouls.bonusState !== 'NONE',
+            }
+          : undefined,
     };
   };
 
