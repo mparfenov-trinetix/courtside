@@ -54,6 +54,11 @@ export function FormCard({ log, accent }: { log: GameLogEntry[]; accent: string 
       </View>
 
       <View style={styles.card}>
+        {/* The average is named here, not on the line: a label at the line's end sat on top of the last bar. */}
+        <View style={styles.legend}>
+          <View style={styles.legendDash} />
+          <Text style={styles.legendText}>Season average {season.toFixed(1)}</Text>
+        </View>
         <View
           style={styles.chart}
           accessible
@@ -61,7 +66,6 @@ export function FormCard({ log, accent }: { log: GameLogEntry[]; accent: string 
           accessibilityLabel={`Points in the last ${recent.length} games, oldest first: ${recent.map((g) => g.pts).join(', ')}. Season average ${season.toFixed(1)}.`}>
           <View style={[styles.avgLine, { bottom: BAR_BASE + seasonY }]}>
             <View style={styles.avgDash} />
-            <Text style={styles.avgLabel}>{season.toFixed(1)} avg</Text>
           </View>
           {recent.map((g, i) => (
             <View key={g.gameId} style={styles.col}>
@@ -174,7 +178,9 @@ const styles = StyleSheet.create({
   opp: { fontFamily: fonts.body, fontSize: 9, color: palette.muted, height: 12 },
   avgLine: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center' },
   avgDash: { flex: 1, height: 1, backgroundColor: withAlpha(palette.chalk, 0.35) },
-  avgLabel: { fontFamily: fonts.bodySemi, fontSize: 10, color: palette.muted, marginLeft: 6 },
+  legend: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  legendDash: { width: 18, height: 0, borderTopWidth: 1, borderStyle: 'dashed', borderColor: withAlpha(palette.chalk, 0.55) },
+  legendText: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted },
   table: { gap: 6 },
   tableRow: { flexDirection: 'row', alignItems: 'center' },
   cellHead: { flex: 1, textAlign: 'right', fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.4 },

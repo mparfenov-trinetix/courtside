@@ -7,6 +7,7 @@ export const PRIORITY: [RegExp, number][] = [
   [/defensive player/i, 2],
   [/rookie of the year/i, 3],
   [/all-star mvp/i, 4],
+  [/^nba all-star$/i, 4.5],
   [/(sixth|6th)|most improved|clutch|scoring champion|assists leader|rebounds leader/i, 5],
   [/all-nba 1st/i, 6],
   [/all-nba 2nd/i, 7],

@@ -1,8 +1,10 @@
+import type { ComponentType } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { CupIcon } from '@/components';
+import { BasketballIcon, CupIcon, PeopleIcon, StarIcon, TrophyIcon } from '@/components';
 import { seasonLabel, type Contract, type Draft, type Honor } from '@/lib/espn';
+import { CHAMPIONS } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { GOLD, PRIORITY } from './constants';
 const rank = (name: string) => PRIORITY.find(([re]) => re.test(name))?.[1] ?? 20;
@@ -12,39 +14,66 @@ const years = (seasons: number[]) => {
   return seasons.length > 4 ? `${shown} · +${seasons.length - 4} more` : shown;
 };
 
+/** Which small icon stands for an award: trophies for the individual prizes, a star for selections, and so on. */
+function iconFor(name: string): ComponentType<{ color: string; size?: number }> {
+  if (/all-star$/i.test(name)) return StarIcon;
+  if (/mvp|player of the year|champion|scoring|leader/i.test(name)) return TrophyIcon;
+  if (/all-nba|all-defensive|all-rookie|all-tournament/i.test(name)) return PeopleIcon;
+  return BasketballIcon;
+}
+
+/** The title line: the team when every title was with one team, otherwise a general note. */
+function titleNote(titles: number[]) {
+  const teams = [...new Set(titles.map((y) => CHAMPIONS[y]).filter(Boolean))];
+  const team = teams.length === 1 ? teams[0] : null;
+  return {
+    name: titles.length === 1 && team ? `NBA champion · ${team}` : 'NBA champion',
+    sub:
+      titles.length === 1 || !team
+        ? `${years(titles)}${titles.length > 1 ? ' · with the team he played for that season' : ''}`
+        : `${years(titles)} · with ${team}`,
+  };
+}
+
 /** Titles (worked out from the teams he won with) and everything ESPN lists as an award. */
-export function HonorsCard({ honors, titles }: { honors: Honor[]; titles: number[] }) {
-  const sorted = [...honors].sort((a, b) => rank(a.name) - rank(b.name) || b.count - a.count);
+export function HonorsCard({ honors, titles, allStars = [] }: { honors: Honor[]; titles: number[]; allStars?: number[] }) {
+  // ESPN lists only the All-Star MVP; selections come from who played in each All-Star Game (since 2003).
+  const withSelections: Honor[] = allStars.length > 0 ? [...honors, { id: 'all-star', name: 'NBA All-Star', count: allStars.length, seasons: allStars }] : honors;
+  const sorted = [...withSelections].sort((a, b) => rank(a.name) - rank(b.name) || b.count - a.count);
   if (sorted.length === 0 && titles.length === 0) return null;
+  const note = titles.length > 0 ? titleNote(titles) : null;
 
   return (
     <Animated.View entering={FadeInDown.delay(40).duration(280)} style={styles.wrap}>
       <Text style={styles.title}>Honors</Text>
       <View style={styles.card}>
-        {titles.length > 0 && (
+        {note && (
           <View style={[styles.row, sorted.length > 0 && styles.border]}>
             <View style={[styles.badge, { backgroundColor: withAlpha(GOLD, 0.16) }]}>
               <CupIcon color={GOLD} size={20} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.name}>NBA champion</Text>
-              <Text style={styles.sub}>{years(titles)} · with the team he played for that season</Text>
+              <Text style={styles.name}>{note.name}</Text>
+              <Text style={styles.sub}>{note.sub}</Text>
             </View>
-            <Text style={[styles.count, { color: GOLD }]}>×{titles.length}</Text>
+            {titles.length > 1 && <Text style={[styles.count, { color: GOLD }]}>×{titles.length}</Text>}
           </View>
         )}
-        {sorted.map((h, i) => (
-          <View key={h.id} style={[styles.row, i < sorted.length - 1 && styles.border]}>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{h.count}</Text>
+        {sorted.map((h, i) => {
+          const Icon = iconFor(h.name);
+          return (
+            <View key={h.id} style={[styles.row, i < sorted.length - 1 && styles.border]}>
+              <View style={styles.badge}>
+                <Icon color={palette.chalk} size={18} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{h.name}</Text>
+                {h.seasons.length > 0 && <Text style={styles.sub}>{years(h.seasons)}</Text>}
+              </View>
+              {h.count > 1 && <Text style={styles.count}>×{h.count}</Text>}
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{h.name}</Text>
-              {h.seasons.length > 0 && <Text style={styles.sub}>{years(h.seasons)}</Text>}
-            </View>
-            <Text style={styles.count}>×{h.count}</Text>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </Animated.View>
   );
@@ -97,7 +126,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
   border: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: withAlpha(palette.chalk, 0.1) },
   badge: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: withAlpha(palette.chalk, 0.1) },
-  badgeText: { fontFamily: fonts.display, fontSize: 18, color: palette.chalk },
   name: { fontFamily: fonts.bodySemi, fontSize: 15, color: palette.chalk },
   sub: { fontFamily: fonts.body, fontSize: 11, color: palette.muted, marginTop: 1 },
   count: { fontFamily: fonts.display, fontSize: 22, color: palette.chalk },

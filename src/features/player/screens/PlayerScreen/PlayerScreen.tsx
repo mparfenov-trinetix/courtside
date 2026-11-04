@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
   FadeIn,
@@ -12,15 +13,14 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from 'react-native-reanimated';
-import { GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, CompareIcon, StarIcon } from '@/components';
-import { CareerSkeleton, CareerTable, ContractCard, GameLog, GameLogSkeleton, HonorsCard, FormCard, InfoSkeleton, PlayerPageSkeleton, SplitsCard, StatsSkeleton } from '../../components';
-import { usePlayerCareer, usePlayerGameLog, usePlayerProfile, usePlayerBio, usePlayerStats, useRoster, useTeam , useRefresh , useTilt } from '@/hooks';
+import { useAllStars, usePlayerBio, usePlayerCareer, usePlayerGameLog, usePlayerProfile, usePlayerStats, useRefresh, useRoster, useTeam, useTilt } from '@/hooks';
 import { titleSeasons } from '@/lib/league';
-import { useWatchlist } from '@/state';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
+import { useWatchlist } from '@/state';
+import { CareerSkeleton, CareerTable, ContractCard, FormCard, GameLog, GameLogSkeleton, HonorsCard, InfoSkeleton, PlayerPageSkeleton, PlayerShotChart, SplitsCard, StatsSkeleton } from '../../components';
 
 const MAX_ROTATE = 10;
 
@@ -40,8 +40,10 @@ export function PlayerScreen() {
   // The link carries the team he played for in the game, season or list it came from. He may have moved since, or
   // not be on any roster (retired, never signed): his athlete record answers those.
   const linked = useRoster(linkedTeamId);
+  const [picked, setActiveTab] = useState<Tab | null>(null);
   const listed = linked.data?.players.find((p) => p.id === id);
-  const bio = usePlayerBio(!listed && (!linkedTeamId || linked.isSuccess || linked.isError) ? id : undefined);
+  // Also read on the Info tab, for where he was born and his nationality (the roster doesn't carry them).
+  const bio = usePlayerBio(picked === 'info' || (!listed && (!linkedTeamId || linked.isSuccess || linked.isError)) ? id : undefined);
   const teamId = listed ? linkedTeamId : (bio.data?.teamId ?? undefined);
   const { data: currentRoster } = useRoster(!listed && bio.data?.active ? teamId : undefined);
   // The roster entry has the fuller details (born, college); the athlete record covers everyone else.
@@ -51,13 +53,13 @@ export function PlayerScreen() {
   const team = useTeam(teamId);
   const theme = teamTheme(team);
   // Someone with no current season opens on his career instead of an empty Season tab.
-  const [picked, setActiveTab] = useState<Tab | null>(null);
   const activeTab: Tab = picked ?? (onRoster ? 'season' : 'career');
   const { isWatched, toggle } = useWatchlist();
 
   const { data: stats, isPending: statsPending } = usePlayerStats(player?.id);
   const { data: gameLog, isPending: logPending } = usePlayerGameLog(player?.id);
   const { data: career, isPending: careerPending } = usePlayerCareer(activeTab === 'career' || activeTab === 'info' ? player?.id : undefined);
+  const { data: allStars } = useAllStars(activeTab === 'info');
   const { data: profile, isPending: profilePending } = usePlayerProfile(activeTab === 'info' ? player?.id : undefined);
   const refreshControl = useRefresh([['playerStats', id], ['playerGameLog', id], ['playerCareer', id], ['roster', teamId], ['playerBio', id]]);
 
@@ -138,6 +140,8 @@ export function PlayerScreen() {
       ? ['Experience', player.experience === 0 ? 'Rookie' : `${player.experience} yr${player.experience !== 1 ? 's' : ''}`]
       : null,
     player.college ? ['College', player.college] : null,
+    bio.data?.birthPlace ? ['Birthplace', bio.data.birthPlace] : null,
+    bio.data?.citizenship ? ['Nationality', bio.data.citizenship] : null,
     onRoster ? null : ['Status', 'Not on an NBA roster'],
   ].filter((r): r is [string, string] => r !== null);
 
@@ -209,6 +213,9 @@ export function PlayerScreen() {
                 source={teamLogoUri}
                 style={[styles.logoWatermark, { width: cardWidth * 0.75, height: cardWidth * 0.75 }]}
                 contentFit="contain"
+                allowDownscaling={false}
+                priority="high"
+                cachePolicy="memory-disk"
               />
             )}
 
@@ -236,7 +243,9 @@ export function PlayerScreen() {
                   source={player.headshot}
                   style={{ width: cardWidth * 0.72, height: cardWidth * 0.78 }}
                   contentFit="cover"
-                  transition={200}
+                  allowDownscaling={false}
+                  priority="high"
+                  cachePolicy="memory-disk"
                 />
               ) : (
                 <View
@@ -314,7 +323,9 @@ export function PlayerScreen() {
               <StatsSkeleton />
             ) : stats && Object.values(stats).some((v) => v != null) ? (
               <Animated.View entering={FadeInDown.delay(60).duration(300)} style={styles.statsBlock}>
-                <Text style={styles.sectionLabel}>Averages</Text>
+                <Text style={styles.sectionLabel}>
+                  Averages{stats.gamesPlayed != null ? ` · ${stats.gamesPlayed} games${stats.gamesStarted != null ? `, ${stats.gamesStarted} started` : ''}` : ''}
+                </Text>
                 <View style={styles.statsGrid}>
                   {([
                     { key: 'PPG', val: stats.ppg },
@@ -352,15 +363,11 @@ export function PlayerScreen() {
                     </View>
                   </>
                 )}
-
-                {(stats.gamesPlayed != null) && (
-                  <Text style={styles.gamesNote}>
-                    {stats.gamesPlayed} games played
-                    {stats.gamesStarted != null ? `, ${stats.gamesStarted} started` : ''}
-                  </Text>
-                )}
-
+                {/* How he is playing right now comes right after the averages; the shooting breakdown follows. */}
                 {gameLog && gameLog.length > 1 && <FormCard log={gameLog} accent={theme.accent} />}
+
+                {gameLog && gameLog.length > 0 && <PlayerShotChart athleteId={player.id} log={gameLog} accent={theme.accent} />}
+
                 {gameLog && gameLog.length > 3 && <SplitsCard log={gameLog} />}
               </Animated.View>
             ) : (
@@ -405,7 +412,7 @@ export function PlayerScreen() {
             <InfoSkeleton />
           ) : (
           <>
-            <HonorsCard honors={profile?.honors ?? []} titles={career ? titleSeasons(career.seasons) : []} />
+            <HonorsCard honors={profile?.honors ?? []} titles={career ? titleSeasons(career.seasons) : []} allStars={allStars?.[player.id]} />
             <ContractCard contract={profile?.contract} draft={profile?.draft} />
             {infoRows.length > 0 ? (
               <Animated.View

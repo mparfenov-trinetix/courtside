@@ -15,7 +15,7 @@ import {
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CompareRow, type Row, Radar, type RadarAxis, TeamCompare } from '../../components';
+import { CompareRow, PlayerExtras, type Row, Radar, type RadarAxis, TeamCompare } from '../../components';
 import { Segmented, slideIn, ScreenHeader } from '@/components';
 import { usePlayerCareer, usePlayerSearch, usePlayerStats, useTeams } from '@/hooks';
 import { headshotUrl, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
@@ -141,18 +141,19 @@ export function CompareScreen() {
         : null;
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: palette.arena }]}>
       <ScreenHeader title="Compare" />
-      <Segmented
-        style={{ marginBottom: 14 }}
-        options={[...MODES]}
-        value={mode}
-        onChange={(key, direction) => {
-          setSlide(direction);
-          router.setParams({ mode: key });
-        }}
-      />
+      {/* Inside the scroll view, so it scrolls away with the page instead of taking room all the time. */}
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
+        <Segmented
+          style={{ marginBottom: 14 }}
+          options={[...MODES]}
+          value={mode}
+          onChange={(key, direction) => {
+            setSlide(direction);
+            router.setParams({ mode: key });
+          }}
+        />
         <Animated.View key={mode} entering={slideIn(slide)}>
         {mode === 'teams' ? (
           <TeamCompare />
@@ -193,6 +194,8 @@ export function CompareScreen() {
             {slotA && slotB && <ActivityIndicator color={palette.muted} style={{ marginTop: 12 }} />}
           </Animated.View>
         )}
+
+        {slotA && slotB && <PlayerExtras a={slotA} b={slotB} aColor={colors.away} bColor={colors.home} />}
           </>
         )}
         </Animated.View>
@@ -248,7 +251,7 @@ function PickerModal({
   const { data, isFetching } = usePlayerSearch(query);
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose} onDismiss={() => { setText(''); setQuery(''); }} presentationStyle="pageSheet">
       <View style={[styles.modal, { paddingTop: 16 }]}>
         <View style={styles.searchRow}>
           <TextInput
