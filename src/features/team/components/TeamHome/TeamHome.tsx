@@ -4,28 +4,30 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, {
-  Extrapolation,
+  Easing,
   FadeIn,
   FadeInDown,
-  interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { TeamMark , CompareIcon, PeopleIcon, SearchIcon, StarIcon , IconButton, ScreenHeader, Skeleton, SkeletonGroup } from '@/components';
+import { TeamMark , CompareIcon, PeopleIcon, SearchIcon, StarIcon , IconButton, ScreenHeader, Skeleton, SkeletonGroup, TITLE_INSET, headerHeight } from '@/components';
 import { MyCupCard } from '@/features/cup';
 import { NextGame } from '../NextGame';
 import { ScoresStrip } from '../ScoresStrip';
 import { TeamSwitcher } from '../TeamSwitcher';
 import { SeasonSeries } from '../SeasonSeries';
 import { sharedTag , openDetail } from '@/navigation';
+import { CatchUp } from '../CatchUp';
 import { cardHeight, TeamCard } from '../TeamCard';
 import { TeamSeasonStats } from '../TeamSeasonStats';
 import { Watchlist } from '@/features/watchlist';
-import { useTeam, useTeamDetail, useTeamSchedule , useRefresh , useTilt } from '@/hooks';
+import { useRefresh, useStandings, useTeam, useTeamDetail, useTeamSchedule, useTilt } from '@/hooks';
+import { conferenceStanding } from '@/lib/league';
 import type { Game } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
@@ -42,6 +44,8 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
   const team = useTeam(teamId);
   const { data: detail } = useTeamDetail(teamId);
   const { data: schedule } = useTeamSchedule(teamId);
+  const { data: standings } = useStandings();
+  const standing = conferenceStanding(standings, teamId);
   const theme = teamTheme(team);
   const rival = useTeam(pushed && favoriteTeamId !== teamId ? favoriteTeamId : null);
 
@@ -51,18 +55,26 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
 
   // The header is empty while the card is on screen; once it has scrolled away the team's name takes over.
   const scrollY = useSharedValue(0);
+  // The title comes in once the card is mostly gone and goes out only when you are back almost at the top, so
+  // scrolling up doesn't make it vanish while the card is still half off screen. Both ease in time.
+  const titleShown = useSharedValue(0);
+  const cardH = cardHeight(cardWidth);
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.set(e.contentOffset.y);
+    if (e.contentOffset.y > cardH * 0.7) titleShown.set(1);
+    else if (e.contentOffset.y < cardH * 0.1) titleShown.set(0);
   });
+  const titleProgress = useDerivedValue(() => withTiming(titleShown.get(), { duration: 260, easing: Easing.out(Easing.cubic) }));
   // The drawer's "Team card" screen is reused for every team, so a new team must start at the top.
   // Keying the ScrollView remounts it at offset 0; the shared value is reset to match.
   useEffect(() => {
     scrollY.set(0);
-  }, [teamId, scrollY]);
-  const cardH = cardHeight(cardWidth);
+    titleShown.set(0);
+  }, [teamId, scrollY, titleShown]);
+  const headerFill = useAnimatedStyle(() => ({ opacity: titleProgress.get() }));
   const titleStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.get(), [cardH * 0.55, cardH * 0.85], [0, 1], Extrapolation.CLAMP),
-    transform: [{ translateY: interpolate(scrollY.get(), [cardH * 0.55, cardH * 0.85], [8, 0], Extrapolation.CLAMP) }],
+    opacity: titleProgress.get(),
+    transform: [{ translateY: (1 - titleProgress.get()) * 8 }],
   }));
 
   const bg = useSharedValue<string>(theme.background);
@@ -100,11 +112,16 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
 
   return (
     <Animated.View style={[styles.root, bgStyle]}>
+      {/* Over the page, see-through while the card is on screen (it tilts, and its top edge must not be cut off by a
+          bar), and filling in with the page color once you scroll so content doesn't run under the buttons. */}
+      <View style={[styles.headerWrap, { height: headerHeight(insets.top) }]} pointerEvents="box-none">
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, bgStyle, headerFill]} />
       <ScreenHeader
         onBack={pushed ? () => router.back() : undefined}
+        centerTitle
         title={
           <Animated.View style={[styles.headerTitle, titleStyle]} pointerEvents="none">
-            <TeamMark team={team} />
+            <TeamMark team={team} maxWidth={width - 2 * TITLE_INSET} />
           </Animated.View>
         }
         right={
@@ -139,6 +156,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
           )
         }
       />
+      </View>
 
       <Animated.ScrollView
         key={team.id}
@@ -146,21 +164,27 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}>
+        contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight(insets.top), paddingBottom: insets.bottom + 32 }]}>
         {/* Team card */}
         <View style={styles.cardArea}>
-          {/* Hold the card to switch team. A drag tilts it instead (the gesture takes over before the hold completes). */}
-          <Pressable
-            disabled={pushed}
-            onLongPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              setSwitching(true);
-            }}
-            delayLongPress={420}
-            accessibilityHint="Hold to switch team">
-            <TeamCard key={team.id} team={team} detail={detail} width={cardWidth} tilt={tilt} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
-          </Pressable>
+          {pushed ? (
+            <TeamCard key={team.id} team={team} detail={detail} standing={standing} width={cardWidth} tilt={tilt} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
+          ) : (
+            // Hold the card to switch team. A drag tilts it instead (the gesture takes over before the hold completes).
+            <Pressable
+              onLongPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setSwitching(true);
+              }}
+              delayLongPress={420}
+              accessibilityHint="Hold to switch team">
+              <TeamCard key={team.id} team={team} detail={detail} standing={standing} width={cardWidth} tilt={tilt} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
+            </Pressable>
+          )}
         </View>
+
+        {/* What happened while the app was closed (own team only). */}
+        {team.id === favoriteTeamId && <CatchUp teamId={team.id} schedule={schedule} accent={theme.accent} />}
 
         {/* Team stats row */}
         <Animated.View entering={FadeIn.duration(400)} style={styles.splits}>
@@ -169,13 +193,30 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
           <Split label="Arena" value={detail?.venue} wide />
         </Animated.View>
 
-        <TeamSeasonStats teamId={team.id} accent={theme.accent} />
-
+        {/* What is coming first, then what is on today, then how the team has been doing; the season numbers come after. */}
         {schedule && schedule.length > 0 && <NextGame schedule={schedule} theme={theme} />}
+
+        <ScoresStrip accent={theme.accent} highlightTeamId={team.id} />
 
         <MyCupCard teamId={team.id} />
 
         {pushed && rival && schedule && <SeasonSeries schedule={schedule} team={team} rival={rival} accent={theme.accent} />}
+
+        {/* Recent games */}
+        {completedGames.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(120).duration(300)} style={styles.gamesSection}>
+            <Text style={[styles.gamesSectionTitle, { color: withAlpha(palette.chalk, 0.55) }]}>
+              Recent Games
+            </Text>
+            {completedGames.map((game, i) => (
+              <GameRow key={game.id} game={game} index={i} />
+            ))}
+          </Animated.View>
+        )}
+
+        <TeamSeasonStats teamId={team.id} accent={theme.accent} />
+
+        <Watchlist accent={theme.accent} teamId={team.id} teamAbbr={team.abbreviation} />
 
         {/* Roster button */}
         <Pressable
@@ -196,22 +237,6 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         {!tilt.sensorAvailable && (
           <Text style={styles.hint}>No motion sensor found. Drag the card to tilt it.</Text>
         )}
-
-        <Watchlist accent={theme.accent} teamId={team.id} teamAbbr={team.abbreviation} />
-
-        <ScoresStrip accent={theme.accent} highlightTeamId={team.id} />
-
-        {/* Recent games */}
-        {completedGames.length > 0 && (
-          <Animated.View entering={FadeInDown.delay(120).duration(300)} style={styles.gamesSection}>
-            <Text style={[styles.gamesSectionTitle, { color: withAlpha(palette.chalk, 0.55) }]}>
-              Recent Games
-            </Text>
-            {completedGames.map((game, i) => (
-              <GameRow key={game.id} game={game} theme={theme} index={i} />
-            ))}
-          </Animated.View>
-        )}
       </Animated.ScrollView>
       <TeamSwitcher visible={switching} onClose={() => setSwitching(false)} />
     </Animated.View>
@@ -229,7 +254,7 @@ function Split({ label, value, wide }: { label: string; value?: string; wide?: b
   );
 }
 
-function GameRow({ game, theme, index }: { game: Game; theme: ReturnType<typeof teamTheme>; index: number }) {
+function GameRow({ game, index }: { game: Game; index: number }) {
   const date = new Date(game.date);
   const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const isWin = game.result === 'W';
@@ -280,6 +305,7 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
+  headerWrap: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2 },
   headerActions: { flexDirection: 'row', gap: 8 },
   headerTitle: { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' },
   // The source image is square with the lettering centered, so it is drawn square and the empty space trimmed with margins.

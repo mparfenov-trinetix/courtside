@@ -14,7 +14,9 @@ import Svg, { Circle, Defs, Line, RadialGradient, Rect, Stop } from 'react-nativ
 import type { Tilt } from '@/hooks';
 import type { Team, TeamDetail } from '@/lib/espn';
 import { fonts, logoOn, mix, teamTheme, withAlpha } from '@/lib/theme';
-import { MAX_ROTATE, RADIUS, GLINT } from './constants';
+import { MAX_ROTATE, RADIUS, GLINT, OUTLINE, OUTLINED_LOGO } from './constants';
+
+const OUTLINE_STEPS: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]];
 
 /** Card "deals" in with a quarter flip whenever the team changes. */
 const dealIn = new Keyframe({
@@ -42,9 +44,11 @@ type Props = {
   tilt: Tilt;
   /** Shared-transition tag for the logo, when the card was opened from a list that shows the same logo. */
   logoTag?: string;
+  /** Place in the conference ("7th in the West"); falls back to ESPN's own text. */
+  standing?: string;
 };
 
-export function TeamCard({ team, detail, width, tilt, logoTag }: Props) {
+export function TeamCard({ team, detail, width, tilt, logoTag, standing }: Props) {
   const height = cardHeight(width);
   const theme = teamTheme(team);
   const { x, y } = tilt;
@@ -108,11 +112,28 @@ export function TeamCard({ team, detail, width, tilt, logoTag }: Props) {
 
           <Animated.View style={[styles.logoWrap, logoStyle]}>
             <Animated.View sharedTransitionTag={logoTag}>
+              {OUTLINED_LOGO.has(team.abbreviation) && (
+                // A white copy of the logo's shape, nudged in eight directions, shows as an outline around the real one.
+                <>
+                  {OUTLINE_STEPS.map(([dx, dy]) => (
+                    <Image
+                      key={`${dx}${dy}`}
+                      source={logoOn(team, theme.onPrimary)}
+                      tintColor="#FFFFFF"
+                      contentFit="contain"
+                      style={{ position: 'absolute', width: width * 0.58, height: width * 0.58, left: dx * width * OUTLINE, top: dy * width * OUTLINE }}
+                    />
+                  ))}
+                </>
+              )}
               <Image
                 source={logoOn(team, theme.onPrimary)}
                 style={{ width: width * 0.58, height: width * 0.58 }}
                 contentFit="contain"
-                transition={200}
+                // Decode at the image's own size and keep it ready: scaled-down decodes look soft while the card flips in.
+                allowDownscaling={false}
+                priority="high"
+                cachePolicy="memory-disk"
               />
             </Animated.View>
           </Animated.View>
@@ -130,7 +151,7 @@ export function TeamCard({ team, detail, width, tilt, logoTag }: Props) {
             </Text>
             <View style={styles.statsRow}>
               <Stat label="Record" value={detail?.record ?? '–'} color={theme.onPrimary} />
-              <Stat label="Standing" value={detail?.standing ?? '–'} color={theme.onPrimary} grow />
+              <Stat label="Standing" value={standing ?? detail?.standing ?? '–'} color={theme.onPrimary} grow />
             </View>
           </View>
 

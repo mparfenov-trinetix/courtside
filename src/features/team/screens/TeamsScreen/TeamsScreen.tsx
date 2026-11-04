@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import Animated, { FadeInRight } from 'react-native-reanimated';
+import Animated, { Easing, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChevronIcon, StarIcon , ErrorState, ListSkeleton, ScreenHeader } from '@/components';
@@ -88,7 +88,7 @@ function TeamRow({
 }) {
   const theme = teamTheme(team);
   return (
-    <Animated.View entering={FadeInRight.delay(Math.min(index, 12) * 30).springify().damping(18)}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 24).duration(240).easing(Easing.out(Easing.cubic))}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"

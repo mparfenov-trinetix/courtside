@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
-import { useTeam, useTeamDetail, useTeamSchedule } from '@/hooks';
+import { useStandings, useTeam, useTeamDetail, useTeamSchedule } from '@/hooks';
+import { conferenceStanding } from '@/lib/league';
 import { useTeamStore } from '@/state';
 import { syncWidgets } from './sync';
 
@@ -10,8 +11,10 @@ export function useWidgetSync() {
   const team = useTeam(favoriteTeamId);
   const { data: detail } = useTeamDetail(favoriteTeamId);
   const { data: schedule } = useTeamSchedule(favoriteTeamId);
+  const { data: standings } = useStandings();
+  const standing = conferenceStanding(standings, favoriteTeamId);
 
   useEffect(() => {
-    if (team && schedule) syncWidgets(team, detail, schedule);
-  }, [team, detail, schedule]);
+    if (team && schedule) syncWidgets(team, detail ? { ...detail, standing: standing ?? detail.standing } : undefined, schedule);
+  }, [team, detail, schedule, standing]);
 }

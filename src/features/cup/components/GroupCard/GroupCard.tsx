@@ -56,7 +56,8 @@ function Row({ row, mine, last }: { row: CupRow; mine: boolean; last: boolean })
 
 const styles = StyleSheet.create({
   card: { borderRadius: 18, backgroundColor: withAlpha('#FFFFFF', 0.05), overflow: 'hidden', marginBottom: 12 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 12, paddingBottom: 6 },
+  // Same gap and right padding as a row, so the column titles sit exactly over their values.
+  header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 14, paddingRight: 14, paddingTop: 12, paddingBottom: 6 },
   title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 13, color: palette.chalk, letterSpacing: 0.4 },
   col: { fontFamily: fonts.bodySemi, fontSize: 10, color: palette.muted, letterSpacing: 0.5, textAlign: 'right' },
   colW: { width: 46 },

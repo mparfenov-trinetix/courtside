@@ -6,11 +6,11 @@ import Svg, { Path } from 'react-native-svg';
 import { MiniSeries, MINI_H, MINI_W, SeriesCard } from '../SeriesCard';
 import { SeriesSheet } from '../SeriesSheet';
 import { Segmented, slideIn } from '@/components';
-import { layoutTree, type Round, type Series } from '@/lib/league';
+import { layoutTree, type BracketSection, type Round, type Series } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
-import { COL_GAP, ROW_GAP } from './constants';
+import { COL_GAP, CONF_GAP, ROW_GAP, TAG_H } from './constants';
 
-export type BracketSection = { title: string; rounds: Round[] };
+export type { BracketSection };
 
 /**
  * A knockout bracket with two ways in. "Rounds" steps through the stages one at a time with big series
@@ -126,7 +126,14 @@ function Tree({ sections, favoriteTeamId, onOpen }: { sections: BracketSection[]
 }
 
 function TreeSection({ section, favoriteTeamId, onOpen }: { section: BracketSection; favoriteTeamId?: string | null; onOpen: (s: Series) => void }) {
-  const { placements, height } = layoutTree(section.rounds, MINI_H, ROW_GAP);
+  // East above West in one tree: leave room for their "East" / "West" tags and between the two halves.
+  const { placements, height } = layoutTree(section.rounds, MINI_H, ROW_GAP, section.byConference ? { confGap: CONF_GAP, top: TAG_H } : undefined);
+  const tags = section.byConference
+    ? (['east', 'west'] as const).flatMap((c) => {
+        const first = placements.find((p) => p.col === 0 && p.series.conference === c);
+        return first ? [{ conf: c, y: first.y - TAG_H }] : [];
+      })
+    : [];
   const colX = (col: number) => col * (MINI_W + COL_GAP);
   const width = section.rounds.length * (MINI_W + COL_GAP) - COL_GAP;
   const byId = new Map(placements.map((p) => [p.series.id, p]));
@@ -151,7 +158,7 @@ function TreeSection({ section, favoriteTeamId, onOpen }: { section: BracketSect
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{section.title}</Text>
+      {section.title ? <Text style={styles.sectionTitle}>{section.title}</Text> : null}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
         <View style={{ width, height: height + 22 }}>
           <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
@@ -167,6 +174,11 @@ function TreeSection({ section, favoriteTeamId, onOpen }: { section: BracketSect
               onPress={() => onOpen(p.series)}
               style={{ position: 'absolute', left: colX(p.col), top: p.y }}
             />
+          ))}
+          {tags.map((t) => (
+            <Text key={t.conf} style={[styles.confTag, { top: t.y }]}>
+              {t.conf === 'east' ? 'EAST' : 'WEST'}
+            </Text>
           ))}
           {/* Round names scroll with the tree they label */}
           {section.rounds.map((r, i) => (
@@ -193,5 +205,6 @@ const styles = StyleSheet.create({
   hint: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, marginBottom: 6 },
   section: { marginHorizontal: -16, marginTop: 12 },
   sectionTitle: { fontFamily: fonts.bodySemi, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: withAlpha(palette.chalk, 0.55), paddingHorizontal: 20, paddingBottom: 8 },
+  confTag: { position: 'absolute', left: 0, fontFamily: fonts.bodySemi, fontSize: 11, letterSpacing: 0.6, color: withAlpha(palette.chalk, 0.55) },
   colName: { position: 'absolute', width: MINI_W, fontFamily: fonts.body, fontSize: 10, color: palette.muted, textAlign: 'center' },
 });

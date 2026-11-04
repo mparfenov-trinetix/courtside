@@ -1,15 +1,16 @@
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Segmented, ErrorState, ListSkeleton, ScreenHeader , SeasonButton, SeasonSheet } from '@/components';
-import { useStandings , useRefresh } from '@/hooks';
+import { useRefresh, useStandings, useTeams } from '@/hooks';
 import { currentSeason, type StandingEntry } from '@/lib/espn';
 import { hasPlayIn } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, matchupColors, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
 import { openDetail, sharedTag } from '@/navigation';
 
@@ -24,25 +25,48 @@ const TABS: { key: Conference; label: string }[] = [
 ];
 
 /** Standings for any recent season. Playoffs, play-in and the NBA Cup have their own screens. */
-export function StandingsScreen() {
-  const [season, setSeason] = useState(currentSeason());
+/** `pushed`: opened on top of another page (a game), so the header's button goes back instead of opening the menu. */
+export function StandingsScreen({ pushed = false }: { pushed?: boolean }) {
+  // Opened from a game: `teams` are the two teams to light up (comma separated ids) and `season` the game's season.
+  const params = useLocalSearchParams<{ teams?: string; season?: string }>();
+  const highlight = (params.teams ?? '').split(',').filter(Boolean);
+  const paramSeason = params.season ? Number(params.season) : currentSeason();
+  const [picked, setPicked] = useState<{ from: number; season: number } | null>(null);
+  // A new link wins over an earlier manual pick; a manual pick holds until the next link.
+  const season = picked && picked.from === paramSeason ? picked.season : paramSeason;
+  const setSeason = (s: number) => setPicked({ from: paramSeason, season: s });
   const [picking, setPicking] = useState(false);
+  // Lives here, not in the table: the table is re-created for every season, which used to reset the tab.
+  const [chosen, setChosen] = useState<{ key: string; conf: Conference } | null>(null);
 
   return (
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
-      <ScreenHeader title="Standings" color={palette.chalk} right={<SeasonButton season={season} onPress={() => setPicking(true)} />} />
+      <ScreenHeader title="Standings" color={palette.chalk} onBack={pushed ? () => router.back() : undefined} right={<SeasonButton season={season} onPress={() => setPicking(true)} />} />
       {/* Keyed by season, so switching replays the entrance instead of silently swapping data */}
       <Animated.View key={season} entering={FadeIn.duration(240)} style={{ flex: 1 }}>
-        <StandingsTable season={season} />
+        <StandingsTable season={season} highlight={highlight} chosen={chosen} setChosen={setChosen} />
       </Animated.View>
       <SeasonSheet visible={picking} season={season} onPick={setSeason} onClose={() => setPicking(false)} />
     </View>
   );
 }
 
-function StandingsTable({ season }: { season: number }) {
+function StandingsTable({
+  season,
+  highlight,
+  chosen,
+  setChosen,
+}: {
+  season: number;
+  highlight: string[];
+  chosen: { key: string; conf: Conference } | null;
+  setChosen: (c: { key: string; conf: Conference }) => void;
+}) {
   const insets = useSafeAreaInsets();
-  const [conf, setConf] = useState<Conference>('east');
+  const listRef = useRef<FlatList<StandingEntry | { sectionTitle: string }>>(null);
+  const scrolled = useRef('');
+  const { data: teams } = useTeams();
+  const highlightKey = highlight.join(',');
   const past = season !== currentSeason();
   const { data, isPending, error, refetch } = useStandings(season);
   const refreshControl = useRefresh([['standings']]);
@@ -51,6 +75,21 @@ function StandingsTable({ season }: { season: number }) {
   const league: StandingEntry[] = [...(data?.east ?? []), ...(data?.west ?? [])]
     .sort((a, b) => b.winPct - a.winPct || b.wins - a.wins || b.diff - a.diff)
     .map((e, i) => ({ ...e, seed: i + 1 }));
+  // Both highlighted teams in one conference: open that table. Different conferences: the league table shows both.
+  const confOf = (id: string): Conference | null => (data?.east.some((e) => e.teamId === id) ? 'east' : data?.west.some((e) => e.teamId === id) ? 'west' : null);
+  const confs = new Set(highlight.map(confOf).filter((c): c is Conference => c != null));
+  const suggested: Conference = highlight.length === 0 ? 'east' : confs.size === 1 ? [...confs][0] : 'league';
+  const conf = chosen && chosen.key === highlightKey ? chosen.conf : suggested;
+  const setConf = (c: Conference) => setChosen({ key: highlightKey, conf: c });
+  const colors: Record<string, string> = {};
+  const picks = highlight.map((id) => teams?.find((t) => t.id === id)).filter((t) => t != null);
+  if (picks.length === 2) {
+    const m = matchupColors(picks[0], picks[1]);
+    colors[picks[0].id] = m.away;
+    colors[picks[1].id] = m.home;
+  } else {
+    for (const t of picks) colors[t.id] = teamTheme(t).accent;
+  }
   const isLeague = conf === 'league';
   const entries: StandingEntry[] = isLeague ? league : (data?.[conf] ?? []);
 
@@ -89,6 +128,10 @@ function StandingsTable({ season }: { season: number }) {
     ? entries
     : sections.flatMap((s) => [{ sectionTitle: s.title }, ...s.data]);
 
+  // Position among the team rows only (for the staggered entrance); worked out once, not per row.
+  const rowIndexOf = new Map<object, number>();
+  for (const f of flat) if (!('sectionTitle' in f)) rowIndexOf.set(f, rowIndexOf.size);
+
   return (
     <View style={styles.root}>
       <Animated.View entering={FadeIn.duration(300)} style={styles.tabs}>
@@ -102,17 +145,28 @@ function StandingsTable({ season }: { season: number }) {
       ) : (
         <FlatList
           key={conf}
+          ref={listRef}
           data={flat}
+          // Bring the highlighted teams into view once, when the list first has its size.
+          onContentSizeChange={() => {
+            const mark = `${conf}:${highlightKey}`;
+            if (highlight.length === 0 || scrolled.current === mark) return;
+            const at = flat.findIndex((f) => !('sectionTitle' in f) && highlight.includes(f.teamId));
+            if (at < 0) return;
+            scrolled.current = mark;
+            listRef.current?.scrollToIndex({ index: at, viewPosition: 0.3, animated: false });
+          }}
+          onScrollToIndexFailed={(info) => listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false })}
           refreshControl={refreshControl}
           keyExtractor={(item, i) => ('sectionTitle' in item ? `header-${item.sectionTitle}` : `${item.teamId}-${i}`)}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 6 }}
           ListHeaderComponent={<ColumnHeader />}
-          renderItem={({ item, index }) => {
+          renderItem={({ item }) => {
             if ('sectionTitle' in item) {
               return <SectionDivider title={item.sectionTitle} />;
             }
-            const rowIndex = flat.filter((f) => !('sectionTitle' in f)).indexOf(item);
-            return <TeamRow entry={item} index={rowIndex} cut={cutLabel(item)} />;
+            const rowIndex = rowIndexOf.get(item) ?? 0;
+            return <TeamRow entry={item} index={rowIndex} cut={cutLabel(item)} highlight={colors[item.teamId]} />;
           }}
         />
       )}
@@ -145,7 +199,7 @@ function SectionDivider({ title }: { title: string }) {
   );
 }
 
-function TeamRow({ entry, index, cut }: { entry: StandingEntry; index: number; cut: string | null }) {
+function TeamRow({ entry, index, cut, highlight }: { entry: StandingEntry; index: number; cut: string | null; highlight?: string }) {
   const { favoriteTeamId } = useTeamStore();
   const gbText = entry.gamesBehind === 0 ? '—' : entry.gamesBehind.toFixed(1);
   const pctText = entry.winPct.toFixed(3).replace(/^0/, '');
@@ -165,7 +219,11 @@ function TeamRow({ entry, index, cut }: { entry: StandingEntry; index: number; c
         }}
         accessibilityRole="button"
         accessibilityLabel={`Open ${entry.teamName}`}
-        style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
+        style={({ pressed }) => [
+          styles.row,
+          highlight ? { backgroundColor: withAlpha(highlight, 0.2), borderWidth: 1.5, borderColor: withAlpha(highlight, 0.85) } : null,
+          pressed && { opacity: 0.7 },
+        ]}>
         <Text style={styles.seed}>{entry.seed}</Text>
         {entry.teamLogo ? (
           <Animated.View sharedTransitionTag={sharedTag('standings', 'team', entry.teamId, 'logo')} style={styles.logo}>
@@ -252,6 +310,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
     backgroundColor: withAlpha('#FFFFFF', 0.05),
   },
   seed: {

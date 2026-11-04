@@ -1,3 +1,4 @@
+export * from './CatchUp';
 export * from './NextGame';
 export * from './ScoresStrip';
 export * from './SeasonSeries';

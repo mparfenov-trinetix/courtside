@@ -14,14 +14,11 @@ export function useRefresh(keys: readonly QueryKey[]) {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
 
-  const onRefresh = async () => {
+  const onRefresh = () => {
     setRefreshing(true);
-    try {
-      await Promise.all(keys.map((queryKey) => queryClient.refetchQueries({ queryKey })));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } finally {
-      setRefreshing(false);
-    }
+    Promise.all(keys.map((queryKey) => queryClient.refetchQueries({ queryKey })))
+      .then(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success))
+      .finally(() => setRefreshing(false));
   };
 
   return <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.muted} />;

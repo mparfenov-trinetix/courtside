@@ -65,8 +65,8 @@ function PostseasonPane({ season, kind }: { season: number; kind: 'playoffs' | '
       )}
 
       <Bracket
-        rounds={playoffs ? playoffs.rounds : playIn ? [playIn] : []}
-        sections={playoffs ? playoffs.sections : playIn ? [{ title: 'Play-In', rounds: [playIn] }] : []}
+        rounds={playoffs ? playoffs.rounds : (playIn?.rounds ?? [])}
+        sections={playoffs ? playoffs.sections : (playIn?.sections ?? [])}
         favoriteTeamId={favoriteTeamId}
         emptyText={
           upcoming

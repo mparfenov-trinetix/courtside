@@ -3,9 +3,10 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { FlashOverlay, Tick } from '@/components';
+import { FlashOverlay, HeatBadge, Tick } from '@/components';
 import { useScoreboardByDate } from '@/hooks';
 import { nbaToday, toDateKey } from '@/lib/date';
+import { gameHeat } from '@/lib/game';
 import { involvesTeam, type ScoreboardGame, type ScoreboardTeam } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail, sharedTag } from '@/navigation';
@@ -51,6 +52,7 @@ export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highl
               <FlashOverlay radius={16} signature={`${g.away.score ?? ''}-${g.home.score ?? ''}-${g.status}`} />
               <Side team={g.away} completed={g.completed} gameId={g.id} side="away" />
               <Side team={g.home} completed={g.completed} gameId={g.id} side="home" />
+              {g.inProgress ? <HeatBadge heat={gameHeat(g.away.score, g.home.score, g.status)} compact /> : null}
               <Tick
                 style={[styles.status, g.inProgress && { color: '#4ADE80' }]}
                 value={

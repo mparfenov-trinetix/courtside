@@ -1,3 +1,5 @@
+import { useIsFocused } from 'expo-router';
+import { useEffect } from 'react';
 import { usePanGesture } from 'react-native-gesture-handler';
 import {
   SensorType,
@@ -38,6 +40,13 @@ export function useTilt(size: { width: number; height: number }, options?: { scr
   const reducedMotion = useReducedMotion();
   const gravity = useAnimatedSensor(SensorType.GRAVITY, { interval: 'auto' });
 
+  // A screen that is covered or off screen keeps its sensor, but stops doing the smoothing work for it.
+  const focused = useIsFocused();
+  const active = useSharedValue(focused);
+  useEffect(() => {
+    active.set(focused);
+  }, [focused, active]);
+
   const baseX = useSharedValue<number | null>(null);
   const baseY = useSharedValue(0);
   const sensorX = useSharedValue(0);
@@ -50,6 +59,7 @@ export function useTilt(size: { width: number; height: number }, options?: { scr
   useAnimatedReaction(
     () => gravity.sensor.value,
     (g) => {
+      if (!active.get()) return;
       const magnitude = Math.hypot(g.x, g.y, g.z);
       if (!magnitude) return;
       const nx = g.x / magnitude;
