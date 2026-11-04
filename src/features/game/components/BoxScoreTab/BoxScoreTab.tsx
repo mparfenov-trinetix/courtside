@@ -183,7 +183,7 @@ export function BoxScoreTab({
                   })}
                 </View>
                 {rows.map((p, i) => (
-                  <StatsRow key={`${p.id || i}-${periodKey}`} player={p} cols={cols} shade={i % 2 === 1} teamId={team.team.id} />
+                  <StatsRow key={`${p.id || i}-${periodKey}`} player={p} cols={cols} shade={i % 2 === 1} />
                 ))}
                 {hasTotals && (
                   <View style={[styles.statsRow, styles.totalsRow, { height: TOTALS_H }]}>
@@ -238,19 +238,20 @@ function PlayerCell({ player, shade, teamId }: { player: BoxScorePlayer; shade: 
   );
 }
 
-/** The scrolling half of a row: the stat values. */
-function StatsRow({ player, cols, shade, teamId }: { player: BoxScorePlayer; cols: Col[]; shade: boolean; teamId: string }) {
+/**
+ * The scrolling half of a row: the stat values. It isn't tappable: this half is swiped sideways all the time, and a
+ * swipe that ended on a row used to open that player. The pinned name on the left is the way in.
+ */
+function StatsRow({ player, cols, shade }: { player: BoxScorePlayer; cols: Col[]; shade: boolean }) {
   return (
-    <Pressable
-      onPress={() => openPlayer(player, teamId)}
-      style={({ pressed }) => [styles.statsRow, { height: ROW_H }, shade && styles.shade, pressed && { opacity: 0.7 }]}>
+    <View style={[styles.statsRow, { height: ROW_H }, shade && styles.shade]}>
       <FlashOverlay radius={8} signature={cols.map((c) => player.stats[c] ?? '').join('|')} />
       {cols.map((col) => (
         <Text key={col} style={statStyle(col, player.stats[col])}>
           {player.stats[col] ?? '–'}
         </Text>
       ))}
-    </Pressable>
+    </View>
   );
 }
 

@@ -1,15 +1,15 @@
 import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { Collapsible, HeadToHead } from '@/components';
+import { Collapsible } from '@/components';
 import { GameFlow } from '../GameFlow';
 import { GameInfoCard, GameLeaders, InjuryReport } from '../GameLeaders';
 import { KeyMoments } from '../KeyMoments';
-import { MatchupForm } from '../MatchupForm';
-import { PregameOdds } from '../PregameOdds';
+import { StandingsLink } from '../MatchupStandings';
+import { Pregame } from '../Pregame';
 import { TeamStatsCard } from '../TeamStatsCard';
 import { Timeouts } from '../Timeouts';
-import type { BoxScorePlayer, BoxScoreTeam, GameInfo, Play, Pregame } from '@/lib/espn';
+import type { BoxScorePlayer, BoxScoreTeam, GameInfo, Play, Pregame as PregameData } from '@/lib/espn';
 import {
   buildFourFactors,
   buildKeyStats,
@@ -54,7 +54,7 @@ export function SummaryTab({
   winProb: Record<string, number>;
   flow: Flow;
   info: GameInfo;
-  pregame: Pregame;
+  pregame: PregameData;
   live: boolean;
   hasStarted: boolean;
   selPeriods: number[] | null;
@@ -123,24 +123,17 @@ export function SummaryTab({
     ? [flowChart, stats, leaders, timeouts, moments]
     : [leaders, stats, flowChart, moments, timeouts];
 
-  // Before tip-off there is nothing to replay, so the page is about the matchup instead.
-  const preview = !hasStarted && (
-    <View key="preview" style={{ paddingHorizontal: 16, marginBottom: 18 }}>
-      <PregameOdds away={awaySide} home={homeSide} pregame={pregame} />
-      <MatchupForm away={awaySide} home={homeSide} form={pregame.form} />
-      <HeadToHead a={awaySide} b={homeSide} delay={120} />
-    </View>
-  );
-
   return (
     <View>
       {ordered}
-      {preview}
+      {!hasStarted && <Pregame away={awaySide} home={homeSide} data={pregame} info={info} date={info.date} />}
+      {hasStarted && <StandingsLink away={awaySide} home={homeSide} date={info.date} />}
 
+      {hasStarted && (
       <Collapsible
         title="Injuries and game info"
         hint={injuryCount > 0 ? `${injuryCount} injur${injuryCount === 1 ? 'y' : 'ies'}` : undefined}
-        defaultOpen={!hasStarted}>
+        defaultOpen={false}>
         <InjuryReport
           injuries={info.injuries}
           teams={[
@@ -150,6 +143,7 @@ export function SummaryTab({
         />
         <GameInfoCard info={info} />
       </Collapsible>
+      )}
     </View>
   );
 }

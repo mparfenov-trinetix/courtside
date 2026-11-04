@@ -15,9 +15,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ArrowLeftIcon , Tick, RollingNumber, UpdatedAgo } from '@/components';
+import { ArrowLeftIcon, HeatBadge, Tick, RollingNumber, UpdatedAgo } from '@/components';
 import type { BoxScoreTeam } from '@/lib/espn';
-import { periodLabel } from '@/lib/game';
+import { gameHeat, periodLabel } from '@/lib/game';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail, sharedTag } from '@/navigation';
 
@@ -75,6 +75,7 @@ export function ScoreHero({
             <Text style={styles.vsScore}>vs</Text>
           )}
           {live ? <LivePill label={status} /> : <Text style={styles.gameStatus}>{status}</Text>}
+          {live ? <HeatBadge heat={gameHeat(away.score, home.score, status)} /> : null}
         </View>
         <TeamScore team={home} right tag={sharedTag(origin, 'game', gameId ?? '', 'home', 'logo')} />
       </Animated.View>
@@ -191,7 +192,7 @@ export function GameTopBar({
   const surface = useAnimatedStyle(() => ({ opacity: pinned.get() }));
 
   return (
-    <View style={[styles.topBar, { paddingTop: insets.top + 6 }]}>
+    <View style={[styles.topBar, { paddingTop: insets.top + 10, paddingBottom: 4 }]}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, surface]}>
         <LinearGradient colors={tint} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
       </Animated.View>

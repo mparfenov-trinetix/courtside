@@ -30,8 +30,8 @@ export function GameSkeleton() {
           <Skeleton key={i} width={w} height={14} />
         ))}
       </View>
-      <ListSkeleton count={3} avatar="round" trailing />
-      <Skeleton height={200} radius={16} style={{ marginHorizontal: 16 }} />
+      <ListSkeleton count={3} avatar="round" trailing inset={false} />
+      <Skeleton height={200} radius={16} />
     </SkeletonGroup>
   );
 }

@@ -4,13 +4,12 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle, G, Line, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, G, Line } from 'react-native-svg';
 
-import { Segmented } from '@/components';
+import { CourtMarkings, HeatLayer, Segmented, binShots, COURT_W, COURT_H, HOOP, HOT, COLD } from '@/components';
 import type { BoxScorePlayer, BoxScoreTeam, Play } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
-import { COURT_W, COURT_H, HOOP, THREE_R, CORNER_X, CORNER_Y, HOT, COLD, CELL } from './constants';
-import { HeatLayer } from './HeatLayer';
+
 
 type Shot = { play: Play; x: number; y: number; made: boolean; three: boolean; shooterId: string };
 type Zone = 'At rim' | 'Paint' | 'Mid-range' | '3-point';
@@ -23,27 +22,6 @@ function zoneOf(s: Shot): Zone {
   if (Math.abs(s.x - HOOP.x) <= 8 && s.y <= 19) return 'Paint';
   return 'Mid-range';
 } // feet per heatmap cell
-
-type Cell = { cx: number; cy: number; made: number; att: number };
-
-/**
- * Bins shots into a grid and colors each cell by how much better or worse the shooting is there
- * than the shooter's overall rate. Cells with few shots are pulled toward that overall rate so a
- * single make doesn't light up the map.
- */
-function binShots(shots: Shot[]): { cells: Cell[]; base: number } {
-  const base = shots.length ? shots.filter((s) => s.made).length / shots.length : 0;
-  const grid = new Map<string, Cell>();
-  for (const s of shots) {
-    const cx = Math.min(Math.floor(s.x / CELL), Math.ceil(COURT_W / CELL) - 1);
-    const cy = Math.min(Math.floor(s.y / CELL), Math.ceil(COURT_H / CELL) - 1);
-    const cell = grid.get(`${cx}:${cy}`) ?? { cx, cy, made: 0, att: 0 };
-    cell.att += 1;
-    if (s.made) cell.made += 1;
-    grid.set(`${cx}:${cy}`, cell);
-  }
-  return { cells: [...grid.values()], base };
-}
 
 const pct = (m: number, a: number) => (a > 0 ? `${Math.round((m / a) * 100)}%` : '–');
 
@@ -108,7 +86,6 @@ export function ShotChart({
   const height = COURT_H * scale;
   const X = (x: number) => x * scale;
   const Y = (y: number) => height - y * scale;
-  const line = withAlpha(palette.chalk, 0.32);
 
   const zoneStats = ZONES.map((z) => {
     const inZone = shots.filter((s) => zoneOf(s) === z);
@@ -194,20 +171,7 @@ export function ShotChart({
         {width > 0 && (
           <Pressable onPress={(e) => pickShot(e.nativeEvent.locationX, e.nativeEvent.locationY)} disabled={view !== 'shots'}>
           <Svg width={width} height={height}>
-            <Rect x={0} y={0} width={width} height={height} fill={withAlpha(palette.maple, 0.07)} />
-            <Rect x={1} y={1} width={width - 2} height={height - 2} fill="none" stroke={line} strokeWidth={1.5} />
-            <Rect x={X(17)} y={Y(19)} width={16 * scale} height={19 * scale} fill="none" stroke={line} strokeWidth={1.5} />
-            <Path d={`M${X(19)},${Y(19)} A${6 * scale},${6 * scale} 0 0 1 ${X(31)},${Y(19)}`} fill="none" stroke={line} strokeWidth={1.5} />
-            <Path d={`M${X(19)},${Y(19)} A${6 * scale},${6 * scale} 0 0 0 ${X(31)},${Y(19)}`} fill="none" stroke={line} strokeWidth={1.5} strokeDasharray="4,5" />
-            <Path d={`M${X(21)},${Y(HOOP.y)} A${4 * scale},${4 * scale} 0 0 1 ${X(29)},${Y(HOOP.y)}`} fill="none" stroke={line} strokeWidth={1.5} />
-            <Path
-              d={`M${X(CORNER_X)},${Y(0)} L${X(CORNER_X)},${Y(CORNER_Y)} A${THREE_R * scale},${THREE_R * scale} 0 0 1 ${X(COURT_W - CORNER_X)},${Y(CORNER_Y)} L${X(COURT_W - CORNER_X)},${Y(0)}`}
-              fill="none"
-              stroke={line}
-              strokeWidth={1.5}
-            />
-            <Line x1={X(22)} y1={Y(4)} x2={X(28)} y2={Y(4)} stroke={line} strokeWidth={2.5} />
-            <Circle cx={X(HOOP.x)} cy={Y(HOOP.y)} r={0.75 * scale} fill="none" stroke={withAlpha(palette.maple, 0.9)} strokeWidth={1.5} />
+            <CourtMarkings width={width} height={height} />
 
             {view === 'heat' && (
               <HeatLayer key={`${side}-${activeId}-${periods?.join(',') ?? 'all'}`} cells={heat.cells} base={heat.base} scale={scale} height={height} />

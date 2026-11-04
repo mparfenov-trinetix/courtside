@@ -14,12 +14,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BoxScoreTab, GameSkeleton, PlayByPlay, GameTopBar, ScoreHero, ShotChart, SummaryTab, GameStickyBar, type GameTab } from '../../components';
+import { BoxScoreTab, GameBackdrop, GameSkeleton, backdropColors, PlayByPlay, GameTopBar, ScoreHero, ShotChart, SummaryTab, GameStickyBar, type GameTab } from '../../components';
 import { ArrowLeftIcon, IconButton, slideIn, ErrorState } from '@/components';
-import { useGameSummary , useRefresh } from '@/hooks';
+import { useGameSummary, useGameTeams, useRefresh, useTeams } from '@/hooks';
 import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
 import { buildPeriodOptions, deriveFlow, numsFromLine, numsFromTotals, playersWithStats, deriveQuarterStats, emptyLine, lineToStats, sumPeriods, type Line, type QuarterStats } from '@/lib/game';
-import { matchupColors, mix, palette, withAlpha } from '@/lib/theme';
+import { matchupColors, mix, palette } from '@/lib/theme';
 
 const TAB_ORDER: GameTab[] = ['summary', 'box', 'plays', 'shots'];
 
@@ -55,12 +55,19 @@ export function GameScreen() {
     withTiming(scrollY.get() > 90 ? 1 : 0, { duration: 300, easing: Easing.out(Easing.cubic) }),
   );
   const heroTintStyle = useAnimatedStyle(() => ({ opacity: 1 - pinned.get() }));
+  // While the game loads, its teams (and so its colors) are often already known from a list the user came from.
+  const { data: allTeams } = useTeams();
+  const pair = useGameTeams(id);
+  const knownAway = allTeams?.find((t) => t.id === pair?.awayId);
+  const knownHome = allTeams?.find((t) => t.id === pair?.homeId);
+  const known = knownAway && knownHome ? (() => { const c = matchupColors(knownAway, knownHome); return { away: c.away, home: c.home }; })() : null;
   // A soft shadow under the top bar once content has scrolled beneath it (the tab bar carries its own when pinned).
   const edgeStyle = useAnimatedStyle(() => ({ opacity: interpolate(scrollY.get(), [0, 24], [0, 1], Extrapolation.CLAMP) }));
 
   if (isPending) {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
+        <GameBackdrop awayColor={known?.away} homeColor={known?.home} />
         <GameSkeleton />
       </View>
     );
@@ -83,10 +90,7 @@ export function GameScreen() {
   const { home: homeColor, away: awayColor } = matchupColors(away.team, home.team);
   const hasStarted = completed || live || plays.length > 0;
   const tabbed = hasStarted && plays.length > 0;
-  // The page takes on the two teams: a deep base mixed from both colors, washed by a gradient from one to the other.
-  const base = mix(palette.arena, mix(awayColor, homeColor, 0.5), 0.1);
-  // The pinned bars are opaque, in the same colors the page wash has at the top, so they read as part of the page.
-  const tint: [string, string] = [mix(base, awayColor, 0.2), mix(base, homeColor, 0.2)];
+  const { base, tint } = backdropColors(awayColor, homeColor);
 
   const derived: QuarterStats | null =
     plays.length > 0
@@ -131,27 +135,8 @@ export function GameScreen() {
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: base }]}>
-      <LinearGradient
-        pointerEvents="none"
-        colors={[withAlpha(awayColor, 0.2), withAlpha(homeColor, 0.2)]}
-        start={{ x: 0, y: 0.15 }}
-        end={{ x: 1, y: 0.95 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <Animated.View pointerEvents="none" style={[styles.heroTint, heroTintStyle]}>
-        <LinearGradient
-          colors={[withAlpha(awayColor, 0.34), withAlpha(homeColor, 0.34)]}
-          start={{ x: 0, y: 0.4 }}
-          end={{ x: 1, y: 0.6 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <LinearGradient
-          colors={[withAlpha(base, 0), withAlpha(base, 0.78)]}
-          locations={[0, 0.42]}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
+    <View style={styles.root}>
+      <GameBackdrop awayColor={awayColor} homeColor={homeColor} heroStyle={heroTintStyle} />
 
       <GameTopBar
         collapsed={collapsed}
