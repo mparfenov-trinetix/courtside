@@ -25,7 +25,7 @@ import { DataHealthBanner } from '@/components';
 import { reportIssue } from '@/lib/data-health';
 import { currentSeason, setHealthReporter } from '@/lib/espn';
 import { palette } from '@/lib/theme';
-import { TeamProvider , WatchlistProvider } from '@/state';
+import { LastVisitProvider, TeamProvider, WatchlistProvider } from '@/state';
 
 // Keep the native splash up until the intro screen has painted its first frame,
 // so the hand-off from native splash to the JS intro animation is seamless.
@@ -45,7 +45,7 @@ const persister = createAsyncStoragePersister({ storage: AsyncStorage, key: 'cou
 
 // Slow-changing, small payloads are restored on launch. Game summaries are big and live games change,
 // but a *finished* game never does, so the latest few of those are kept too and open instantly, offline.
-const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'playerCareer', 'leagueTeamStats']);
+const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'playerCareer', 'leagueTeamStats', 'allStars', 'cup', 'headToHead', 'playerProfile', 'playerBio', 'playerGameLog']);
 const KEPT_FINISHED_GAMES = 8;
 
 const isFinished = (q: Query) => !!(q.state.data as { completed?: boolean } | undefined)?.completed;
@@ -96,13 +96,14 @@ export default function RootLayout() {
         persistOptions={{
           persister,
           maxAge: WEEK,
-          buster: 'v7',
+          buster: 'v9',
           dehydrateOptions: {
             shouldDehydrateQuery: shouldPersist,
           },
         }}>
         <TeamProvider>
           <WatchlistProvider>
+          <LastVisitProvider>
           <ThemeProvider value={navTheme}>
             <StatusBar style="light" />
             <Stack
@@ -123,11 +124,13 @@ export default function RootLayout() {
               <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="team/[id]" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="search" options={{ animation: 'fade' }} />
+              <Stack.Screen name="matchup-standings" options={{ animation: 'slide_from_right' }} />
             </Stack>
             <NavDepthTracker />
             <WidgetSync />
             <DataHealthBanner />
           </ThemeProvider>
+          </LastVisitProvider>
           </WatchlistProvider>
         </TeamProvider>
       </PersistQueryClientProvider>

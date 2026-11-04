@@ -18,9 +18,10 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import Svg, { Circle, Line } from 'react-native-svg';
 
-import { Basketball } from '@/components';
+import { Basketball, NbaLogo } from '@/components';
+import { useTeam } from '@/hooks';
 import { fetchTeams } from '@/lib/espn';
-import { fonts, palette } from '@/lib/theme';
+import { fonts, palette, teamTheme } from '@/lib/theme';
 import { useTeamStore } from '@/state';
 import { BALL, RING, WORD } from './constants';
 
@@ -36,6 +37,9 @@ export function IntroScreen() {
   const queryClient = useQueryClient();
   const { hydrated, favoriteTeamId } = useTeamStore();
   const [finished, setFinished] = useState(false);
+  // Returning users see the court drawn in their own team's color (the teams list is prefetched below).
+  const favorite = useTeam(favoriteTeamId);
+  const lineColor = favorite ? teamTheme(favorite).accent : palette.maple;
   const started = useRef(false);
 
   const ballY = useSharedValue(0); // 0 = resting on the floor (screen center)
@@ -137,7 +141,7 @@ export function IntroScreen() {
           <AnimatedLine
             y1={centerY + BALL / 2 + 2}
             y2={centerY + BALL / 2 + 2}
-            stroke={palette.maple}
+            stroke={lineColor}
             strokeOpacity={0.5}
             strokeWidth={2}
             animatedProps={floorProps}
@@ -146,7 +150,7 @@ export function IntroScreen() {
             cx={width / 2}
             cy={centerY}
             r={RING}
-            stroke={palette.maple}
+            stroke={lineColor}
             strokeWidth={2.5}
             fill="none"
             strokeDasharray={`${2 * Math.PI * RING}`}
@@ -171,7 +175,10 @@ export function IntroScreen() {
               <Letter key={i} char={char} index={i} progress={word} />
             ))}
           </View>
-          <Animated.Text style={[styles.tagline, taglineStyle]}>NBA team cards</Animated.Text>
+          <Animated.Text style={[styles.tagline, taglineStyle]}>Every team. Every game.</Animated.Text>
+          <Animated.View style={[styles.league, taglineStyle]}>
+            <NbaLogo size={56} />
+          </Animated.View>
         </View>
       </Animated.View>
     </Pressable>
@@ -221,6 +228,7 @@ const styles = StyleSheet.create({
     fontSize: 58,
     color: palette.chalk,
   },
+  league: { marginTop: 18 },
   tagline: {
     marginTop: 2,
     fontFamily: fonts.bodySemi,
