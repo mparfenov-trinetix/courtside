@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import { normalizeGameSummary } from '../src/lib/espn';
-import { buildFourFactors, deriveFlow, deriveQuarterStats, sumLineups, sumPeriods } from '../src/lib/game';
+import { shotsOf, buildFourFactors, deriveFlow, deriveQuarterStats, sumLineups, sumPeriods } from '../src/lib/game';
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/game-final.json', import.meta.url), 'utf8'));
 const game = normalizeGameSummary(fixture, '401909912');
@@ -97,4 +97,13 @@ test('four factors: eFG% weights threes, and the rebound row is dropped without 
   assert.equal(rows[0].awayText, '56.3%'); // (40 + 0.5*10) / 80
   assert.ok(!rows.some((r) => r.label === 'Off. rebound rate'));
   assert.equal(buildFourFactors({ ...t, oreb: 8, dreb: 30 }, { ...t, oreb: 10, dreb: 28 }).length, 4);
+});
+
+test('shotsOf: one player field goals with locations, free throws left out', () => {
+  const shooter = plays.find((p) => p.shooting && p.x != null && p.athleteIds[0])!.athleteIds[0];
+  const shots = shotsOf(plays, shooter);
+  assert.ok(shots.length > 3);
+  assert.ok(shots.every((s) => s.x >= 0 && s.x <= 50 && s.y >= 0 && s.y <= 47));
+  assert.ok(shots.some((s) => s.made) && shots.some((s) => !s.made));
+  assert.deepEqual(shotsOf(plays, 'nobody'), []);
 });

@@ -27,5 +27,23 @@ export function currentSeason(): number {
   return now.getFullYear() + (now.getMonth() >= 9 ? 1 : 0);
 }
 
+/**
+ * ESPN's logo for a team in the feeds that only carry its default one. For the Celtics that is the shamrock roundel (their
+ * secondary logo), so their real primary logo is swapped in; every other team's logo passes through untouched.
+ */
+const PRIMARY_LOGO_GUID: Record<string, string> = { BOS: '2ca761df-5f60-b2e9-22ed-e099c46d889b' };
+
+export function teamLogo(abbr: string | undefined, href: string | undefined): string {
+  const guid = abbr ? PRIMARY_LOGO_GUID[abbr] : undefined;
+  if (guid) return `https://a.espncdn.com/combiner/i?img=/guid/${guid}/logos/primary_logo_on_black_color.png&w=500&h=500&transparent=true`;
+  return href ?? '';
+}
+
+/** The season a game date belongs to: games from September on count toward the season that ends the next year. */
+export function seasonOfDate(iso: string): number {
+  const d = new Date(iso);
+  return d.getFullYear() + (d.getMonth() >= 8 ? 1 : 0);
+}
+
 /** 2027 -> "2026-27". */
 export const seasonLabel = (year: number) => `${year - 1}-${String(year).slice(2)}`;

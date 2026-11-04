@@ -1,5 +1,5 @@
 export { setHealthReporter, viaProxy } from './client';
-export { cupStage, currentSeason, seasonLabel } from './common';
+export { cupStage, currentSeason, seasonLabel, seasonOfDate, teamLogo } from './common';
 export { fetchRoster, fetchTeamDetail, fetchTeams } from './teams';
 export type { Player, Roster, Team, TeamDetail } from './teams';
 export { fetchHeadToHead, fetchTeamSchedule } from './schedule';
@@ -14,6 +14,7 @@ export { fetchScoreboardByDate, involvesTeam } from './scoreboard';
 export type { ScoreboardGame, ScoreboardTeam } from './scoreboard';
 export { fetchPlayerCareer, fetchPlayerGameLog, fetchPlayerStats, fetchPlayerBio, headshotUrl, searchPlayers } from './players';
 export type { CareerRow, GameLogEntry, PlayerBio, PlayerCareer, PlayerSearchResult, PlayerSeasonStats } from './players';
+export { fetchAllStars } from './all-star';
 export { fetchPlayerProfile } from './player-profile';
 export type { Contract, Draft, Honor, PlayerProfile } from './player-profile';
 export { fetchLeagueTeamStats, normalizeLeagueTeamStats } from './team-stats';

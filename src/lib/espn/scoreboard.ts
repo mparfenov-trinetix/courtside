@@ -1,6 +1,6 @@
 import { BASE, getJson } from './client';
 import type { Json } from './client';
-import { cupStage } from './common';
+import { cupStage, teamLogo } from './common';
 
 export type ScoreboardTeam = {
   teamId: string;
@@ -36,7 +36,7 @@ export async function fetchScoreboardByDate(date: string): Promise<ScoreboardGam
       teamId: String(c.team?.id ?? ''),
       name: c.team?.displayName ?? c.team?.name ?? '',
       abbreviation: c.team?.abbreviation ?? '',
-      logo: c.team?.logo ?? c.team?.logos?.[0]?.href ?? '',
+      logo: teamLogo(c.team?.abbreviation, c.team?.logo ?? c.team?.logos?.[0]?.href),
       score: c.score != null ? parseFloat(String(c.score)) || undefined : undefined,
       winner: c.winner === true,
     });

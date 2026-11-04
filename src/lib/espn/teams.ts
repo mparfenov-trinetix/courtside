@@ -57,8 +57,18 @@ function pickLogo(logos: Json[] | undefined, variant: 'default' | 'dark') {
   return (match ?? logos[0]).href ?? '';
 }
 
+/**
+ * Teams whose ESPN "default" logo is really the secondary one. The Celtics' is the shamrock roundel; their primary logo (the
+ * leprechaun) only comes with the brand variants, so it is taken from there.
+ */
+const PRIMARY_FROM_BRAND = new Set(['BOS']);
+
 export function normalizeTeam(t: Json): Team {
-  const logo = pickLogo(t.logos, 'default') || (typeof t.logo === 'string' ? t.logo : '');
+  const brand = PRIMARY_FROM_BRAND.has(t.abbreviation);
+  const logo =
+    (brand && brandLogo(t.logos, 'primary_logo_on_white_color')) ||
+    pickLogo(t.logos, 'default') ||
+    (typeof t.logo === 'string' ? t.logo : '');
   return {
     id: String(t.id),
     abbreviation: t.abbreviation ?? '',
@@ -70,17 +80,21 @@ export function normalizeTeam(t: Json): Team {
     logo,
     // ESPN's "dark" variant is a flat white mark for these teams, which loses the team's identity on the
     // app's dark background: show the colored logo there instead.
-    logoDark: COLORED_ON_DARK.has(t.abbreviation) ? logo : pickLogo(t.logos, 'dark') || logo,
-    logoOnPrimary: pickLogo(t.logos, 'dark') || logo,
+    logoDark: (brand && brandLogo(t.logos, 'primary_logo_on_black_color')) || (COLORED_ON_DARK.has(t.abbreviation) ? logo : pickLogo(t.logos, 'dark') || logo),
+    logoOnPrimary: (brand && brandLogo(t.logos, 'primary_logo_on_primary_color')) || pickLogo(t.logos, 'dark') || logo,
     mark: markUrl(t.logos),
   };
 }
 
-/** The 4096px originals are resized through ESPN's image service. */
-function markUrl(logos: Json[] | undefined): string | undefined {
-  const href: string | undefined = (logos ?? []).find((l) => Array.isArray(l.rel) && l.rel.includes('secondary_logo_on_black_color'))?.href;
+/** One of ESPN's brand-kit logos (the 4096px originals), resized through its image service. */
+function brandLogo(logos: Json[] | undefined, rel: string, size = 500): string | undefined {
+  const href: string | undefined = (logos ?? []).find((l) => Array.isArray(l.rel) && l.rel.includes(rel))?.href;
   const guid = href?.split('/guid/')[1];
-  return guid ? `https://a.espncdn.com/combiner/i?img=/guid/${guid}&w=400&h=400&transparent=true` : undefined;
+  return guid ? `https://a.espncdn.com/combiner/i?img=/guid/${guid}&w=${size}&h=${size}&transparent=true` : undefined;
+}
+
+function markUrl(logos: Json[] | undefined): string | undefined {
+  return brandLogo(logos, 'secondary_logo_on_black_color', 400);
 }
 
 const COLORED_ON_DARK = new Set(['TOR']);

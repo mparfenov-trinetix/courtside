@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsFocused } from 'expo-router';
 
 import {
   fetchGameSummary,
   fetchHeadToHead,
+  fetchAllStars,
   fetchCupGames,
   fetchLeagueLeaders,
   fetchPostseason,
@@ -21,7 +22,10 @@ import {
   fetchTeams,
   searchPlayers,
   fetchTeamSchedule,
+  type Game,
+  type ScoreboardGame,
 } from '@/lib/espn';
+import { shotsOf } from '@/lib/game';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -210,4 +214,63 @@ export function usePlayerBio(athleteId?: string | null) {
     enabled: !!athleteId,
     staleTime: 6 * HOUR,
   });
+}
+
+/** Every All-Star Game roster since 2003, read once (it never changes) and kept. */
+export function useAllStars(enabled = true) {
+  return useQuery({
+    queryKey: ['allStars'],
+    queryFn: fetchAllStars,
+    enabled,
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+}
+
+/**
+ * The two teams of a game that is still loading, found in data the app already has (a scoreboard it showed, or a team's
+ * schedule). Lets the game page paint its team colors from the first frame instead of switching when the game arrives.
+ */
+export function useGameTeams(gameId?: string | null): { awayId: string; homeId: string } | null {
+  const client = useQueryClient();
+  if (!gameId) return null;
+  for (const q of client.getQueryCache().findAll({ queryKey: ['scoreboard'] })) {
+    const g = (q.state.data as ScoreboardGame[] | undefined)?.find((x) => x.id === gameId);
+    if (g) return { awayId: g.away.teamId, homeId: g.home.teamId };
+  }
+  for (const q of client.getQueryCache().findAll({ queryKey: ['schedule'] })) {
+    const g = (q.state.data as Game[] | undefined)?.find((x) => x.id === gameId);
+    const teamId = String(q.queryKey[1] ?? '');
+    if (g && teamId && g.opponentId) return g.home ? { homeId: teamId, awayId: g.opponentId } : { homeId: g.opponentId, awayId: teamId };
+  }
+  return null;
+}
+
+/** Game logs of several players at once (the same cached queries the player page uses). */
+export function usePlayerGameLogs(ids: string[]) {
+  return useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ['playerGameLog', id],
+      queryFn: () => fetchPlayerGameLog(id),
+      staleTime: 30 * 60 * 1000,
+    })),
+  });
+}
+
+/**
+ * One player's shots over several finished games. Each game's play-by-play is its own request (and the same cached query the
+ * game page uses, so games already opened cost nothing), so nothing loads until `enabled`.
+ */
+export function usePlayerShots(athleteId: string, gameIds: string[], enabled: boolean) {
+  const results = useQueries({
+    queries: gameIds.map((id) => ({
+      queryKey: ['game', id],
+      queryFn: () => fetchGameSummary(id),
+      enabled,
+      staleTime: Infinity,
+    })),
+  });
+  const loaded = results.filter((r) => r.data).length;
+  const shots = results.flatMap((r) => (r.data ? shotsOf(r.data.plays, athleteId) : []));
+  return { shots, loaded, total: gameIds.length };
 }

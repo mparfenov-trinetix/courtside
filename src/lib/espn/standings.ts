@@ -1,6 +1,6 @@
 import { getJson, report } from './client';
 import type { Json } from './client';
-import { currentSeason } from './common';
+import { currentSeason, teamLogo } from './common';
 
 export type StandingEntry = {
   teamId: string;
@@ -47,7 +47,7 @@ export async function fetchStandings(season: number = currentSeason()): Promise<
           teamId: String(team.id ?? ''),
           teamName: team.displayName ?? `${team.location ?? ''} ${team.name ?? ''}`.trim(),
           teamAbbr: team.abbreviation ?? '',
-          teamLogo: team.logos?.[0]?.href ?? '',
+          teamLogo: teamLogo(team.abbreviation, team.logos?.[0]?.href),
           wins: stat('wins'),
           losses: stat('losses'),
           winPct: stat('winPercent'),

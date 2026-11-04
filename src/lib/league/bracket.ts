@@ -6,7 +6,7 @@ import type { CupGame, CupSide, ConferenceStandings } from '@/lib/espn';
  */
 
 export type Conf = 'east' | 'west';
-export type RoundKey = 'playin' | 'r1' | 'r2' | 'r3' | 'finals' | 'cup-qf' | 'cup-sf' | 'cup-final';
+export type RoundKey = 'playin' | 'playin-final' | 'r1' | 'r2' | 'r3' | 'finals' | 'cup-qf' | 'cup-sf' | 'cup-final';
 
 export type SeriesTeam = { teamId: string; abbr: string; logo: string; seed?: number };
 
@@ -44,6 +44,7 @@ export type Round = { key: RoundKey; name: string; series: Series[] };
 
 export const ROUND_NAMES: Record<RoundKey, string> = {
   playin: 'Play-In',
+  'playin-final': '8th seed game',
   r1: 'First Round',
   r2: 'Conference Semifinals',
   r3: 'Conference Finals',
@@ -188,7 +189,10 @@ export function seedMap(standings: ConferenceStandings): Record<string, number> 
 /** Where each first-round series sits in the bracket, top to bottom, by its top seed. */
 const R1_SLOT: Record<number, number> = { 1: 0, 4: 1, 3: 2, 2: 3 };
 
-export type Playoffs = { rounds: Round[]; sections: { title: string; rounds: Round[] }[] };
+/** One drawn bracket: columns of rounds left to right. `byConference` stacks East above West inside each column. */
+export type BracketSection = { title: string; rounds: Round[]; byConference?: boolean };
+
+export type Playoffs = { rounds: Round[]; sections: BracketSection[] };
 
 export function buildPlayoffs(games: CupGame[], seeds: Record<string, number>): Playoffs {
   const drafts = group(games, (g) => {
@@ -227,13 +231,14 @@ export function buildPlayoffs(games: CupGame[], seeds: Record<string, number>): 
   const finals = byRound('finals');
   finals.forEach((s) => (s.order = 0));
 
+  // One tree: East stacked above West, each round a column, and the Finals the last column, centered between the two
+  // conference finals it grew out of.
   const key: RoundKey[] = ['r1', 'r2', 'r3'];
-  const section = (title: string, rs: Series[][]) => ({
-    title,
-    rounds: rs.map((series, i): Round => ({ key: key[i], name: ROUND_NAMES[key[i]], series })).filter((r) => r.series.length > 0),
-  });
-  const sections = [section('East', east), section('West', west)].filter((s) => s.rounds.length > 0);
-  if (finals.length) sections.push({ title: 'NBA Finals', rounds: [{ key: 'finals', name: ROUND_NAMES.finals, series: finals }] });
+  const columns: Round[] = key
+    .map((k, i): Round => ({ key: k, name: ROUND_NAMES[k], series: [...east[i], ...west[i]] }))
+    .filter((r) => r.series.length > 0);
+  if (finals.length) columns.push({ key: 'finals', name: ROUND_NAMES.finals, series: finals });
+  const sections: BracketSection[] = columns.length ? [{ title: '', rounds: columns, byConference: true }] : [];
 
   const rounds: Round[] = (['r1', 'r2', 'r3', 'finals'] as RoundKey[])
     .map((k): Round => ({
@@ -249,8 +254,15 @@ export function buildPlayoffs(games: CupGame[], seeds: Record<string, number>): 
 // ─── Play-in ──────────────────────────────────────────────────────────────────
 
 const PLAYIN_ORDER = ['7th Place vs 8th Place', '9th Place vs 10th Place', '8th Seed Game'];
+const playInIndex = (s: Series) => PLAYIN_ORDER.findIndex((t) => (s.title ?? '').startsWith(t.split(' ')[0]));
 
-export function buildPlayIn(games: CupGame[], seeds: Record<string, number>): Round | null {
+export type PlayIn = { rounds: Round[]; sections: BracketSection[] };
+
+/**
+ * The play-in as a real bracket, per conference: 7 vs 8 and 9 vs 10 first, then the loser of the first plays the winner
+ * of the second for the 8th seed. `rounds` is the flat list for the Rounds view.
+ */
+export function buildPlayIn(games: CupGame[], seeds: Record<string, number>): PlayIn | null {
   const drafts = group(games, (g) => {
     const p = parsePlayInNote(g.stage);
     return p ? { round: 'playin', conference: p.conference, label: p.title, title: p.title, bestOf: 1 } : null;
@@ -258,10 +270,22 @@ export function buildPlayIn(games: CupGame[], seeds: Record<string, number>): Ro
   const series = drafts.map((d) => finish(d, (id) => seeds[id], true));
   series.sort((a, b) => {
     if (a.conference !== b.conference) return a.conference === 'east' ? -1 : 1;
-    return PLAYIN_ORDER.findIndex((t) => (a.title ?? '').startsWith(t.split(' ')[0])) - PLAYIN_ORDER.findIndex((t) => (b.title ?? '').startsWith(t.split(' ')[0]));
+    return playInIndex(a) - playInIndex(b);
   });
   series.forEach((s, i) => (s.order = i));
-  return series.length ? { key: 'playin', name: ROUND_NAMES.playin, series } : null;
+  if (series.length === 0) return null;
+
+  const sections = (['east', 'west'] as const).flatMap((conf): BracketSection[] => {
+    const mine = series.filter((s) => s.conference === conf);
+    const first = mine.filter((s) => playInIndex(s) < 2);
+    const last = mine.filter((s) => playInIndex(s) === 2);
+    const rounds = ([
+      { key: 'playin', name: 'First games', series: first },
+      { key: 'playin-final', name: '8th seed game', series: last },
+    ] satisfies Round[]).filter((r) => r.series.length > 0);
+    return rounds.length ? [{ title: conf === 'east' ? 'East' : 'West', rounds }] : [];
+  });
+  return { rounds: [{ key: 'playin', name: ROUND_NAMES.playin, series }], sections };
 }
 
 // ─── NBA Cup knockout ─────────────────────────────────────────────────────────
@@ -293,18 +317,27 @@ export type Placement = { series: Series; col: number; y: number };
  * Positions for a bracket drawn left to right: the first round is evenly stacked and every later series
  * is centered between the series it grew out of.
  */
-export function layoutTree(rounds: Round[], cardH: number, gap: number): { placements: Placement[]; height: number } {
+export function layoutTree(
+  rounds: Round[],
+  cardH: number,
+  gap: number,
+  opts: { confGap?: number; top?: number } = {},
+): { placements: Placement[]; height: number } {
+  const { confGap = 0, top = 0 } = opts;
   const placements: Placement[] = [];
   const yById = new Map<string, number>();
   rounds.forEach((round, col) => {
+    // Extra room where the first round switches conference (East above, West below).
+    let extra = 0;
     round.series.forEach((s, i) => {
       let y: number;
       if (col === 0) {
-        y = i * (cardH + gap);
+        if (i > 0 && s.conference !== round.series[i - 1].conference) extra += confGap;
+        y = top + i * (cardH + gap) + extra;
       } else {
         const feeders = rounds[col - 1].series.filter((p) => [p.top.teamId, p.bottom.teamId].some((id) => id === s.top.teamId || id === s.bottom.teamId));
         const ys = feeders.map((f) => yById.get(f.id)).filter((v): v is number => v != null);
-        y = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : i * (cardH + gap) * 2 ** col;
+        y = ys.length ? ys.reduce((a, b) => a + b, 0) / ys.length : top + i * (cardH + gap) * 2 ** col;
       }
       yById.set(s.id, y);
       placements.push({ series: s, col, y });

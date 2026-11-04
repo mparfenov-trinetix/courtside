@@ -1,6 +1,6 @@
 import { CORE, getJson } from './client';
 import type { Json } from './client';
-import { currentSeason } from './common';
+import { currentSeason, teamLogo } from './common';
 import type { Player } from './teams';
 
 export type PlayerSeasonStats = {
@@ -194,7 +194,7 @@ export async function fetchPlayerCareer(athleteId: string): Promise<PlayerCareer
       year: Number(s.season?.year ?? 0),
       season: String(s.season?.displayName ?? ''),
       abbr: team?.abbreviation ?? (/total/i.test(String(s.teamSlug)) ? 'TOT' : ''),
-      logo: team?.logos?.[0]?.href,
+      logo: team?.abbreviation ? teamLogo(team.abbreviation, team?.logos?.[0]?.href) : team?.logos?.[0]?.href,
       stats,
     };
   });
@@ -209,6 +209,9 @@ export type PlayerBio = {
   teamId: string | null;
   /** On an NBA roster right now. */
   active: boolean;
+  /** "Sombor, Serbia" and "Serbia", when ESPN has them. */
+  birthPlace?: string;
+  citizenship?: string;
 };
 
 /**
@@ -234,5 +237,6 @@ export async function fetchPlayerBio(athleteId: string): Promise<PlayerBio> {
     headshot: a.headshot?.href ?? headshotUrl(athleteId),
   };
   const teamId = a.team?.id != null && String(a.team.id) !== '' ? String(a.team.id) : null;
-  return { player, teamId, active: a.active === true };
+  const text = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+  return { player, teamId, active: a.active === true, birthPlace: text(a.displayBirthPlace), citizenship: text(a.citizenship) };
 }

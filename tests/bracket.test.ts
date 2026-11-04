@@ -95,16 +95,39 @@ test('tree layout centers each series between its feeders', () => {
   assert.equal(height, 3 * 70 + 60);
 });
 
+test('the Finals are the last column of the same tree, centered between the two conference finals', () => {
+  const games = [
+    game('East Finals - Game 1', 1, 2, 100, 90),
+    game('West Finals - Game 1', 11, 12, 100, 90),
+    game('NBA Finals - Game 1', 1, 11, 100, 90),
+  ];
+  const [tree] = buildPlayoffs(games, {}).sections;
+  assert.equal(tree.byConference, true);
+  assert.deepEqual(tree.rounds.map((r) => r.key), ['r3', 'finals']);
+  const { placements } = layoutTree(tree.rounds, 60, 10, { confGap: 40, top: 20 });
+  const y = (col: number, i: number) => placements.filter((p) => p.col === col)[i].y;
+  assert.equal(y(0, 0), 20);
+  assert.equal(y(0, 1), 20 + 70 + 40);
+  assert.equal(y(1, 0), (y(0, 0) + y(0, 1)) / 2);
+});
+
 test('play-in: three single games per conference, in bracket order', () => {
   const games = [
     game('NBA Play-In - East - 9th Place vs 10th Place', 9, 10, 100, 90),
     game('NBA Play-In - East - 8th Seed Game', 8, 9, 99, 101),
     game('NBA Play-In - East - 7th Place vs 8th Place', 7, 8, 110, 100),
   ];
-  const round = buildPlayIn(games, seeds)!;
+  const playIn = buildPlayIn(games, seeds)!;
+  const round = playIn.rounds[0];
   assert.deepEqual(round.series.map((s) => s.title), ['7th Place vs 8th Place', '9th Place vs 10th Place', '8th Seed Game']);
   assert.equal(round.series[0].status, 'T7 wins 110-100');
   assert.equal(round.series[2].winnerId, '9');
+  // As a bracket: the two first games feed the 8th seed game, which sits centered between them.
+  const east = playIn.sections[0];
+  assert.deepEqual(east.rounds.map((r) => r.series.length), [2, 1]);
+  const { placements } = layoutTree(east.rounds, 60, 10);
+  const y = (col: number, i: number) => placements.filter((p) => p.col === col)[i].y;
+  assert.equal(y(1, 0), (y(0, 0) + y(0, 1)) / 2);
 });
 
 test('Cup knockout: quarterfinals, semifinals and the championship, East half first', () => {
