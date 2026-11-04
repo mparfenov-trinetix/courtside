@@ -164,3 +164,15 @@ export function CupIcon({ size = 22, color }: IconProps) {
     </Svg>
   );
 }
+
+export function FlameIcon({ size = 22, color, filled }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-1.8.8-3 1.8-4 .3 1.4 1 2 1.7 2.3C10.2 8.6 10.6 5.6 12 3z"
+        {...stroke(color)}
+        fill={filled ? color : 'none'}
+      />
+    </Svg>
+  );
+}

@@ -1,0 +1,284 @@
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, type Href } from 'expo-router';
+import { DrawerContentScrollView, useDrawerProgress, type DrawerContentComponentProps } from 'expo-router/drawer';
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { useTeam } from '@/hooks';
+import { fonts, logoOn, mix, palette, teamTheme, withAlpha } from '@/lib/theme';
+import { useTeamStore } from '@/state';
+import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, GridIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon } from '../Icons';
+import { NbaLogo } from '../NbaLogo';
+import { DRAWER_WIDTH, SCENE_RADIUS, type MenuSection } from './constants';
+
+// Only when Metro was started with `npm run storybook`.
+const STORYBOOK = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === 'true';
+
+/** The menu, in groups: your team, the league, players (to look up and compare) and the two tournaments. */
+export const SECTIONS: MenuSection[] = [
+  {
+    title: 'Team',
+    items: [
+      { route: 'home', href: '/home', label: 'Team card', Icon: CardIcon },
+      { route: 'roster', href: '/roster', label: 'Roster', Icon: PeopleIcon },
+      { route: 'team-leaders', href: '/team-leaders' as Href, label: 'Team leaders', Icon: PodiumIcon },
+      { route: 'calendar', href: '/calendar' as Href, label: 'Calendar', Icon: CalendarIcon },
+    ],
+  },
+  {
+    title: 'League',
+    items: [
+      { route: 'standings', href: '/standings', label: 'Standings', Icon: StandingsIcon },
+      { route: 'league-leaders', href: '/league-leaders', label: 'League leaders', Icon: TrophyIcon },
+      { route: 'teams', href: '/teams', label: 'All teams', Icon: GridIcon },
+    ],
+  },
+  {
+    title: 'Players',
+    items: [
+      { route: 'compare', href: '/compare' as Href, label: 'Compare', Icon: CompareIcon },
+      { route: 'watchlist', href: '/watchlist' as Href, label: 'Watchlist', Icon: StarIcon },
+    ],
+  },
+  {
+    title: 'Tournaments',
+    items: [
+      { route: 'playoffs', href: '/playoffs' as Href, label: 'Playoffs', Icon: BracketIcon },
+      { route: 'cup', href: '/cup' as Href, label: 'NBA Cup', Icon: CupIcon },
+    ],
+  },
+];
+
+/** Where each row falls in the opening sequence (hero, search, then every section title and its items), worked out once. */
+const ORDER = (() => {
+  let n = 2;
+  const titles: Record<string, number> = {};
+  const items: Record<string, number> = {};
+  for (const section of SECTIONS) {
+    titles[section.title] = n++;
+    for (const item of section.items) items[item.route] = n++;
+  }
+  return { titles, items, footer: n };
+})();
+
+/** Fades and slides its content in as the menu opens, each row a little after the one above it. */
+function Reveal({ progress, index, children }: { progress: SharedValue<number>; index: number; children: ReactNode }) {
+  const style = useAnimatedStyle(() => {
+    const from = Math.min(0.55, 0.1 + index * 0.035);
+    const p = interpolate(progress.get(), [from, from + 0.4], [0, 1], Extrapolation.CLAMP);
+    return { opacity: p, transform: [{ translateX: (1 - p) * -18 }] };
+  });
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
+
+/** The deep, team-tinted color behind the menu: darker than any screen, so the screen reads as a layer above it. */
+export const menuBackground = (primary: string) => mix(primary, '#000000', 0.62);
+
+export function DrawerMenu(props: DrawerContentComponentProps) {
+  const insets = useSafeAreaInsets();
+  const progress = useDrawerProgress() as SharedValue<number>;
+  const { favoriteTeamId, currentTeamId, viewTeam } = useTeamStore();
+  const team = useTeam(currentTeamId);
+  const favorite = useTeam(favoriteTeamId);
+  const theme = teamTheme(team);
+  const base = menuBackground(theme.primary);
+  const activeRoute = props.state.routes[props.state.index]?.name;
+
+  const go = (href: Href) => {
+    props.navigation.closeDrawer();
+    router.navigate(href);
+  };
+
+  const dim = withAlpha(palette.chalk, 0.72);
+  const press = ({ pressed }: { pressed: boolean }) => [styles.item, pressed && { backgroundColor: withAlpha('#FFFFFF', 0.07) }];
+
+  return (
+    <View style={{ flex: 1, width: DRAWER_WIDTH, backgroundColor: base }}>
+      <LinearGradient colors={[withAlpha(theme.primary, TOP_WASH + 0.02), withAlpha(theme.primary, 0)]} style={[StyleSheet.absoluteFill, { height: 360 }]} />
+
+      <Reveal progress={progress} index={0}>
+        <View style={[styles.hero, { paddingTop: insets.top + 16 }]}>
+          <View style={styles.heroTop}>
+            {team && <Image source={logoOn(team, theme.onPrimary)} style={styles.heroLogo} contentFit="contain" />}
+            <View style={styles.pills}>
+              {favorite && favorite.id !== currentTeamId && (
+                <Pressable
+                  onPress={() => {
+                    viewTeam(favorite.id);
+                    go('/home');
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Back to the ${favorite.name}`}
+                  style={({ pressed }) => [styles.pill, pressed && { opacity: 0.7 }]}>
+                  <Image source={favorite.logoDark || favorite.logo} style={styles.pillLogo} contentFit="contain" />
+                  <Text style={styles.pillText}>Mine</Text>
+                </Pressable>
+              )}
+              <Pressable
+                onPress={() => {
+                  props.navigation.closeDrawer();
+                  router.push('/onboarding');
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Change favorite team"
+                style={({ pressed }) => [styles.pill, pressed && { opacity: 0.7 }]}>
+                <StarIcon color={dim} size={14} />
+                <Text style={styles.pillText}>Change</Text>
+              </Pressable>
+            </View>
+          </View>
+          <Text style={[styles.heroLocation, { color: withAlpha(theme.onPrimary, 0.75) }]}>{team?.location ?? 'Courtside'}</Text>
+          <Text style={[styles.heroName, { color: theme.onPrimary }]} numberOfLines={1}>
+            {team?.name ?? ''}
+          </Text>
+        </View>
+      </Reveal>
+
+      <Reveal progress={progress} index={1}>
+        <Pressable
+          onPress={() => {
+            props.navigation.closeDrawer();
+            router.push('/search');
+          }}
+          accessibilityRole="search"
+          accessibilityLabel="Search teams and players"
+          style={({ pressed }) => [styles.search, pressed && { opacity: 0.75 }]}>
+          <SearchIcon color={dim} size={18} />
+          <Text style={styles.searchText}>Search teams and players</Text>
+        </Pressable>
+      </Reveal>
+
+      <DrawerContentScrollView {...props} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        {SECTIONS.map((section) => (
+          <View key={section.title} style={styles.section}>
+            <Reveal progress={progress} index={ORDER.titles[section.title]}>
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+            </Reveal>
+            {section.items.map(({ route, href, label, Icon }) => {
+              const active = route === activeRoute;
+              const color = active ? palette.chalk : dim;
+              return (
+                <Reveal key={route} progress={progress} index={ORDER.items[route]}>
+                  <Pressable
+                    onPress={() => go(href)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    style={(s) => [press(s), active && { backgroundColor: withAlpha(theme.accent, 0.2) }]}>
+                    {active && <View style={[styles.activeBar, { backgroundColor: theme.accent }]} />}
+                    <Icon color={active ? theme.accent : color} size={22} />
+                    <Text style={[styles.itemLabel, { color }]}>{label}</Text>
+                  </Pressable>
+                </Reveal>
+              );
+            })}
+          </View>
+        ))}
+
+        {STORYBOOK && (
+          <Pressable
+            onPress={() => {
+              props.navigation.closeDrawer();
+              router.push('/storybook' as Href);
+            }}
+            accessibilityRole="button"
+            style={press}>
+            <GridIcon color={dim} size={20} />
+            <Text style={[styles.itemLabelSmall, { color: dim }]}>Storybook</Text>
+          </Pressable>
+        )}
+      </DrawerContentScrollView>
+
+      <View style={[styles.footerRow, { paddingBottom: insets.bottom + 16 }]}>
+        <NbaLogo size={28} />
+        <Text style={styles.footer}>Team data from ESPN’s public API</Text>
+      </View>
+    </View>
+  );
+}
+
+/** How much of the team color the menu's top wash shows at the very top edge. */
+const TOP_WASH = 0.53;
+
+/** A rounded corner drawn in the menu's color over the screen's own corner, so the screen needs no clipping to look round. */
+function Corner({ color, flip }: { color: string; flip?: boolean }) {
+  const r = SCENE_RADIUS;
+  return (
+    <Svg width={r} height={r} style={flip ? { transform: [{ scaleY: -1 }] } : undefined}>
+      <Path d={`M0,0 H${r} A${r},${r} 0 0 0 0,${r} Z`} fill={color} />
+      <Path d={`M${r},0 A${r},${r} 0 0 0 0,${r}`} fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth={1.5} />
+    </Svg>
+  );
+}
+
+/**
+ * Wraps every screen. While the menu is open the screen reads as a layer of its own: round corners at its left edge, a
+ * soft shadow falling onto the menu and a thin light edge. It is all drawn on top of the screen (nothing clips or
+ * re-renders the screen itself), so opening a screen from the menu stays cheap.
+ */
+export function SceneFrame({ children }: { children: ReactNode }) {
+  const progress = useDrawerProgress() as SharedValue<number>;
+  const { currentTeamId } = useTeamStore();
+  const team = useTeam(currentTeamId);
+  const primary = teamTheme(team).primary;
+  const menu = menuBackground(primary);
+  // The menu's team-colored wash is strongest at the very top (see DrawerMenu), so the top corner matches it, not the base.
+  const menuTop = mix(menu, primary, TOP_WASH);
+  const edge = useAnimatedStyle(() => ({ opacity: progress.get() }));
+  // The corners must be solid as soon as any of the menu shows (they sit right next to it), not fade in with the slide.
+  const corner = useAnimatedStyle(() => ({ opacity: Math.min(1, progress.get() * 8) }));
+  return (
+    <View style={styles.frame}>
+      {children}
+      <Animated.View pointerEvents="none" style={[styles.shadow, edge]}>
+        <LinearGradient colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+      </Animated.View>
+      <Animated.View pointerEvents="none" style={[styles.line, edge]} />
+      <Animated.View pointerEvents="none" style={[styles.cornerTop, corner]}>
+        <Corner color={menuTop} />
+      </Animated.View>
+      <Animated.View pointerEvents="none" style={[styles.cornerBottom, corner]}>
+        <Corner color={menu} flip />
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  frame: { flex: 1 },
+  shadow: { position: 'absolute', top: 0, bottom: 0, left: 0, width: 26 },
+  line: { position: 'absolute', top: SCENE_RADIUS, bottom: SCENE_RADIUS, left: 0, width: 1.5, backgroundColor: 'rgba(255,255,255,0.16)' },
+  cornerTop: { position: 'absolute', top: 0, left: 0 },
+  cornerBottom: { position: 'absolute', bottom: 0, left: 0 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 42, marginHorizontal: 20, marginTop: 6, marginBottom: 4, paddingHorizontal: 14, borderRadius: 14, backgroundColor: withAlpha('#FFFFFF', 0.1) },
+  searchText: { fontFamily: fonts.body, fontSize: 14, color: withAlpha(palette.chalk, 0.6) },
+  hero: { paddingHorizontal: 24, paddingBottom: 10 },
+  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  heroLogo: { width: 48, height: 48 },
+  pills: { flexDirection: 'row', gap: 6 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 30, paddingHorizontal: 11, borderRadius: 15, backgroundColor: withAlpha('#FFFFFF', 0.12) },
+  pillLogo: { width: 16, height: 16 },
+  pillText: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.chalk },
+  heroLocation: { fontFamily: fonts.bodySemi, fontSize: 15 },
+  heroName: { fontFamily: fonts.display, fontSize: 34, marginTop: -2 },
+  list: { paddingTop: 6, paddingHorizontal: 14 },
+  section: { marginTop: 8 },
+  sectionTitle: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: withAlpha(palette.chalk, 0.42),
+    paddingHorizontal: 12,
+    paddingBottom: 6,
+  },
+  item: { flexDirection: 'row', alignItems: 'center', gap: 14, height: 40, paddingHorizontal: 12, borderRadius: 12, marginBottom: 1, overflow: 'hidden' },
+  activeBar: { position: 'absolute', left: 0, top: 11, bottom: 11, width: 3, borderRadius: 2 },
+  itemLabel: { fontFamily: fonts.bodySemi, fontSize: 16 },
+  itemLabelSmall: { fontFamily: fonts.bodySemi, fontSize: 15 },
+  footerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 26, paddingTop: 10 },
+  footer: { flex: 1, fontFamily: fonts.body, fontSize: 12, color: withAlpha(palette.chalk, 0.45) },
+});

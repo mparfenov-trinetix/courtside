@@ -9,15 +9,18 @@ export function ListSkeleton({
   avatar = 'round',
   trailing = true,
   card = true,
+  inset = true,
 }: {
   count?: number;
   avatar?: 'round' | 'square' | 'none';
   trailing?: boolean;
   /** Each row sits on the same raised card the real rows use. */
   card?: boolean;
+  /** Side padding of its own; turn off when the parent already pads. */
+  inset?: boolean;
 }) {
   return (
-    <SkeletonGroup style={styles.wrap}>
+    <SkeletonGroup style={[styles.wrap, !inset && { paddingHorizontal: 0 }]}>
       {Array.from({ length: count }, (_, i) => (
         <View key={i} style={[styles.row, card && styles.card]}>
           {avatar !== 'none' && <Skeleton width={40} height={40} radius={avatar === 'round' ? 20 : 10} />}

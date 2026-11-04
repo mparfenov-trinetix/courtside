@@ -12,11 +12,20 @@ export function useOpenDrawer() {
   return () => navigation.openDrawer();
 }
 
+/** Space above and below the header's buttons (plus the status bar), and the height the bar takes in all. */
+const HEADER_TOP = 10;
+const HEADER_BOTTOM = 14;
+export const headerHeight = (statusBar: number) => statusBar + HEADER_TOP + 42 + HEADER_BOTTOM;
+
+/** Room kept free on each side of a centered title: the widest button group (search and favorite) plus the screen margin. */
+export const TITLE_INSET = 124;
+
 export function ScreenHeader({
   title,
   color = palette.chalk,
   right,
   onBack,
+  centerTitle = false,
 }: {
   /** Text, or a custom node (e.g. one that fades in on scroll). */
   title?: ReactNode;
@@ -24,11 +33,13 @@ export function ScreenHeader({
   right?: ReactNode;
   /** When set, shows a back arrow instead of the drawer menu button (for pushed screens). */
   onBack?: () => void;
+  /** Put a custom title node in the middle of the screen (under the Dynamic Island) instead of beside the menu button. */
+  centerTitle?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const openDrawer = useOpenDrawer();
   return (
-    <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
+    <View style={[styles.header, { paddingTop: insets.top + HEADER_TOP }]}>
       <Pressable
         onPress={onBack ?? openDrawer}
         hitSlop={12}
@@ -41,6 +52,14 @@ export function ScreenHeader({
         <Text style={[styles.title, { color }]} numberOfLines={1}>
           {title}
         </Text>
+      ) : centerTitle ? (
+        <>
+          <View style={styles.titleNode} />
+          {/* Centered on the screen, not on the space left between the buttons; the node gets TITLE_INSET on both sides. */}
+          <View pointerEvents="none" style={[styles.centerTitle, { top: insets.top + HEADER_TOP }]}>
+            {title}
+          </View>
+        </>
       ) : (
         <View style={styles.titleNode}>{title}</View>
       )}
@@ -95,8 +114,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingBottom: 10,
+    paddingHorizontal: 20,
+    paddingBottom: HEADER_BOTTOM,
     gap: 14,
   },
   iconButton: {
@@ -112,6 +131,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   titleNode: { flex: 1, justifyContent: 'center' },
+  centerTitle: { position: 'absolute', left: TITLE_INSET, right: TITLE_INSET, height: 42, alignItems: 'center', justifyContent: 'center' },
   right: {
     minWidth: 42,
     alignItems: 'flex-end',
