@@ -103,7 +103,7 @@ export function OnboardingScreen() {
             ]}>
             <Image source={logoOn(selected, theme.onPrimary)} style={styles.ctaLogo} contentFit="contain" />
             <Text style={[styles.ctaText, { color: theme.onPrimary }]} numberOfLines={1}>
-              Make the {selected.name} my team
+              {selected.id === favoriteTeamId ? `Keep the ${selected.name} as my team` : `Make the ${selected.name} my team`}
             </Text>
           </Pressable>
         </Animated.View>

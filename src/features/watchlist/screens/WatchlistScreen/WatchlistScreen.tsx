@@ -1,20 +1,20 @@
 import { Image } from 'expo-image';
 import { useMemo } from 'react';
 import { SectionList, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StarIcon , ScreenHeader } from '@/components';
-import { WatchRow } from '../../components';
+import { WatchGame, WatchRow } from '../../components';
 import { useTeams , useRefresh } from '@/hooks';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useWatchlist, type WatchedPlayer } from '@/state';
 
 export function WatchlistScreen() {
   const insets = useSafeAreaInsets();
-  const { players, toggle } = useWatchlist();
+  const { players, toggle, games, toggleGame } = useWatchlist();
   const { data: teams } = useTeams();
-  const refreshControl = useRefresh([['playerStats'], ['playerGameLog']]);
+  const refreshControl = useRefresh([['playerStats'], ['playerGameLog'], ['game']]);
 
   const sections = useMemo(() => {
     const byTeam = new Map<string, WatchedPlayer[]>();
@@ -28,11 +28,11 @@ export function WatchlistScreen() {
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
       <ScreenHeader title="Watchlist" color={palette.chalk} />
 
-      {players.length === 0 ? (
+      {players.length === 0 && games.length === 0 ? (
         <View style={styles.empty}>
           <StarIcon color={withAlpha(palette.chalk, 0.4)} size={40} />
-          <Text style={styles.emptyTitle}>No players yet</Text>
-          <Text style={styles.emptyText}>Tap the star on a player&apos;s card to follow them here.</Text>
+          <Text style={styles.emptyTitle}>Nothing starred yet</Text>
+          <Text style={styles.emptyText}>Tap the star on a player&apos;s card or at the top of a game to keep it here.</Text>
         </View>
       ) : (
         <SectionList
@@ -40,6 +40,24 @@ export function WatchlistScreen() {
           refreshControl={refreshControl}
           keyExtractor={(p) => p.id}
           stickySectionHeadersEnabled={false}
+          // Starred games come first: the ones you want to look at quickly.
+          ListHeaderComponent={
+            games.length > 0 ? (
+              <View>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Games · {games.length}</Text>
+                </View>
+                <View style={styles.gamesList}>
+                  {games
+                    .slice()
+                    .sort((a, b) => b.date.localeCompare(a.date))
+                    .map((g) => (
+                      <WatchGame key={g.id} game={g} onRemove={() => toggleGame(g)} />
+                    ))}
+                </View>
+              </View>
+            ) : undefined
+          }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}
           renderSectionHeader={({ section }) => (
@@ -53,7 +71,7 @@ export function WatchlistScreen() {
           renderItem={({ item, index, section }) => {
             const accent = teamTheme(section.team).accent;
             return (
-              <Animated.View entering={FadeInDown.delay(index * 40).duration(240)} style={styles.rowWrap}>
+              <Animated.View style={styles.rowWrap}>
                 <WatchRow
                   player={item}
                   accent={accent}
@@ -81,6 +99,7 @@ const styles = StyleSheet.create({
     color: withAlpha(palette.chalk, 0.6),
   },
   rowWrap: { marginBottom: 8 },
+  gamesList: { gap: 8 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 10 },
   emptyTitle: { fontFamily: fonts.display, fontSize: 30, color: palette.chalk },
   emptyText: { fontFamily: fonts.body, fontSize: 15, color: palette.muted, textAlign: 'center' },

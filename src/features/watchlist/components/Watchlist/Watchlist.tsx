@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { StarIcon } from '@/components';
 import { usePlayerGameLog, usePlayerStats } from '@/hooks';
@@ -18,7 +18,7 @@ export function Watchlist({ accent, teamId, teamAbbr }: { accent: string; teamId
   if (players.length === 0) return null;
 
   return (
-    <Animated.View entering={FadeInDown.delay(110).duration(300)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <View style={styles.titleRow}>
         <Text style={styles.title}>Watchlist{teamAbbr && mine.length > 0 ? ` · ${teamAbbr}` : ''}</Text>
         <Pressable onPress={() => router.navigate('/watchlist' as Href)} hitSlop={8}>
