@@ -19,30 +19,27 @@ import { DRAWER_WIDTH, SCENE_RADIUS, type MenuSection } from './constants';
 // Only when Metro was started with `npm run storybook`.
 const STORYBOOK = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === 'true';
 
-/** The menu, in groups: your team, the league, players (to look up and compare) and the two tournaments. */
+/** The menu: what is yours, the league, and the two tournaments. */
 export const SECTIONS: MenuSection[] = [
   {
-    title: 'Team',
+    // What is yours, no heading of its own: your team, its calendar, what you starred (players and games alike).
+    title: '',
     items: [
       { route: 'home', href: '/home', label: 'Team card', Icon: CardIcon },
-      { route: 'roster', href: '/roster', label: 'Rosters', Icon: PeopleIcon },
-      { route: 'team-leaders', href: '/team-leaders' as Href, label: 'Team leaders', Icon: PodiumIcon },
       { route: 'calendar', href: '/calendar' as Href, label: 'Calendar', Icon: CalendarIcon },
+      { route: 'watchlist', href: '/watchlist' as Href, label: 'Watchlist', Icon: StarIcon },
     ],
   },
   {
+    // The whole league: tables, leaderboards (players, and teams ranked by a team stat), every roster and a way to put two players or teams side by side.
     title: 'League',
     items: [
       { route: 'standings', href: '/standings', label: 'Standings', Icon: StandingsIcon },
-      { route: 'league-leaders', href: '/league-leaders', label: 'League leaders', Icon: TrophyIcon },
-      { route: 'teams', href: '/teams', label: 'All teams', Icon: GridIcon },
-    ],
-  },
-  {
-    title: 'Players',
-    items: [
+      { route: 'league-leaders', href: '/league-leaders', label: 'Player leaders', Icon: TrophyIcon },
+      { route: 'team-leaders', href: '/team-leaders' as Href, label: 'Team leaders', Icon: PodiumIcon },
+      { route: 'roster', href: '/roster', label: 'Rosters', Icon: PeopleIcon },
+      { route: 'teams', href: '/teams', label: 'Teams', Icon: GridIcon },
       { route: 'compare', href: '/compare' as Href, label: 'Compare', Icon: CompareIcon },
-      { route: 'watchlist', href: '/watchlist' as Href, label: 'Watchlist', Icon: StarIcon },
     ],
   },
   {
@@ -155,10 +152,12 @@ export function DrawerMenu(props: DrawerContentComponentProps) {
 
       <DrawerContentScrollView {...props} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
         {SECTIONS.map((section) => (
-          <View key={section.title} style={styles.section}>
-            <Reveal progress={progress} index={ORDER.titles[section.title]}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-            </Reveal>
+          <View key={section.title || 'main'} style={styles.section}>
+            {section.title ? (
+              <Reveal progress={progress} index={ORDER.titles[section.title]}>
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+              </Reveal>
+            ) : null}
             {section.items.map(({ route, href, label, Icon }) => {
               const active = route === activeRoute;
               const color = active ? palette.chalk : dim;

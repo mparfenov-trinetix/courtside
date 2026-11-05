@@ -26,6 +26,7 @@ export function ScreenHeader({
   right,
   onBack,
   centerTitle = false,
+  afterMenu,
 }: {
   /** Text, or a custom node (e.g. one that fades in on scroll). */
   title?: ReactNode;
@@ -35,6 +36,8 @@ export function ScreenHeader({
   onBack?: () => void;
   /** Put a custom title node in the middle of the screen (under the Dynamic Island) instead of beside the menu button. */
   centerTitle?: boolean;
+  /** A second button beside the menu / back button (the Team card puts the Calendar there). */
+  afterMenu?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
   const openDrawer = useOpenDrawer();
@@ -48,6 +51,7 @@ export function ScreenHeader({
         style={({ pressed }) => [styles.iconButton, { backgroundColor: withAlpha('#FFFFFF', pressed ? 0.16 : 0.08) }]}>
         {onBack ? <ArrowLeftIcon color={color} /> : <MenuIcon color={color} />}
       </Pressable>
+      {afterMenu}
       {typeof title === 'string' || title == null ? (
         <Text style={[styles.title, { color }]} numberOfLines={1}>
           {title}

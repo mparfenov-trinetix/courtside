@@ -7,7 +7,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { TeamMark , CompareIcon, PeopleIcon, SearchIcon, StarIcon , IconButton, ScreenHeader, Skeleton, SkeletonGroup, TITLE_INSET, headerHeight } from '@/components';
+import { TeamMark , CalendarIcon, CompareIcon, PeopleIcon, SearchIcon, StarIcon , IconButton, ScreenHeader, Skeleton, SkeletonGroup, TITLE_INSET, headerHeight } from '@/components';
 import { MyCupCard } from '@/features/cup';
 import { NextGame } from '../NextGame';
 import { ScoresStrip } from '../ScoresStrip';
@@ -125,6 +125,14 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, bgStyle, headerFill]} />
       <ScreenHeader
         onBack={pushed ? goBack : undefined}
+        // Calendar is one of the two main screens: one tap from the Team card, next to the menu.
+        afterMenu={
+          pushed ? undefined : (
+            <IconButton label="Open the calendar" onPress={() => router.navigate('/calendar')}>
+              <CalendarIcon color={palette.chalk} />
+            </IconButton>
+          )
+        }
         centerTitle
         title={
           <Animated.View style={[styles.headerTitle, titleStyle]} pointerEvents="none">
