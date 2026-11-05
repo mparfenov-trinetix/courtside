@@ -9,6 +9,7 @@ import {
   frame,
   kerning,
   lineLimit,
+  minimumScaleFactor,
   padding,
   resizable,
 } from '@expo/ui/swift-ui/modifiers';
@@ -19,7 +20,7 @@ import type { LiveGameProps } from './live-game';
 /**
  * The live score of one game, on the lock screen and in the Dynamic Island. The banner is split in the two teams' own
  * colors, each side with its crest and a big score (the leader's brighter); the clock sits between them with a "DET TO"
- * pill during a timeout. A gold "B" on a crest means that team is in the bonus.
+ * pill during a timeout. A light gold "B" on a crest means that team is in the bonus.
  * Runs in the activity's own runtime: pure, synchronous, and nothing outside this function but the imports above.
  */
 const LiveGameActivity = (props: LiveGameProps, environment: LiveActivityEnvironment) => {
@@ -27,6 +28,7 @@ const LiveGameActivity = (props: LiveGameProps, environment: LiveActivityEnviron
   const white = '#F5F7FA';
   const dim = '#F5F7FA8C';
   const amber = '#FBBF24';
+  const lightGold = '#FDE68A';
   const red = '#FF6B6B';
   const stale = environment.isStale === true && !props.final;
 
@@ -44,10 +46,10 @@ const LiveGameActivity = (props: LiveGameProps, environment: LiveActivityEnviron
         {crest(file, abbr, size)}
         <Text
           modifiers={[
-            font({ size: size * 0.34, weight: 'heavy' }),
-            foregroundStyle('#000000'),
-            frame({ width: size * 0.42, height: size * 0.42 }),
-            background(amber),
+            font({ size: size * 0.26, weight: 'semibold' }),
+            foregroundStyle('#5B4300'),
+            frame({ width: size * 0.32, height: size * 0.32 }),
+            background(lightGold),
             clipShape('circle'),
           ]}>
           B
@@ -58,7 +60,10 @@ const LiveGameActivity = (props: LiveGameProps, environment: LiveActivityEnviron
     );
 
   const score = (value: string, leads: boolean, size: number) => (
-    <Text modifiers={[font({ size, weight: 'heavy' }), foregroundStyle(leads || props.final ? white : dim), lineLimit(1)]}>{value}</Text>
+    // A three-digit score (100+) must shrink to fit the half it sits in, not be cut to "1…".
+    <Text modifiers={[font({ size, weight: 'heavy' }), foregroundStyle(leads || props.final ? white : dim), lineLimit(1), minimumScaleFactor(0.5)]}>
+      {value}
+    </Text>
   );
 
   const name = (abbr: string, color: string, size: number) => (

@@ -18,17 +18,30 @@ export function useLiveActivity() {
   const { games } = useWatchlist();
   const starred = games.map((g) => g.id);
   const dateKey = toNbaDateKey(new Date());
+  // ESPN files a game under the Eastern day it started on, so a game that tipped off in the evening is still on yesterday's
+  // board for a while after Eastern midnight (early morning in Europe): look there too, or it is never found.
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = toNbaDateKey(yesterday);
 
   const client = useQueryClient();
+  const watching = !!favoriteTeamId || starred.length > 0;
+  // Looks only while there is something to see: from shortly before tip-off until the last game is over.
   const board = useQuery({
     queryKey: ['scoreboard', dateKey],
     queryFn: scoreboardQueryFn(client, dateKey),
-    enabled: !!favoriteTeamId || starred.length > 0,
-    // Looks only while there is something to see: from shortly before tip-off until the last game is over.
+    enabled: watching,
+    refetchInterval: (q) => (boardPhase(q.state.data) === 'idle' ? false : BOARD_MS),
+  });
+  const lastNight = useQuery({
+    queryKey: ['scoreboard', yesterdayKey],
+    queryFn: scoreboardQueryFn(client, yesterdayKey),
+    enabled: watching,
     refetchInterval: (q) => (boardPhase(q.state.data) === 'idle' ? false : BOARD_MS),
   });
   useMinuteTick(awaitsTipOff(board.data));
-  const id = pickTrackedGame(board.data, favoriteTeamId, starred);
+  const boards = board.data || lastNight.data ? [...(lastNight.data ?? []), ...(board.data ?? [])] : undefined;
+  const id = pickTrackedGame(boards, favoriteTeamId, starred);
 
   const game = useQuery({
     queryKey: ['game', id],

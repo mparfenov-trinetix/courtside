@@ -1,10 +1,12 @@
 /** Where a logo lives inside the shared widget folder; null while there is nowhere to put it. */
 const fileNameOf = (url: string) => `logo-${url.replace(/[^a-z0-9]+/gi, '_').slice(-80)}.png`;
 
-/** ESPN's resizer: the widget only ever shows a logo ~50pt wide, so don't make it decode 500px. */
+/** ESPN's resizer: the widget only ever shows a logo ~50pt wide (a headshot ~30pt), so don't make it decode 500px. */
 const small = (url: string) => {
-  const path = url.match(/^https?:\/\/a\.espncdn\.com(\/i\/teamlogos\/.+)$/)?.[1];
-  return path ? `https://a.espncdn.com/combiner/i?img=${path}&w=160&h=160` : url;
+  const logo = url.match(/^https?:\/\/a\.espncdn\.com(\/i\/teamlogos\/.+)$/)?.[1];
+  if (logo) return `https://a.espncdn.com/combiner/i?img=${logo}&w=160&h=160`;
+  const head = url.match(/^https?:\/\/a\.espncdn\.com(\/i\/headshots\/.+)$/)?.[1];
+  return head ? `https://a.espncdn.com/combiner/i?img=${head}&w=160&h=117` : url;
 };
 
 /**

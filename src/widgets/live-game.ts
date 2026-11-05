@@ -1,6 +1,7 @@
 import { involvesTeam, type GameSummary, type ScoreboardGame } from '@/lib/espn';
 import { timeoutLabel } from '@/lib/game';
 import { matchupColors, mix, palette } from '@/lib/theme';
+import type { LiveScore } from './timeline';
 
 /**
  * Everything the Live Activity (lock screen banner and Dynamic Island) shows, already worked out by the app: the
@@ -102,4 +103,13 @@ export function pickTrackedGame(board: ScoreboardGame[] | undefined, favoriteTea
   const rank = (g: ScoreboardGame) => (involvesTeam(g, favoriteTeamId) ? 0 : 1);
   const candidates = board.filter(mine).sort((a, b) => rank(a) - rank(b));
   return (candidates.find((g) => g.inProgress) ?? candidates.find((g) => g.completed))?.id ?? null;
+}
+
+/** Pure: the score of the selected team's game while it is on, for the Next game widget; undefined when it is not on. */
+export function liveScoreOf(game: Pick<GameSummary, 'id' | 'live' | 'completed' | 'status' | 'away' | 'home'> | undefined, teamId: string | null | undefined): LiveScore | undefined {
+  if (!game || !teamId || !game.live || game.completed) return undefined;
+  const mine = game.away.team.id === teamId ? game.away : game.home.team.id === teamId ? game.home : undefined;
+  if (!mine) return undefined;
+  const other = mine === game.away ? game.home : game.away;
+  return { gameId: game.id, myScore: String(mine.score), oppScore: String(other.score), clock: game.status };
 }

@@ -40,6 +40,10 @@ export type NextGameProps = {
   gameId: string;
   /** For the footer: stage like "NBA Cup" or "Round 1", when there is one. */
   tag: string;
+  /** The score while the game is on (the selected team's first, as the logos are) and its clock ("4:03 - 3rd"); empty before the app has one. */
+  myScore: string;
+  oppScore: string;
+  clock: string;
   /** Only the gallery sample sets these: fixed text in place of the live clock, which a sample can't have. */
   timeText?: string;
   countdownText?: string;
@@ -62,6 +66,9 @@ export const EMPTY_PROPS: NextGameProps = {
   live: false,
   gameId: '',
   tag: '',
+  myScore: '',
+  oppScore: '',
+  clock: '',
 };
 
 /**
@@ -85,6 +92,9 @@ export const SAMPLE_PROPS: NextGameProps = {
   live: false,
   gameId: '',
   tag: '',
+  myScore: '',
+  oppScore: '',
+  clock: '',
   timeText: '7:00 PM',
   countdownText: 'in 1 day, 6 hr',
 };
@@ -101,6 +111,8 @@ const NextGameWidget = (props: NextGameProps, environment: WidgetEnvironment) =>
   const white = '#F2F4F7';
   const dim = '#F2F4F7A6';
   const has = props.iso !== '';
+  // A game that is on, with the score the app last saw: the right side shows it instead of the tip-off time.
+  const scored = props.live && props.myScore !== '';
   const when = has ? new Date(props.iso) : undefined;
   const url = has ? 'courtside://game/' + props.gameId : 'courtside://';
   const background = containerBackground(
@@ -167,14 +179,18 @@ const NextGameWidget = (props: NextGameProps, environment: WidgetEnvironment) =>
           {team(props.oppLogo, props.oppAbbr, props.home ? 'Away' : 'Home', 38)}
         </HStack>
         <Spacer />
-        <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(0.6), foregroundStyle(dim), lineLimit(1), minimumScaleFactor(0.7)]}>
-          {props.live ? 'TIP-OFF' : props.day.toUpperCase()}
+        <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(0.6), foregroundStyle(scored ? red : dim), lineLimit(1), minimumScaleFactor(0.7)]}>
+          {scored ? props.clock.toUpperCase() : props.live ? 'TIP-OFF' : props.day.toUpperCase()}
         </Text>
-        props.timeText ? (
+        {scored ? (
+          <Text modifiers={[font({ size: 22, weight: 'heavy' }), foregroundStyle(white), lineLimit(1), minimumScaleFactor(0.6)]}>
+            {props.myScore + ' – ' + props.oppScore}
+          </Text>
+        ) : props.timeText ? (
           <Text modifiers={[font({ size: 20, weight: 'heavy' }), foregroundStyle(props.accent)]}>{props.timeText}</Text>
         ) : (
           <Text modifiers={[font({ size: 20, weight: 'heavy' }), foregroundStyle(props.live ? red : props.accent)]} date={when} dateStyle="time" />
-        )
+        )}
       </VStack>
     );
   }
@@ -189,16 +205,20 @@ const NextGameWidget = (props: NextGameProps, environment: WidgetEnvironment) =>
         {team(props.oppLogo, props.oppAbbr, props.home ? 'Away' : 'Home', 52)}
         <Spacer />
         <VStack alignment="trailing" spacing={2}>
-          <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(0.8), foregroundStyle(dim), lineLimit(1)]}>
-            {props.live ? 'TIP-OFF' : props.day.toUpperCase()}
+          <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(0.8), foregroundStyle(scored ? red : dim), lineLimit(1)]}>
+            {scored ? props.clock.toUpperCase() : props.live ? 'TIP-OFF' : props.day.toUpperCase()}
           </Text>
-          props.timeText ? (
+          {scored ? (
+            <Text modifiers={[font({ size: 34, weight: 'heavy' }), foregroundStyle(white), lineLimit(1), minimumScaleFactor(0.6)]}>
+              {props.myScore + ' – ' + props.oppScore}
+            </Text>
+          ) : props.timeText ? (
             <Text modifiers={[font({ size: 30, weight: 'heavy' }), foregroundStyle(props.accent)]}>{props.timeText}</Text>
           ) : (
             <Text modifiers={[font({ size: 30, weight: 'heavy' }), foregroundStyle(props.live ? red : props.accent)]} date={when} dateStyle="time" />
-          )
+          )}
           {props.live ? (
-            <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(dim)]}>Tap for the live score</Text>
+            <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(dim)]}>{scored ? 'Tap for the game' : 'Tap for the live score'}</Text>
           ) : props.countdownText ? (
             <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(dim), lineLimit(1)]}>{props.countdownText}</Text>
           ) : (

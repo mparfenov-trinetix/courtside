@@ -81,6 +81,31 @@
                 ],
                 "initialLayout": "./src/widgets/fixtures-widget.tsx"
               }
+            },
+            {
+              "name": "LockScreenWidget",
+              "displayName": "Lock Screen",
+              "description": "Your team's record, form and next game on the Lock Screen",
+              "ios": {
+                "supportedFamilies": [
+                  "accessoryCircular",
+                  "accessoryRectangular",
+                  "accessoryInline"
+                ],
+                "initialLayout": "./src/widgets/lock-screen-widget.tsx"
+              }
+            },
+            {
+              "name": "WatchlistWidget",
+              "displayName": "Watchlist",
+              "description": "Scores of the games you starred and the latest lines of your starred players",
+              "ios": {
+                "supportedFamilies": [
+                  "systemMedium",
+                  "systemLarge"
+                ],
+                "initialLayout": "./src/widgets/watchlist-widget.tsx"
+              }
             }
           ],
           "frequentUpdates": true

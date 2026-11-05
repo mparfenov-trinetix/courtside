@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildFixturesProps, buildFormProps, streakOf } from '../src/widgets/snapshots.ts';
+import { buildFixturesProps, buildFormProps, buildLockProps, buildWatchlistProps, streakOf } from '../src/widgets/snapshots.ts';
+import { liveScoreOf } from '../src/widgets/live-game.ts';
 import { buildTimeline } from '../src/widgets/timeline.ts';
 
 const team = { abbreviation: 'PHI', name: '76ers', logo: 'light.png', logoDark: 'dark.png' };
@@ -149,4 +150,76 @@ test('live activity follows your team while it is on, else a starred game, else 
   assert.equal(pickTrackedGame(board, '99', []), null);
   assert.equal(pickTrackedGame(undefined, '21', []), null);
   assert.equal(pickTrackedGame([g('4', '40', '41', false)], '41', []), null); // not started yet
+});
+
+test('lock screen: record, last five, latest score and the next game', () => {
+  const played = (id: string, iso: string, opp: string, home: boolean, us: number, them: number) => ({
+    ...game(id, iso, opp, home, true), result: us > them ? ('W' as const) : ('L' as const), teamScore: us, opponentScore: them,
+  });
+  const p = buildLockProps(team, { record: '4-3' }, [
+    played('1', '2026-10-30T01:00:00Z', 'NY', true, 110, 100),
+    played('2', '2026-11-01T01:00:00Z', 'BOS', false, 98, 104),
+    game('3', '2026-11-05T01:00:00Z', 'DET', false),
+    game('4', '2026-11-09T01:00:00Z', 'CHI', true),
+  ], NOW);
+  assert.equal(p.teamAbbr, 'PHI');
+  assert.equal(p.record, '4-3');
+  assert.equal(p.streak, 'L1');
+  assert.deepEqual(p.form, ['W', 'L']);
+  assert.equal(p.last, 'L 98-104 @ BOS');
+  assert.equal(p.oppAbbr, 'DET');
+  assert.equal(p.home, false);
+  assert.equal(p.gameId, '3');
+  assert.ok(p.when.length > 0 && p.time.length > 0);
+});
+
+test('lock screen: with nothing scheduled or played it is still complete', () => {
+  const p = buildLockProps(team, undefined, [], NOW);
+  assert.equal(p.oppAbbr, '');
+  assert.equal(p.when, '');
+  assert.deepEqual(p.form, []);
+  assert.equal(p.last, '');
+});
+
+test('watchlist: games in live, upcoming, final order; players with their latest line', () => {
+  const g = (id: string, iso: string) => ({ id, date: iso, away: { abbr: `A${id}`, logo: `a${id}.png` }, home: { abbr: `H${id}`, logo: `h${id}.png` } });
+  const sum = (live: boolean, completed: boolean, status: string, a: number, h: number) => ({ live, completed, status, away: { score: a }, home: { score: h } });
+  const p = buildWatchlistProps(
+    [{ id: 'p1', name: 'Luka Doncic' }, { id: 'p2', name: 'No Log' }],
+    {
+      p1: [{ pts: 41, reb: 10, ast: 8, result: 'W', teamScore: 127, opponentScore: 120 } as never],
+    },
+    [g('1', '2026-11-01T01:00:00Z'), g('2', '2026-11-06T01:00:00Z'), g('3', '2026-11-04T01:00:00Z'), g('4', '2026-11-02T01:00:00Z')],
+    { '1': sum(false, true, 'Final', 100, 90), '3': sum(true, false, 'Q4 3:12', 98, 101), '4': sum(false, true, 'Final', 80, 85) },
+  );
+  assert.deepEqual(p.games.map((x) => x.away), ['A3', 'A2', 'A4', 'A1']);
+  assert.deepEqual(p.games[0], { away: 'A3', home: 'H3', awayLogo: 'a3.png', homeLogo: 'h3.png', awayScore: '98', homeScore: '101', status: 'Q4 3:12', live: true });
+  assert.equal(p.games[1].awayScore, ''); // not started: no score
+  assert.equal(p.games[1].live, false);
+  assert.deepEqual(p.players, [{ name: 'Luka Doncic', avatar: 'https://a.espncdn.com/i/headshots/nba/players/full/p1.png', line: '41 pts · 10 reb · 8 ast', result: 'W 127-120' }]);
+});
+
+test('watchlist: nothing starred gives empty lists', () => {
+  assert.deepEqual(buildWatchlistProps([], {}, [], {}), { games: [], players: [] });
+});
+
+test('timeline: the live entry of the game that is on carries its score and clock', () => {
+  const sched = [game('a', '2026-11-03T10:30:00Z', 'DET', true), game('b', '2026-11-07T01:00:00Z', 'CLE', true)];
+  const t = buildTimeline(team, undefined, sched, theme, NOW, { gameId: 'a', myScore: '58', oppScore: '61', clock: '4:03 - 2nd' });
+  const live = t.find((e) => e.props.live && e.props.gameId === 'a')!;
+  assert.deepEqual([live.props.myScore, live.props.oppScore, live.props.clock], ['58', '61', '4:03 - 2nd']);
+  // The other game's entries stay empty.
+  assert.ok(t.filter((e) => e.props.gameId === 'b').every((e) => e.props.myScore === ''));
+});
+
+test('liveScoreOf: the selected team first, only while the game is on', () => {
+  const g = (live: boolean, completed: boolean) => ({
+    id: 'x', live, completed, status: '8:13 - 3rd',
+    away: { team: { id: '1' }, score: 70 }, home: { team: { id: '2' }, score: 66 },
+  }) as never;
+  assert.deepEqual(liveScoreOf(g(true, false), '2'), { gameId: 'x', myScore: '66', oppScore: '70', clock: '8:13 - 3rd' });
+  assert.deepEqual(liveScoreOf(g(true, false), '1'), { gameId: 'x', myScore: '70', oppScore: '66', clock: '8:13 - 3rd' });
+  assert.equal(liveScoreOf(g(false, true), '1'), undefined);
+  assert.equal(liveScoreOf(g(true, false), '9'), undefined);
+  assert.equal(liveScoreOf(undefined, '1'), undefined);
 });

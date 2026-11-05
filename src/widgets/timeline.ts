@@ -7,6 +7,9 @@ const MAX_GAMES = 5;
 
 export type Entry = { date: Date; props: NextGameProps };
 
+/** The game that is on, as the app last saw it: the live entry for that game carries its score and clock. */
+export type LiveScore = { gameId: string; myScore: string; oppScore: string; clock: string };
+
 /** Pure: one timeline entry per upcoming game, each taking over when the previous game is over. */
 export function buildTimeline(
   team: Pick<Team, 'abbreviation' | 'name' | 'logo' | 'logoDark'>,
@@ -14,6 +17,7 @@ export function buildTimeline(
   schedule: Game[],
   theme: { background: string; surface: string; accent: string },
   now: Date = new Date(),
+  live?: LiveScore,
 ): Entry[] {
   const upcoming = schedule
     .filter((g) => !g.completed && g.date && Date.parse(g.date) + GAME_LENGTH_MS > now.getTime())
@@ -31,7 +35,7 @@ export function buildTimeline(
   };
 
   if (upcoming.length === 0) {
-    return [{ date: now, props: { ...base, oppAbbr: '', oppName: '', oppLogo: '', home: true, iso: '', day: '', gameId: '', tag: '', live: false } }];
+    return [{ date: now, props: { ...base, oppAbbr: '', oppName: '', oppLogo: '', home: true, iso: '', day: '', gameId: '', tag: '', live: false, myScore: '', oppScore: '', clock: '' } }];
   }
   // Each game is two entries: "next game" until tip-off, then "live" until it should be over.
   return upcoming.flatMap((g, i) => {
@@ -47,11 +51,15 @@ export function buildTimeline(
       gameId: g.id,
       tag: g.cup ? 'NBA Cup' : '',
       live: false,
+      myScore: '',
+      oppScore: '',
+      clock: '',
     };
     const from = i === 0 ? now : new Date(Date.parse(upcoming[i - 1].date) + GAME_LENGTH_MS);
     const entries: Entry[] = [];
     if (tip > from.getTime()) entries.push({ date: from, props });
-    entries.push({ date: new Date(Math.max(tip, from.getTime())), props: { ...props, live: true } });
+    const scored = live && live.gameId === g.id ? { myScore: live.myScore, oppScore: live.oppScore, clock: live.clock } : {};
+    entries.push({ date: new Date(Math.max(tip, from.getTime())), props: { ...props, live: true, ...scored } });
     return entries;
   });
 }
