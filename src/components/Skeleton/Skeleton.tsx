@@ -39,18 +39,21 @@ export function Skeleton({
   width = '100%',
   height = 14,
   radius = 8,
+  still = false,
   style,
 }: {
   width?: DimensionValue;
   height?: DimensionValue;
   radius?: number;
+  /** Drawn but not pulsing: for placeholders that are only scrolled past (no animation work at all). */
+  still?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const shared = useContext(PulseContext);
   const reduced = useReducedMotion();
-  const own = usePulse(!shared && !reduced);
+  const own = usePulse(!shared && !reduced && !still);
   const pulse = shared ?? own;
-  const anim = useAnimatedStyle(() => ({ opacity: 0.55 + 0.45 * pulse.get() }));
+  const anim = useAnimatedStyle(() => ({ opacity: still ? 0.8 : 0.55 + 0.45 * pulse.get() }));
   return <Animated.View style={[styles.block, { width, height, borderRadius: radius }, anim, style]} />;
 }
 
