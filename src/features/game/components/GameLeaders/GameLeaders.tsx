@@ -88,7 +88,8 @@ function Headshot({ player, color }: { player: BoxScorePlayer; color: string }) 
   );
 }
 
-export function GameInfoCard({ info }: { info: GameInfo }) {
+/** `nested`: drawn inside a section that already has a heading and padding (no side padding, and no title unless `titled`). */
+export function GameInfoCard({ info, nested = false, titled = !nested }: { info: GameInfo; nested?: boolean; titled?: boolean }) {
   const rows: [string, string][] = [];
   if (info.venue) rows.push(['Arena', [info.venue, info.city].filter(Boolean).join(' · ')]);
   if (info.date) {
@@ -104,8 +105,8 @@ export function GameInfoCard({ info }: { info: GameInfo }) {
   if (rows.length === 0) return null;
 
   return (
-    <View style={styles.wrap}>
-      <Text style={styles.title}>Game info</Text>
+    <View style={nested ? styles.nested : styles.wrap}>
+      {titled && <Text style={styles.title}>Game info</Text>}
       <View style={styles.card}>
         {rows.map(([label, value], i) => (
           <View key={label} style={[styles.infoRow, i < rows.length - 1 && styles.rowBorder]}>
@@ -121,9 +122,11 @@ export function GameInfoCard({ info }: { info: GameInfo }) {
 export function InjuryReport({
   injuries,
   teams,
+  nested = false,
 }: {
   injuries: Injury[];
   teams: { id: string; abbr: string; color: string }[];
+  nested?: boolean;
 }) {
   const groups = teams
     .map((t) => ({ ...t, items: injuries.filter((i) => i.teamId === t.id) }))
@@ -131,7 +134,7 @@ export function InjuryReport({
   if (groups.length === 0) return null;
 
   return (
-    <View style={styles.wrap}>
+    <View style={nested ? styles.nested : styles.wrap}>
       <Text style={styles.title}>Injury report</Text>
       <View style={styles.card}>
         {groups.map((g, gi) => (
@@ -197,6 +200,7 @@ const styles = StyleSheet.create({
   injDetail: { fontFamily: fonts.body, fontSize: 12, color: palette.muted },
   injStatus: { fontFamily: fonts.bodyBold, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.4 },
   wrap: { paddingHorizontal: 16, marginBottom: 14 },
+  nested: { paddingHorizontal: 8, paddingBottom: 8 },
   title: {
     fontFamily: fonts.bodySemi,
     fontSize: 12,

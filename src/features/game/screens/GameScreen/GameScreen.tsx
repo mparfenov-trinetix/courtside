@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BoxScoreTab, GameBackdrop, GameLogos, GameSkeleton, HERO_INSET, backdropColors, PlayByPlay, GameTopBar, ScoreHero, ShotChart, SummaryTab, GameStickyBar, type GameTab, type LogoSlot } from '../../components';
 import { ArrowLeftIcon, IconButton, slideIn, ErrorState } from '@/components';
-import { useGameSummary, useGameTeams, useRefresh, useTeams } from '@/hooks';
+import { useGameSummary, useGameTeams, useHeadToHead, useRefresh, useTeams } from '@/hooks';
 import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
 import { buildPeriodOptions, timeoutLabel, deriveFlow, numsFromLine, numsFromTotals, playersWithStats, deriveQuarterStats, emptyLine, lineToStats, sumPeriods, type Line, type QuarterStats } from '@/lib/game';
 import { kickoffLabel } from '@/lib/date';
@@ -101,6 +101,9 @@ export function GameScreen() {
   // While the game loads, its teams (and so its colors) are often already known from a list the user came from.
   const { data: allTeams } = useTeams();
   const pair = useGameTeams(id);
+  // The head-to-head card reads a long history: start it as soon as the teams are known (often before the game itself has
+  // arrived), under the same key the card uses. It is the away team's side, as the card reads it.
+  useHeadToHead(pair?.awayId, pair?.homeId);
   const knownAway = allTeams?.find((t) => t.id === pair?.awayId);
   const knownHome = allTeams?.find((t) => t.id === pair?.homeId);
   const known = knownAway && knownHome ? (() => { const c = matchupColors(knownAway, knownHome); return { away: c.away, home: c.home }; })() : null;
@@ -190,7 +193,6 @@ export function GameScreen() {
         status={status}
         live={live}
         hasStarted={hasStarted}
-        timeout={onTimeout}
         cup={data.cup}
         kickoff={info.date ? kickoffLabel(info.date) : undefined}
         watched={isGameWatched(id)}

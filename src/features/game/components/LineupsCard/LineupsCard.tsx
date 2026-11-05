@@ -80,8 +80,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: withAlpha(palette.chalk, 0.12),
-    borderWidth: 1.5,
-    borderColor: palette.arena,
+    // A faint light edge where the faces overlap; a dark ring (the page color) read as a black outline on the card.
+    borderWidth: 1,
+    borderColor: withAlpha(palette.chalk, 0.28),
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -35,7 +35,7 @@ export function GameLogos({
   awaySlot: SharedValue<LogoSlot>;
   homeSlot: SharedValue<LogoSlot>;
   hasStarted: boolean;
-  /** The team is in the bonus this period (live games): a gold "B" sits at the logo's bottom left until the header collapses. */
+  /** The team is in the bonus this period (live games): a light gold "B" sits at the logo's bottom left until the header collapses. */
   awayBonus: boolean;
   homeBonus: boolean;
   /** With `origin`, names the logos that fly in from the list this game was opened from. */
@@ -116,7 +116,7 @@ function Logo({
 
 const styles = StyleSheet.create({
   logo: { position: 'absolute', left: 0, top: 0, width: HERO_LOGO, height: HERO_LOGO },
-  // Gold disc with a black B, overlapping the logo's bottom-left corner.
-  bonus: { position: 'absolute', left: -4, bottom: -4, width: 20, height: 20, borderRadius: 10, backgroundColor: '#FBBF24', alignItems: 'center', justifyContent: 'center' },
-  bonusText: { fontFamily: fonts.display, fontSize: 14, lineHeight: 16, color: '#000000' },
+  // Small light-gold disc with a dark B, overlapping the logo's bottom-left corner.
+  bonus: { position: 'absolute', left: -3, bottom: -3, width: 15, height: 15, borderRadius: 8, backgroundColor: '#FDE68A', alignItems: 'center', justifyContent: 'center' },
+  bonusText: { fontFamily: fonts.displayBold, fontSize: 11, lineHeight: 13, color: '#5B4300' },
 });

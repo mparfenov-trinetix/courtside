@@ -206,7 +206,6 @@ export function GameTopBar({
   hasStarted,
   cup,
   kickoff,
-  timeout,
   watched,
   onWatch,
   tint,
@@ -223,8 +222,6 @@ export function GameTopBar({
   cup?: string;
   /** When the game starts, in the device's time ("Tomorrow · 01:00"); shown under the matchup and, before tip-off, in the compact bar. */
   kickoff?: string;
-  /** Set while a timeout is on ("NOP TO"); shown with the status in the compact bar. */
-  timeout?: string;
   /** Whether the game is starred in the watchlist, and the star's handler. */
   watched: boolean;
   onWatch: () => void;
@@ -283,7 +280,7 @@ export function GameTopBar({
                   <RollingNumber value={home.score} fontSize={24} style={styles.miniNum} />
                 </View>
                 {/* The period and clock only while it is being played; a finished score needs no label. */}
-                {live ? <Text style={[styles.miniStatus, { color: '#F87171' }]} numberOfLines={1}>{timeout ? `${status} · ${timeout}` : status}</Text> : null}
+                {live ? <Text style={[styles.miniStatus, { color: '#F87171' }]} numberOfLines={1}>{status}</Text> : null}
               </>
             ) : (
               <>
