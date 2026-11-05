@@ -1,4 +1,4 @@
-import { Redirect } from 'expo-router';
+import { Redirect, useSegments } from 'expo-router';
 import { Drawer, type DrawerContentComponentProps } from 'expo-router/drawer';
 import type { ReactNode } from 'react';
 
@@ -15,6 +15,10 @@ export default function DrawerLayout() {
   const { hydrated, favoriteTeamId, currentTeamId } = useTeamStore();
   const team = useTeam(currentTeamId);
   const menu = menuBackground(teamTheme(team).primary);
+  // A game, player or team page opened on top of a drawer screen: the drawer underneath is still mounted, and its edge swipe would
+  // catch the same finger as the back swipe (the screen below dragged open like the menu for a moment). Only a drawer screen on
+  // top may open the menu.
+  const onTop = useSegments()[0] === '(drawer)';
 
   if (hydrated && !favoriteTeamId) return <Redirect href="/onboarding" />;
 
@@ -31,6 +35,7 @@ export default function DrawerLayout() {
         // Behind the screen's round corners: the menu's own color, so the corners read as the edge of a layer.
         sceneStyle: { backgroundColor: menu },
         swipeEdgeWidth: 40,
+        swipeEnabled: onTop,
       }}>
       <Drawer.Screen name="home" options={{ title: 'Team card' }} />
       <Drawer.Screen name="teams" options={{ title: 'All teams' }} />

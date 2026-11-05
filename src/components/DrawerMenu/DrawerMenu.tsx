@@ -1,15 +1,16 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, type Href } from 'expo-router';
+import { router, useIsFocused, type Href } from 'expo-router';
 import { DrawerContentScrollView, useDrawerProgress, type DrawerContentComponentProps } from 'expo-router/drawer';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import Animated, { Easing, Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTeam } from '@/hooks';
 import { fonts, logoOn, mix, palette, teamTheme, withAlpha } from '@/lib/theme';
+import { pushOnce } from '@/navigation';
 import { useTeamStore } from '@/state';
 import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, GridIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon } from '../Icons';
 import { NbaLogo } from '../NbaLogo';
@@ -142,7 +143,7 @@ export function DrawerMenu(props: DrawerContentComponentProps) {
         <Pressable
           onPress={() => {
             props.navigation.closeDrawer();
-            router.push('/search');
+            pushOnce('/search');
           }}
           accessibilityRole="search"
           accessibilityLabel="Search teams and players"
@@ -219,6 +220,12 @@ function Corner({ color, flip }: { color: string; flip?: boolean }) {
  * soft shadow falling onto the menu and a thin light edge. It is all drawn on top of the screen (nothing clips or
  * re-renders the screen itself), so opening a screen from the menu stays cheap.
  */
+/** The first screen shown after launch does not animate in: the intro's own fade hands over to it. Every later focus does. */
+let launchScene = true;
+
+/** How long a screen takes to settle once the menu sends you to it. */
+const SCENE_IN_MS = 360;
+
 export function SceneFrame({ children }: { children: ReactNode }) {
   const progress = useDrawerProgress() as SharedValue<number>;
   const currentTeamId = useTeamStore((s) => s.currentTeamId);
@@ -228,11 +235,34 @@ export function SceneFrame({ children }: { children: ReactNode }) {
   // The menu's team-colored wash is strongest at the very top (see DrawerMenu), so the top corner matches it, not the base.
   const menuTop = mix(menu, primary, TOP_WASH);
   const edge = useAnimatedStyle(() => ({ opacity: progress.get() }));
+
+  // A screen reached from the menu settles in: its content eases from a little to the right (where the menu pushed it), slightly
+  // smaller and not fully opaque, to rest, as the menu closes. Opacity does not start at zero: the menu's color behind the
+  // scene would show through as a blank background.
+  const focused = useIsFocused();
+  const enter = useSharedValue(1);
+  useEffect(() => {
+    if (!focused) return;
+    if (launchScene) {
+      launchScene = false;
+      return;
+    }
+    // Only for a screen chosen from the menu (it is still open, closing). Coming back to this screen from a game, player or
+    // team page opened over it also focuses it again, and that must not slide it in: it looked like the menu dragging open.
+    if (progress.get() < 0.05) return;
+    enter.set(0);
+    enter.set(withTiming(1, { duration: SCENE_IN_MS, easing: Easing.out(Easing.cubic) }));
+  }, [focused, enter, progress]);
+  const content = useAnimatedStyle(() => ({
+    opacity: 0.5 + 0.5 * enter.get(),
+    transform: [{ translateX: (1 - enter.get()) * 26 }, { scale: 0.985 + 0.015 * enter.get() }],
+  }));
+
   // The corners must be solid as soon as any of the menu shows (they sit right next to it), not fade in with the slide.
   const corner = useAnimatedStyle(() => ({ opacity: Math.min(1, progress.get() * 8) }));
   return (
     <View style={styles.frame}>
-      {children}
+      <Animated.View style={[styles.frame, content]}>{children}</Animated.View>
       <Animated.View pointerEvents="none" style={[styles.shadow, edge]}>
         <LinearGradient colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
       </Animated.View>

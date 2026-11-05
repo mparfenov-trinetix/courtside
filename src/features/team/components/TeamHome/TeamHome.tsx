@@ -13,7 +13,7 @@ import { NextGame } from '../NextGame';
 import { ScoresStrip } from '../ScoresStrip';
 import { TeamSwitcher } from '../TeamSwitcher';
 import { SeasonSeries } from '../SeasonSeries';
-import { goBack, sharedTag , openDetail } from '@/navigation';
+import { goBack, sharedTag, openDetail, pushOnce } from '@/navigation';
 import { CatchUp } from '../CatchUp';
 import { cardHeight, TeamCard } from '../TeamCard';
 import { motionOf, PULL_TO_REFRESH, useRefreshAnimation } from '../TeamRefresh';
@@ -148,7 +148,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
             )
           ) : (
             <View style={styles.headerActions}>
-              <IconButton label="Search players and teams" onPress={() => router.push('/search')}>
+              <IconButton label="Search players and teams" onPress={() => pushOnce('/search')}>
                 <SearchIcon color={palette.chalk} />
               </IconButton>
               <IconButton

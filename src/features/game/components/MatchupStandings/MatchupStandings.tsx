@@ -1,6 +1,5 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -10,6 +9,7 @@ import { currentSeason, seasonOfDate, type StandingEntry } from '@/lib/espn';
 import { visibleSeeds } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { ROW_H } from './constants';
+import { pushOnce } from '@/navigation';
 
 type Side = { id: string; abbr: string; color: string };
 
@@ -22,7 +22,7 @@ const ordinal = (n: number) => {
 export function openStandings(teamIds: string[], date?: string) {
   Haptics.selectionAsync();
   // Pushed, not navigated: Standings lives in the menu, and going there would leave the game behind the menu.
-  router.push({
+  pushOnce({
     pathname: '/matchup-standings' as never,
     params: { teams: teamIds.join(','), ...(date ? { season: String(seasonOfDate(date)) } : {}) },
   });

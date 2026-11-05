@@ -5,6 +5,23 @@ export const MAX_DETAIL_DEPTH = 3;
 
 let detailDepth = 0;
 
+/** A screen takes about this long to slide in or out: a second press before then is a double tap, not a second request. */
+const SETTLE_MS = 700;
+let busyUntil = 0;
+
+/** True once per transition: the first call takes the lock, calls that follow within `SETTLE_MS` are refused. */
+function free(): boolean {
+  const now = Date.now();
+  if (now < busyUntil) return false;
+  busyUntil = now + SETTLE_MS;
+  return true;
+}
+
+/** `router.push` that a double tap cannot repeat (it would push the same page twice and play its opening animation twice). */
+export function pushOnce(href: Href) {
+  if (free()) router.push(href);
+}
+
 /** Kept up to date by <NavDepthTracker/> in the root layout. */
 export function setDetailDepth(n: number) {
   detailDepth = n;
@@ -15,6 +32,8 @@ export function setDetailDepth(n: number) {
  * opened the app straight on a game): there is no history to go back to, so it goes to the home card instead of doing nothing.
  */
 export function goBack() {
+  // A double tap on a back arrow would go back twice, past the page it should land on.
+  if (!free()) return;
   if (router.canGoBack()) router.back();
   else router.replace('/home');
 }
@@ -25,6 +44,7 @@ export function goBack() {
  * is MAX_DETAIL_DEPTH deep the current page is replaced instead of covered.
  */
 export function openDetail(href: Href) {
+  if (!free()) return;
   if (detailDepth >= MAX_DETAIL_DEPTH) router.replace(href);
   else router.push(href);
 }
