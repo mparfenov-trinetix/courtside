@@ -1,13 +1,19 @@
 import { Image } from 'expo-image';
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleOnRN } from 'react-native-worklets';
 
-import { ArrowLeftIcon, LarryOBrienIcon, NbaLogo, StarIcon } from '@/components';
-import { nbaToday, toDateKey, toNbaDateKey } from '@/lib/date';
+import { ArrowLeftIcon, LarryOBrienIcon, NbaLogo, slideIn, StarIcon } from '@/components';
+import { useTeams } from '@/hooks';
+import { localToday, parseEspnDate, toDateKey } from '@/lib/date';
 import type { Game } from '@/lib/espn';
 import type { CalendarEvent } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { opponentLook } from '../../utils';
 import { DOW, GOLD, MONTHS, WIN, LOSS } from './constants';
 
 export const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
@@ -57,20 +63,23 @@ export function MonthView({
   selected: Date;
   onPick: (d: Date) => void;
 }) {
+  const { data: teams } = useTeams();
+  const { height: screenHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const byDay = useMemo(() => {
     const map = new Map<string, Game>();
-    // Keyed by ESPN's Eastern date so a cell opens the same day's scoreboard.
-    for (const g of games) if (g.date) map.set(toNbaDateKey(new Date(g.date)), g);
+    // Keyed by the day on the device's own calendar, the one a cell stands for.
+    for (const g of games) if (g.date) map.set(toDateKey(parseEspnDate(g.date)), g);
     return map;
   }, [games]);
 
   const weeks = useMemo(() => buildGrid(cursor), [cursor]);
-  const todayKey = toDateKey(nbaToday());
+  const todayKey = toDateKey(localToday());
   const selectedKey = toDateKey(selected);
 
   const monthGames = games.filter((g) => {
     if (!g.date) return false;
-    return toNbaDateKey(new Date(g.date)).startsWith(`${cursor.getFullYear()}${String(cursor.getMonth() + 1).padStart(2, '0')}`);
+    return toDateKey(parseEspnDate(g.date)).startsWith(`${cursor.getFullYear()}${String(cursor.getMonth() + 1).padStart(2, '0')}`);
   });
   const wins = monthGames.filter((g) => g.result === 'W').length;
   const losses = monthGames.filter((g) => g.result === 'L').length;
@@ -79,9 +88,27 @@ export function MonthView({
   const marked = Object.entries(events ?? {}).filter(([k]) => k.startsWith(prefix)).map(([, e]) => e.kind);
   const markedLabel = [marked.includes('allstar') && 'All-Star', marked.includes('finals') && 'Finals'].filter(Boolean).join(' · ');
 
-  const shift = (n: number) => onCursor(new Date(cursor.getFullYear(), cursor.getMonth() + n, 1));
+  // The grid takes the room there is: the screen less the header, switch, month bar, weekday row and legend (about 250pt).
+  const cellHeight = Math.max(66, Math.min(120, Math.floor((screenHeight - insets.top - insets.bottom - 250) / weeks.length) - 4));
+
+  // The month slides in from the side it lies on, whether an arrow or a swipe moved to it.
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const shift = (n: number) => {
+    setDirection(n > 0 ? 1 : -1);
+    onCursor(new Date(cursor.getFullYear(), cursor.getMonth() + n, 1));
+  };
+  // A sideways swipe on the month goes to the next or previous one (the page still scrolls up and down).
+  const swipe = usePanGesture({
+    activeOffsetX: [-24, 24],
+    failOffsetY: [-14, 14],
+    onDeactivate: (e) => {
+      'worklet';
+      if (Math.abs(e.translationX) > 70 || Math.abs(e.velocityX) > 700) scheduleOnRN(shift, e.translationX < 0 ? 1 : -1);
+    },
+  });
 
   return (
+    <GestureDetector gesture={swipe}>
     <View style={styles.wrap}>
       <View style={styles.monthBar}>
         <Pressable onPress={() => shift(-1)} hitSlop={12} accessibilityLabel="Previous month" style={styles.navBtn}>
@@ -113,7 +140,7 @@ export function MonthView({
         ))}
       </View>
 
-      <Animated.View key={`${cursor.getFullYear()}-${cursor.getMonth()}`} entering={FadeIn.duration(220)} style={styles.grid}>
+      <Animated.View key={`${cursor.getFullYear()}-${cursor.getMonth()}`} entering={slideIn(direction)} style={styles.grid}>
         {weeks.map((week, wi) => (
           <View key={wi} style={styles.week}>
             {week.map(({ date, inMonth }) => {
@@ -123,6 +150,11 @@ export function MonthView({
               const isToday = key === todayKey;
               const isSelected = key === selectedKey;
               const tint = game?.result === 'W' ? WIN : game?.result === 'L' ? LOSS : accent;
+              // What is still to come is dressed in the opponent's colors, so the month reads as a run of matchups; what has been
+              // played is dressed in the result (green win, red loss), so how the season went shows at a glance.
+              const look = game ? opponentLook(teams, game.opponentId, game.opponentLogo) : null;
+              const played = !!game?.result;
+              const wash = played ? tint : look?.color ?? tint;
               return (
                 <Pressable
                   key={key}
@@ -131,14 +163,24 @@ export function MonthView({
                   accessibilityLabel={`${MONTHS[date.getMonth()]} ${date.getDate()}${game ? `, ${game.home ? 'vs' : 'at'} ${game.opponentAbbr}` : ''}${event ? `, ${event.kind === 'allstar' ? 'All-Star Game' : `NBA Finals ${event.label}`}` : ''}`}
                   style={({ pressed }) => [
                     styles.cell,
-                    game && { backgroundColor: withAlpha(tint, 0.14) },
-                    event && { borderColor: withAlpha(GOLD, 0.6), backgroundColor: game ? withAlpha(tint, 0.14) : withAlpha(GOLD, 0.12) },
+                    { height: cellHeight },
+                    game && { backgroundColor: withAlpha(wash, 0.16) },
+                    played && { borderColor: withAlpha(tint, 0.55) },
+                    event && { borderColor: withAlpha(GOLD, 0.6), backgroundColor: game ? withAlpha(wash, 0.16) : withAlpha(GOLD, 0.12) },
                     isSelected && { borderColor: palette.chalk },
                     isToday && !isSelected && { borderColor: withAlpha(palette.chalk, 0.35) },
                     !inMonth && { opacity: 0.28 },
                     pressed && { opacity: 0.6 },
                   ]}>
-                  <Text style={[styles.dayNum, isToday && styles.dayNumToday]}>{date.getDate()}</Text>
+                  {look || played ? (
+                    <LinearGradient
+                      colors={[withAlpha(wash, played ? 0.62 : 0.55), withAlpha(wash, played ? 0.2 : 0.12)]}
+                      start={{ x: 0.1, y: 0 }}
+                      end={{ x: 0.9, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                  ) : null}
+                  <Text style={[styles.dayNum, game && { color: withAlpha(palette.chalk, 0.85) }, isToday && styles.dayNumToday]}>{date.getDate()}</Text>
                   {event && !game ? (
                     <>
                       {event.kind === 'allstar' ? (
@@ -161,14 +203,16 @@ export function MonthView({
                   ) : null}
                   {game ? (
                     <>
-                      {game.opponentLogo ? (
-                        <Image source={game.opponentLogo} style={styles.opp} contentFit="contain" />
+                      {look?.logo || game.opponentLogo ? (
+                        <Image source={look?.logo || game.opponentLogo} style={styles.opp} contentFit="contain" />
                       ) : (
                         <Text style={styles.oppText}>{game.opponentAbbr}</Text>
                       )}
-                      <Text style={[styles.tag, { color: tint }]}>
-                        {game.result ?? (game.home ? 'vs' : '@')}
-                      </Text>
+                      {played ? (
+                        <Text style={[styles.result, { backgroundColor: tint }]}>{game.result}</Text>
+                      ) : (
+                        <Text style={[styles.tag, { color: withAlpha(palette.chalk, 0.75) }]}>{game.home ? 'vs' : '@'}</Text>
+                      )}
                     </>
                   ) : null}
                 </Pressable>
@@ -180,9 +224,10 @@ export function MonthView({
 
       <Text style={styles.legend}>
         {teamAbbr} games · <Text style={{ color: WIN }}>win</Text> · <Text style={{ color: LOSS }}>loss</Text>
-        {markedLabel ? <Text style={{ color: GOLD }}> · {markedLabel}</Text> : null} · tap a day to see every game
+        {markedLabel ? <Text style={{ color: GOLD }}> · {markedLabel}</Text> : null} · swipe for another month
       </Text>
     </View>
+    </GestureDetector>
   );
 }
 
@@ -207,20 +252,22 @@ const styles = StyleSheet.create({
   week: { flexDirection: 'row', gap: 4 },
   cell: {
     flex: 1,
-    height: 66,
     borderRadius: 12,
     alignItems: 'center',
-    paddingTop: 5,
-    gap: 1,
+    paddingTop: 6,
+    gap: 3,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'transparent',
     backgroundColor: withAlpha(palette.chalk, 0.035),
   },
-  dayNum: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
+  dayNum: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.muted },
   dayNumToday: { color: palette.chalk, fontFamily: fonts.bodyBold },
-  opp: { width: 22, height: 22 },
+  opp: { width: 30, height: 30 },
   oppText: { fontFamily: fonts.bodyBold, fontSize: 10, color: palette.chalk, marginTop: 4 },
-  tag: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 0.3 },
+  tag: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.3 },
+  // The result of a game played: a solid chip in the win or loss color.
+  result: { fontFamily: fonts.bodyBold, fontSize: 11, color: '#06121F', paddingHorizontal: 7, paddingVertical: 1, borderRadius: 7, overflow: 'hidden' },
   allStar: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   badge: { position: 'absolute', top: 4, right: 4 },
   legend: {

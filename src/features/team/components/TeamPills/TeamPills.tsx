@@ -1,17 +1,8 @@
 import { Image } from 'expo-image';
-import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, {
-  interpolateColor,
-  scrollTo,
-  useAnimatedReaction,
-  useAnimatedRef,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-  type SharedValue,
-} from 'react-native-reanimated';
+import Animated, { interpolateColor, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
+import { useStripFollow } from '@/hooks';
 import type { Team } from '@/lib/espn';
 import { fonts, logoOn, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { LOGO, OUTLINE, PILL_GAP, PILL_HEIGHT, PILL_WIDTH, STRIP_PADDING } from './constants';
@@ -37,89 +28,19 @@ export function TeamPills({
   selected: number;
   onSelect: (index: number) => void;
 }) {
-  const scrollRef = useAnimatedRef<Animated.ScrollView>();
-  const viewWidth = useSharedValue(0);
   const indexes = teams.map((_, i) => i);
   const accents = teams.map((t) => teamTheme(t).accent);
   const tints = teams.map((t) => withAlpha(teamTheme(t).accent, 0.16));
-  const contentWidth = STRIP_PADDING * 2 + teams.length * STEP - PILL_GAP;
-
-  // Where the strip would put a page in the middle of the view (clamped at the ends).
-  const centered = (at: number) => {
-    'worklet';
-    const x = at * STEP + STRIP_PADDING + PILL_WIDTH / 2 - viewWidth.get() / 2;
-    return Math.max(0, Math.min(x, contentWidth - viewWidth.get()));
-  };
-
-  // The strip follows the pager frame by frame, keeping the current team in the middle. If you have scrolled the strip
-  // yourself, it starts from where you left it and eases into the centered position as the pager moves on, so a tap
-  // after a long scroll doesn't first jump the strip back to the old team.
-  const scrollX = useSharedValue(0);
-  const userMoving = useSharedValue(false);
-  const manual = useSharedValue(false);
-  const manualX = useSharedValue(0);
-  const manualPage = useSharedValue(0);
-  const fadeOver = useSharedValue(1.5);
-
-  const onScroll = useAnimatedScrollHandler({
-    onScroll: (e) => {
-      scrollX.set(e.contentOffset.x);
-      if (!userMoving.get()) return;
-      manual.set(true);
-      manualX.set(e.contentOffset.x);
-      manualPage.set(page.get());
-      fadeOver.set(1.5);
-    },
-    onBeginDrag: () => {
-      userMoving.set(true);
-    },
-    onEndDrag: (e) => {
-      if (e.velocity?.x === 0) userMoving.set(false);
-    },
-    onMomentumEnd: () => {
-      userMoving.set(false);
-    },
+  const { scrollRef, onScroll, contentStyle, contentWidth, tap, layout } = useStripFollow({
+    page,
+    step: STEP,
+    padding: STRIP_PADDING,
+    itemWidth: PILL_WIDTH,
+    count: teams.length,
+    gap: PILL_GAP,
   });
-
-  // Once the pager has travelled far enough from where the strip was left, the leftover offset has faded out completely:
-  // drop it, or it would come back (and pull the strip off the current team) the next time the pager passed that spot.
-  useAnimatedReaction(
-    () => manual.get() && !userMoving.get() && Math.abs(page.get() - manualPage.get()) >= fadeOver.get(),
-    (spent) => {
-      if (spent) manual.set(false);
-    },
-  );
-
-  useAnimatedReaction(
-    () => {
-      const target = centered(page.get());
-      if (!manual.get()) return target;
-      const weight = Math.max(0, 1 - Math.abs(page.get() - manualPage.get()) / fadeOver.get());
-      return target + (manualX.get() - centered(manualPage.get())) * weight;
-    },
-    (x) => {
-      if (userMoving.get()) return;
-      scrollTo(scrollRef, Math.max(0, Math.min(x, contentWidth - viewWidth.get())), 0, false);
-    },
-  );
-
-  // A tap names the team on the UI thread, where the strip's real offset and the pager's position are known: the strip
-  // eases from where it is to the new team over the whole trip of the pager.
-  const tapped = useSharedValue<{ index: number; n: number } | null>(null);
-  const taps = useRef(0);
-  useAnimatedReaction(
-    () => tapped.get(),
-    (tap) => {
-      if (!tap) return;
-      manual.set(true);
-      manualX.set(scrollX.get());
-      manualPage.set(page.get());
-      fadeOver.set(Math.max(1.5, Math.abs(tap.index - page.get())));
-    },
-  );
   const choose = (index: number) => {
-    taps.current += 1;
-    tapped.set({ index, n: taps.current });
+    tap(index);
     onSelect(index);
   };
 
@@ -146,22 +67,19 @@ export function TeamPills({
       showsHorizontalScrollIndicator={false}
       onScroll={onScroll}
       scrollEventThrottle={16}
-      onLayout={(e) => {
-        const width = e.nativeEvent.layout.width;
-        viewWidth.set(width);
-        // Opens with the selected team in the middle.
-        const x = selected * STEP + STRIP_PADDING + PILL_WIDTH / 2 - width / 2;
-        scrollRef.current?.scrollTo({ x: Math.max(0, Math.min(x, contentWidth - width)), animated: false });
-      }}
+      // Opens with the selected team in the middle.
+      onLayout={(e) => layout(e.nativeEvent.layout.width, selected)}
       style={styles.strip}
       contentContainerStyle={{ width: contentWidth, height: PILL_HEIGHT }}>
-      {/* Inside the scrolling content, so it can never drift from the pills. */}
-      <Animated.View pointerEvents="none" style={[styles.outline, outline]} />
-      <View style={styles.row}>
-        {teams.map((team, index) => (
-          <Pill key={team.id} team={team} index={index} page={page} on={index === selected} onPress={() => choose(index)} />
-        ))}
-      </View>
+      {/* One layer for the outline and the pills, moved together, so the outline can never drift from them. */}
+      <Animated.View style={[styles.layer, { width: contentWidth }, contentStyle]}>
+        <Animated.View pointerEvents="none" style={[styles.outline, outline]} />
+        <View style={styles.row}>
+          {teams.map((team, index) => (
+            <Pill key={team.id} team={team} index={index} page={page} on={index === selected} onPress={() => choose(index)} />
+          ))}
+        </View>
+      </Animated.View>
     </Animated.ScrollView>
   );
 }
@@ -202,6 +120,7 @@ function Pill({
 
 const styles = StyleSheet.create({
   strip: { height: PILL_HEIGHT, flexGrow: 0 },
+  layer: { position: 'absolute', left: 0, top: 0, height: PILL_HEIGHT },
   row: { position: 'absolute', left: STRIP_PADDING, top: 0, flexDirection: 'row', gap: PILL_GAP },
   outline: {
     position: 'absolute',

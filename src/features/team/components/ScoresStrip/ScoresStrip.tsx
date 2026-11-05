@@ -3,17 +3,17 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { FlashOverlay, HeatBadge, Tick } from '@/components';
-import { useScoreboardByDate } from '@/hooks';
-import { nbaToday, toDateKey } from '@/lib/date';
+import { useGamesOnDay } from '@/hooks';
+import { localToday } from '@/lib/date';
 import { gameHeat } from '@/lib/game';
 import { involvesTeam, type ScoreboardGame, type ScoreboardTeam } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail, sharedTag } from '@/navigation';
 
 export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highlightTeamId?: string | null }) {
-  // Read each render, not once: a drawer screen stays mounted past midnight (Eastern) and must move on to the next day.
-  const dateKey = toDateKey(nbaToday());
-  const { data: games } = useScoreboardByDate(dateKey);
+  // Today on the device's own clock, read each render: a drawer screen stays mounted past midnight and must move on to the next day.
+  const today = localToday();
+  const { games } = useGamesOnDay(today, today);
 
   if (!games || games.length === 0) return null;
 

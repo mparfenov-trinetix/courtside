@@ -1,14 +1,17 @@
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState, type ReactElement } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SeasonButton } from '@/components';
+import { useTeams } from '@/hooks';
 import { CupBadge } from '@/features/cup';
 import { currentSeason, type Game } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
+import { opponentLook, type OpponentLook } from '../../utils';
 import { WIN, LOSS, DOW } from './constants';
 
 type Row = { type: 'month'; label: string } | { type: 'game'; game: Game };
@@ -47,6 +50,7 @@ export function AgendaView({
   refreshControl?: ReactElement;
 }) {
   const insets = useSafeAreaInsets();
+  const { data: teams } = useTeams();
   const [tab, setTab] = useState<'upcoming' | 'results'>(season != null && season < currentSeason() ? 'results' : 'upcoming');
 
   const sorted = [...games].filter((g) => g.date).sort((a, b) => a.date.localeCompare(b.date));
@@ -87,7 +91,7 @@ export function AgendaView({
           <Text style={styles.month}>{item.label}</Text>
         ) : (
           <Animated.View>
-            <GameRow game={item.game} accent={accent} />
+            <GameRow game={item.game} accent={accent} look={opponentLook(teams, item.game.opponentId, item.game.opponentLogo)} />
           </Animated.View>
         )
       }
@@ -107,21 +111,33 @@ function Tab({ label, active, onPress, accent }: { label: string; active: boolea
   );
 }
 
-function GameRow({ game, accent }: { game: Game; accent: string }) {
+/** One game: in the opponent's colors before it is played, in the result's after, with a logo that reads on them. */
+function GameRow({ game, accent, look }: { game: Game; accent: string; look: OpponentLook | null }) {
   const d = new Date(game.date);
   const resultColor = game.result === 'W' ? WIN : LOSS;
   const isToday = new Date().toDateString() === d.toDateString();
+  // Played games are dressed in the result (green win, red loss); games to come in the opponent's colors.
+  const played = game.completed && !!game.result;
   return (
     <Pressable
       onPress={() => openDetail({ pathname: '/game/[id]', params: { id: game.id } })}
       accessibilityRole="button"
       style={({ pressed }) => [styles.row, isToday && { borderColor: withAlpha(accent, 0.6) }, pressed && { opacity: 0.7 }]}>
+      {look ? (
+        <LinearGradient
+          colors={[withAlpha(played ? resultColor : look.color, 0.5), withAlpha(played ? resultColor : look.color, 0.1), withAlpha(played ? resultColor : look.color, 0.04)]}
+          locations={[0, 0.55, 1]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
       <View style={styles.date}>
         <Text style={styles.dow}>{DOW[d.getDay()]}</Text>
         <Text style={styles.dayNum}>{d.getDate()}</Text>
       </View>
-      {game.opponentLogo ? (
-        <Image source={game.opponentLogo} style={styles.logo} contentFit="contain" />
+      {look?.logo || game.opponentLogo ? (
+        <Image source={look?.logo || game.opponentLogo} style={styles.logo} contentFit="contain" />
       ) : (
         <View style={styles.logo} />
       )}
@@ -174,6 +190,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
     backgroundColor: withAlpha('#FFFFFF', 0.06),
+    overflow: 'hidden',
   },
   date: { width: 38, alignItems: 'center' },
   dow: { fontFamily: fonts.bodySemi, fontSize: 10, letterSpacing: 0.5, color: palette.muted },
