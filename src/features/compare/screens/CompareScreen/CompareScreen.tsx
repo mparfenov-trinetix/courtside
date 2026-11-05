@@ -19,6 +19,7 @@ import { CompareRow, PlayerExtras, type Row, Radar, type RadarAxis, TeamCompare 
 import { Segmented, slideIn, ScreenHeader } from '@/components';
 import { usePlayerCareer, usePlayerSearch, usePlayerStats, useTeams } from '@/hooks';
 import { headshotUrl, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
+import { nba2kRating } from '@/lib/league';
 import { fonts, matchupColors, palette, withAlpha } from '@/lib/theme';
 import { MODES, SCOPES, CEILING } from './constants';
 
@@ -28,8 +29,12 @@ const one = (v: number) => v.toFixed(1);
 const percent = (v: number) => `${(v * 100).toFixed(1)}%`;
 const whole = (v: number) => String(Math.round(v));
 
-function buildRows(a: PlayerSeasonStats, b: PlayerSeasonStats): Row[] {
+function buildRows(a: PlayerSeasonStats, b: PlayerSeasonStats, names?: { a?: string; b?: string }): Row[] {
+  // NBA 2K27's published overall, when either is in its Top 100 (2K publishes no other ratings).
+  const ra = nba2kRating(names?.a)?.overall;
+  const rb = nba2kRating(names?.b)?.overall;
   return [
+    ...(ra != null || rb != null ? [{ label: 'NBA 2K27 overall', a: ra, b: rb, fmt: whole }] : []),
     { label: 'Points', a: a.ppg, b: b.ppg, fmt: one },
     { label: 'Rebounds', a: a.rpg, b: b.rpg, fmt: one },
     { label: 'Assists', a: a.apg, b: b.apg, fmt: one },
@@ -120,7 +125,7 @@ export function CompareScreen() {
         ? buildCareerRows(careerA, careerB)
         : []
       : statsA && statsB
-        ? buildRows(statsA, statsB)
+        ? buildRows(statsA, statsB, { a: slotA?.name, b: slotB?.name })
         : [];
   const winsA = rows.filter((r) => (r.a ?? -1) > (r.b ?? -1)).length;
   const winsB = rows.filter((r) => (r.b ?? -1) > (r.a ?? -1)).length;

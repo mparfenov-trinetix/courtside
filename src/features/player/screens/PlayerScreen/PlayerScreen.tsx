@@ -9,11 +9,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, CompareIcon, StarIcon } from '@/components';
 import { useAllStars, usePlayerBio, usePlayerCareer, usePlayerGameLog, usePlayerProfile, usePlayerStats, useRefresh, useRoster, useTeam, useTilt } from '@/hooks';
-import { titleSeasons } from '@/lib/league';
+import { nba2kRating, titleSeasons } from '@/lib/league';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { goBack } from '@/navigation';
 import { useWatchlist } from '@/state';
-import { CareerSkeleton, CareerTable, ContractCard, FormCard, GameLog, GameLogSkeleton, HonorsCard, InfoSkeleton, PlayerPageSkeleton, PlayerShotChart, SplitsCard, StatsSkeleton } from '../../components';
+import { CareerSkeleton, CareerTable, ContractCard, FormCard, GameLog, GameLogSkeleton, HonorsCard, InfoSkeleton, PlayerPageSkeleton, PlayerShotChart, RatingCard, SplitsCard, StatsSkeleton } from '../../components';
 
 const MAX_ROTATE = 10;
 
@@ -50,6 +50,7 @@ export function PlayerScreen() {
   const { isWatched, toggle } = useWatchlist();
 
   const { data: stats, isPending: statsPending } = usePlayerStats(player?.id);
+  const rating2k = nba2kRating(player?.name);
   const { data: gameLog, isPending: logPending } = usePlayerGameLog(player?.id);
   const { data: career, isPending: careerPending } = usePlayerCareer(activeTab === 'career' || activeTab === 'info' ? player?.id : undefined);
   const { data: allStars } = useAllStars(activeTab === 'info');
@@ -316,6 +317,7 @@ export function PlayerScreen() {
               <StatsSkeleton />
             ) : stats && Object.values(stats).some((v) => v != null) ? (
               <Animated.View style={styles.statsBlock}>
+                {rating2k && <RatingCard rating={rating2k} />}
                 <Text style={styles.sectionLabel}>
                   Averages{stats.gamesPlayed != null ? ` · ${stats.gamesPlayed} games${stats.gamesStarted != null ? `, ${stats.gamesStarted} started` : ''}` : ''}
                 </Text>

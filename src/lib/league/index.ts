@@ -4,6 +4,7 @@ export * from './catch-up';
 export * from './conference-standing';
 export * from './cup';
 export * from './head-to-head';
+export * from './nba2k-ratings';
 export * from './standings-window';
 export * from './team-stats';
 export * from './titles';
