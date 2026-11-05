@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import type { BoxScoreTeam, Play } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -62,7 +62,6 @@ export function PlayByPlay({
             <Animated.View key={play.id || String(i)} layout={i < 30 ? LinearTransition.duration(220) : undefined}>
               {newPeriod && <Text style={styles.periodHeader}>{periodName(play.period)}</Text>}
               <Animated.View
-                entering={i < 12 ? FadeInDown.delay(i * 18).duration(220) : undefined}
                 style={[styles.row, play.scoring && { backgroundColor: withAlpha(entry?.color ?? palette.chalk, 0.14) }]}>
                 <View style={styles.clock}>
                   <Text style={styles.clockText}>{play.clockText}</Text>

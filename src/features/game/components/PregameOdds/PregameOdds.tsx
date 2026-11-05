@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import type { Pregame, SideOdds } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -19,7 +19,7 @@ export function PregameOdds({ away, home, pregame }: { away: Side; home: Side; p
   const homePct = 100 - awayPct;
 
   return (
-    <Animated.View entering={FadeInDown.delay(40).duration(280)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       {winProb && (
         <>
           <Text style={styles.title}>Win probability</Text>

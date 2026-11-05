@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { Collapsible } from '@/components';
 import type { BoxScorePlayer } from '@/lib/espn';
@@ -35,7 +35,7 @@ export function LineupsCard({
         {lineups.map((l, i) => {
           const net = l.pf - l.pa;
           return (
-            <Animated.View key={l.ids.join('|')} entering={FadeInDown.delay(i * 40).duration(240)} style={styles.row}>
+            <Animated.View key={l.ids.join('|')} style={styles.row}>
               <View style={styles.faces}>
                 {l.ids.map((id, k) => {
                   const p = byId.get(id);

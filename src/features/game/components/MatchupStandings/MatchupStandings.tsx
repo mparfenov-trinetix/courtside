@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { ChevronIcon, ListSkeleton } from '@/components';
 import { useStandings } from '@/hooks';
@@ -45,7 +45,7 @@ export function MatchupStandings({ away, home, date }: { away: Side; home: Side;
   const h = find(home);
 
   return (
-    <Animated.View entering={FadeInDown.delay(60).duration(280)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Text style={styles.title}>Standings</Text>
       <View style={styles.card}>
         {isPending ? (

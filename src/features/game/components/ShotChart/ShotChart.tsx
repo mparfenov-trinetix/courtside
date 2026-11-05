@@ -2,14 +2,13 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, G, Line } from 'react-native-svg';
 
 import { CourtMarkings, HeatLayer, Segmented, binShots, COURT_W, COURT_H, HOOP, HOT, COLD } from '@/components';
 import type { BoxScorePlayer, BoxScoreTeam, Play } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
-
 
 type Shot = { play: Play; x: number; y: number; made: boolean; three: boolean; shooterId: string };
 type Zone = 'At rim' | 'Paint' | 'Mid-range' | '3-point';
@@ -200,7 +199,6 @@ export function ShotChart({
         {selected && width > 0 && (
           <Animated.View
             key={selected.play.id}
-            entering={FadeIn.duration(160)}
             pointerEvents="none"
             style={[
               styles.callout,
@@ -222,7 +220,7 @@ export function ShotChart({
           </Animated.View>
         )}
         {visible.length === 0 && width > 0 && (
-          <Animated.Text entering={FadeIn} style={styles.noShots}>No shots with location data</Animated.Text>
+          <Animated.Text style={styles.noShots}>No shots with location data</Animated.Text>
         )}
       </View>
 
@@ -249,7 +247,7 @@ export function ShotChart({
             </Pressable>
           </View>
         ) : (
-          <Animated.View entering={FadeIn.duration(200)} style={styles.legendRight}>
+          <Animated.View style={styles.legendRight}>
             <Text style={styles.legendText}>Colder</Text>
             <LinearGradient
               colors={[COLD, withAlpha(palette.chalk, 0.15), HOT]}

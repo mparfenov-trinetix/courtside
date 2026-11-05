@@ -2,14 +2,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  FadeInDown,
-  Extrapolation,
-  interpolate,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from 'react-native-reanimated';
+import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
 import { LineupsCard } from '../LineupsCard';
 import { FlashOverlay } from '@/components';
@@ -132,7 +125,7 @@ export function BoxScoreTab({
       </View>
 
       {cols.length > 0 && players.length > 0 ? (
-        <Animated.View key={side} entering={FadeInDown.duration(240)}>
+        <Animated.View key={side}>
           <Text style={styles.note}>
             {filtered ? `${periodLabel} stats rebuilt from play-by-play · ` : ''}
             Tap a column to sort ·{' '}

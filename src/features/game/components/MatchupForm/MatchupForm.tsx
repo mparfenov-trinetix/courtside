@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { FormChips } from '@/components';
 import type { FormGame } from '@/lib/espn';
@@ -14,7 +14,7 @@ export function MatchupForm({ away, home, form }: { away: Side; home: Side; form
   if (sides.length === 0) return null;
 
   return (
-    <Animated.View entering={FadeInDown.delay(80).duration(280)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Text style={styles.title}>Recent form · last 5</Text>
       <View style={styles.card}>
         {sides.map((t, i) => {

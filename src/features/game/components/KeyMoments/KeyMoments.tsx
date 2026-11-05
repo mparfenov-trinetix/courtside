@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import type { BoxScoreTeam, Play } from '@/lib/espn';
 import { periodLabel, type Flow, type Run } from '@/lib/game';
@@ -71,7 +71,7 @@ export function KeyMoments({
       <Text style={styles.title}>Key moments</Text>
       <View style={styles.grid}>
         {tiles.map((t, i) => (
-          <Animated.View key={t.key} entering={FadeInDown.delay(i * 40).duration(240)} style={[styles.tile, t.wide && styles.tileWide]}>
+          <Animated.View key={t.key} style={[styles.tile, t.wide && styles.tileWide]}>
             <Text style={styles.label}>{t.label}</Text>
             <Text style={[styles.value, t.wide && styles.valueWide, { color: t.color }]}>{t.value}</Text>
             {t.sub ? <Text style={styles.sub}>{t.sub}</Text> : null}
@@ -79,7 +79,7 @@ export function KeyMoments({
         ))}
       </View>
       {last && (
-        <Animated.View entering={FadeInDown.delay(tiles.length * 40).duration(240)} style={styles.last}>
+        <Animated.View style={styles.last}>
           <Text style={styles.label}>Last lead change · {when(last)}</Text>
           <Text style={styles.lastText} numberOfLines={2}>
             {last.text.replace(/\s*\n\s*/g, ' ').trim()}
