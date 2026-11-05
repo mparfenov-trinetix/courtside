@@ -49,6 +49,9 @@ export function ScoreHero({
 }) {
   const filtered = selPeriods != null;
   const bars = useAnimatedStyle(() => ({ opacity: scrollY ? Math.max(0, 1 - scrollY.get() / 36) : 1 }));
+  // The clock, timeout and heat labels fade as the header starts to collapse, before the top bar shows the same ones: at no
+  // point of the scroll (so wherever it is stopped) is the same information on screen twice.
+  const labels = useAnimatedStyle(() => ({ opacity: scrollY ? Math.max(0, 1 - scrollY.get() / 28) : 1 }));
   const awaySlot = useRef<HostInstance>(null);
   const homeSlot = useRef<HostInstance>(null);
   // Called whenever the row or a slot is laid out: a live badge appearing makes the row taller and moves the slots.
@@ -82,9 +85,11 @@ export function ScoreHero({
           ) : (
             <Text style={styles.vsScore}>vs</Text>
           )}
-          {live ? <LivePill label={status} /> : <Text style={styles.gameStatus}>{status}</Text>}
-          {live && timeout ? <TimeoutPill label={timeout} /> : null}
-          {live ? <HeatBadge heat={gameHeat(away.score, home.score, status)} /> : null}
+          <Animated.View style={[styles.labels, labels]}>
+            {live ? <LivePill label={status} /> : <Text style={styles.gameStatus}>{status}</Text>}
+            {live && timeout ? <TimeoutPill label={timeout} /> : null}
+            {live ? <HeatBadge heat={gameHeat(away.score, home.score, status)} /> : null}
+          </Animated.View>
         </View>
         <TeamScore team={home} right slot={homeSlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
       </Animated.View>
@@ -313,6 +318,7 @@ const styles = StyleSheet.create({
   teamBlockRight: { alignItems: 'flex-end' },
   teamLogo: { width: HERO_LOGO, height: HERO_LOGO },
   teamAbbr: { fontFamily: fonts.display, fontSize: 24, color: palette.chalk },
+  labels: { alignItems: 'center', gap: 4 },
   scoreCenter: { alignItems: 'center', gap: 4 },
   vsScore: { fontFamily: fonts.display, fontSize: 32, color: palette.chalk },
   bigScore: { flexDirection: 'row', alignItems: 'center' },

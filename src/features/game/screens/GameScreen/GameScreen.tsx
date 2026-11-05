@@ -7,6 +7,8 @@ import Animated, {
   Easing,
   Extrapolation,
   interpolate,
+  scrollTo,
+  useAnimatedRef,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useDerivedValue,
@@ -51,8 +53,35 @@ export function GameScreen() {
   const homeSlot = useSharedValue<LogoSlot>({ x: width - HERO_INSET, y: slotY });
   const onLogoSlot = (side: 'away' | 'home', x: number, y: number) =>
     (side === 'away' ? awaySlot : homeSlot).set({ x, y: y + scrollY.get() });
-  const onScroll = useAnimatedScrollHandler((e) => {
-    scrollY.set(e.contentOffset.y);
+  const flick = useSharedValue(0);
+  const scrollRef = useAnimatedRef<Animated.ScrollView>();
+  // The header's collapse (logos gliding into the bar) takes this much scroll. A scroll that comes to rest inside it
+  // would leave the logos half way, so it is finished for you: back to the top, or on to the collapsed bar.
+  const collapseEnd = () => {
+    'worklet';
+    return Math.max(60, awaySlot.get().y - (insets.top + 10 + 22));
+  };
+  const settle = (y: number, velocity: number) => {
+    'worklet';
+    const end = collapseEnd();
+    if (y <= 1 || y >= end - 1) return;
+    // A flick decides by its direction; a slow release by which side of the middle it stopped on.
+    const down = Math.abs(velocity) > 0.25 ? velocity > 0 : y > end / 2;
+    scrollTo(scrollRef, 0, down ? end : 0, true);
+  };
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollY.set(e.contentOffset.y);
+    },
+    onEndDrag: (e) => {
+      const v = e.velocity?.y ?? 0;
+      flick.set(v);
+      // With momentum still to come, wait for it to finish (it keeps the flick's direction); without any, settle now.
+      if (Math.abs(v) < 0.05) settle(e.contentOffset.y, 0);
+    },
+    onMomentumEnd: (e) => {
+      settle(e.contentOffset.y, flick.get());
+    },
   });
   // Where the tab bar sits in the page. It pins once the scroll reaches that point; `pinned` ramps 0 -> 1
   // over the last stretch before, so the bars' team-colored surface arrives exactly as they take over
@@ -180,6 +209,7 @@ export function GameScreen() {
 
       <View style={{ flex: 1 }}>
       <Animated.ScrollView
+        ref={scrollRef}
         onScroll={onScroll}
         scrollEventThrottle={16}
         refreshControl={refreshControl}
