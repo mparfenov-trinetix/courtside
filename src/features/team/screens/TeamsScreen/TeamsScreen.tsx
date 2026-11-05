@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useState } from 'react';
@@ -10,7 +11,6 @@ import { useTeams } from '@/hooks';
 import type { Team } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
-import { goToScreen } from '@/navigation';
 
 export function TeamsScreen() {
   const insets = useSafeAreaInsets();
@@ -26,7 +26,7 @@ export function TeamsScreen() {
   const open = (team: Team) => {
     Haptics.selectionAsync();
     viewTeam(team.id);
-    goToScreen('/home');
+    router.navigate('/home');
   };
 
   return (

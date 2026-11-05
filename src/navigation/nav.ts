@@ -24,7 +24,19 @@ export function pushOnce(href: Href) {
 
 /** Kept up to date by <NavDepthTracker/> in the root layout. */
 export function setDetailDepth(n: number) {
+  // A page was closed: the drawer screen under it is about to show again (see `returningFromDetail`).
+  if (n < detailDepth) poppedAt = Date.now();
   detailDepth = n;
+}
+
+let poppedAt = 0;
+
+/**
+ * Whether the drawer screen that has just come into focus is only showing again because a game, player or team page on top of it was
+ * closed (or is closing). It was on screen all along, so it must not slide in: every other focus is a deliberate trip to it.
+ */
+export function returningFromDetail(): boolean {
+  return detailDepth > 0 || Date.now() - poppedAt < 1000;
 }
 
 /**
@@ -47,23 +59,4 @@ export function openDetail(href: Href) {
   if (!free()) return;
   if (detailDepth >= MAX_DETAIL_DEPTH) router.replace(href);
   else router.push(href);
-}
-
-let settleUntil = 0;
-
-/**
- * Go to another drawer screen (a button in the app, not the menu). The screen it lands on slides in like one chosen from the menu
- * (`takeSettle`); without this the drawer swaps screens with no transition at all. Returning to a drawer screen from a game or
- * player page also focuses it, and that one must not slide, so only screens reached through here (or the open menu) do.
- */
-export function goToScreen(href: Href) {
-  settleUntil = Date.now() + 1500;
-  router.navigate(href);
-}
-
-/** True once after `goToScreen`: the screen that has just come into focus should settle in. */
-export function takeSettle(): boolean {
-  const yes = Date.now() < settleUntil;
-  settleUntil = 0;
-  return yes;
 }

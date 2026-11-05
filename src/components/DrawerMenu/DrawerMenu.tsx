@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useIsFocused, type Href } from 'expo-router';
+import { router, useIsFocused, useRoute, type Href } from 'expo-router';
 import { DrawerContentScrollView, useDrawerProgress, type DrawerContentComponentProps } from 'expo-router/drawer';
 import { useEffect, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTeam } from '@/hooks';
 import { fonts, logoOn, mix, palette, teamTheme, withAlpha } from '@/lib/theme';
-import { pushOnce, takeSettle } from '@/navigation';
+import { pushOnce, returningFromDetail } from '@/navigation';
 import { useTeamStore } from '@/state';
 import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, GridIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon } from '../Icons';
 import { NbaLogo } from '../NbaLogo';
@@ -221,6 +221,8 @@ function Corner({ color, flip }: { color: string; flip?: boolean }) {
  */
 /** The first screen shown after launch does not animate in: the intro's own fade hands over to it. Every later focus does. */
 let launchScene = true;
+/** The drawer screen that was last in focus: a page opened over it and closed again brings focus back to the same one. */
+let lastScene = '';
 
 /** How long a screen takes to settle once the menu sends you to it. */
 // Longer and with a long, soft tail (an ease-out quint): the first frames carry the motion, the end just settles.
@@ -241,6 +243,7 @@ export function SceneFrame({ children }: { children: ReactNode }) {
   // smaller and not fully opaque, to rest, as the menu closes. Opacity does not start at zero: the menu's color behind the
   // scene would show through as a blank background.
   const focused = useIsFocused();
+  const routeName = useRoute().name;
   const enter = useSharedValue(1);
   useEffect(() => {
     if (!focused) return;
@@ -248,9 +251,12 @@ export function SceneFrame({ children }: { children: ReactNode }) {
       launchScene = false;
       return;
     }
-    // Only for a screen chosen from the menu (it is still open, closing) or reached by a button through `goToScreen`. Coming back to this screen from a game, player or
-    // team page opened over it also focuses it again, and that must not slide it in: it looked like the menu dragging open.
-    if (progress.get() < 0.05 && !takeSettle()) return;
+    // Every deliberate trip to a drawer screen slides it in (from the menu, from any button). Returning to the screen that was showing
+    // because a game, player or team page on top of it was closed does not: it was on screen all along, and sliding it in looked like
+    // the menu dragging open. (A button on a page like that, say Compare on a team page, goes to a different screen: that one slides.)
+    const returning = returningFromDetail() && lastScene === routeName;
+    lastScene = routeName;
+    if (returning) return;
     enter.set(0);
     // Not in the same frame the screen is built in: the first render of a heavy screen (the Calendar's pager and its queries) takes
     // the frames the first part of the motion needs, and the slide would start with a hitch. Two frames later it has drawn.
@@ -262,19 +268,21 @@ export function SceneFrame({ children }: { children: ReactNode }) {
       cancelAnimationFrame(first);
       cancelAnimationFrame(second);
     };
-  }, [focused, enter, progress]);
-  // A shorter slide (the soft tail makes it read further), no scale (a scaled layer is resampled and goes soft mid-move), and the
-  // opacity finishes first so the screen is solid before it stops moving.
-  const content = useAnimatedStyle(() => ({
-    opacity: 0.55 + 0.45 * Math.min(1, enter.get() * 1.8),
-    transform: [{ translateX: (1 - enter.get()) * 22 }],
-  }));
+  }, [focused, enter, routeName]);
+  // The screen only slides (cheap: one layer moved). The fade is a veil in the menu's color laid over it and thinning out: fading the
+  // screen itself made iOS draw all its cards into a temporary buffer on every frame. The veil finishes first, so the screen is
+  // solid before it stops moving. No scale: a scaled layer is resampled and goes soft mid-move.
+  const content = useAnimatedStyle(() => ({ transform: [{ translateX: (1 - enter.get()) * 22 }] }));
+  const veil = useAnimatedStyle(() => ({ opacity: 0.45 * (1 - Math.min(1, enter.get() * 1.8)) }));
 
   // The corners must be solid as soon as any of the menu shows (they sit right next to it), not fade in with the slide.
   const corner = useAnimatedStyle(() => ({ opacity: Math.min(1, progress.get() * 8) }));
   return (
     <View style={styles.frame}>
-      <Animated.View style={[styles.frame, content]}>{children}</Animated.View>
+      <Animated.View style={[styles.frame, content]}>
+        {children}
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: menu }, veil]} />
+      </Animated.View>
       <Animated.View pointerEvents="none" style={[styles.shadow, edge]}>
         <LinearGradient colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
       </Animated.View>
