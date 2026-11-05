@@ -5,19 +5,29 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorState, ListSkeleton, ScreenHeader } from '@/components';
-import { useLeagueLeaders, useTeams , useRefresh } from '@/hooks';
-import type { LeaderEntry } from '@/lib/espn';
+import { useLeaderCategory, useTeams, useRefresh } from '@/hooks';
+import type { LeaderCategory, LeaderEntry } from '@/lib/espn';
+import { Efficiency, HotCold } from '../../components';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
-type Category = 'ppg' | 'rpg' | 'apg' | 'stpg' | 'bpg' | 'mpg' | 'pfpg';
+type Category = LeaderCategory;
+type Tab = Category | 'form' | 'eff';
 
-const TABS: { key: Category; label: string; full: string }[] = [
+const TABS: { key: Tab; label: string; full: string }[] = [
+  { key: 'form', label: 'HOT / COLD', full: 'Hot and cold' },
   { key: 'ppg', label: 'PPG', full: 'Points Per Game' },
   { key: 'rpg', label: 'RPG', full: 'Rebounds Per Game' },
   { key: 'apg', label: 'APG', full: 'Assists Per Game' },
   { key: 'stpg', label: 'STL', full: 'Steals Per Game' },
   { key: 'bpg', label: 'BLK', full: 'Blocks Per Game' },
+  { key: 'eff', label: 'EFF', full: 'Efficiency' },
+  { key: 'tpm', label: '3PM', full: '3-Pointers Made Per Game' },
+  { key: 'tppct', label: '3P%', full: '3-Point Percentage' },
+  { key: 'fgpct', label: 'FG%', full: 'Field Goal Percentage' },
+  { key: 'ftpct', label: 'FT%', full: 'Free Throw Percentage' },
+  { key: 'topg', label: 'TOV', full: 'Turnovers Per Game' },
+  { key: 'dd', label: 'DD', full: 'Double-Doubles' },
   { key: 'mpg', label: 'MPG', full: 'Minutes Per Game' },
   { key: 'pfpg', label: 'PF', full: 'Fouls Per Game' },
 ];
@@ -26,18 +36,20 @@ const PAGE = 10;
 
 export function LeagueLeadersScreen() {
   const insets = useSafeAreaInsets();
-  const [active, setActive] = useState<Category>('ppg');
+  const [active, setActive] = useState<Tab>('ppg');
   const [displayCount, setDisplayCount] = useState(PAGE);
-  const { data, isPending, error, refetch } = useLeagueLeaders();
+  // Only the open category is read (the form tabs read their own).
+  const own = active !== 'form' && active !== 'eff';
+  const { data, isPending, error, refetch } = useLeaderCategory(own ? active : 'ppg', 50, own);
   const refreshControl = useRefresh([['leaders']]);
   const { data: teams } = useTeams();
 
-  const switchTab = (tab: Category) => {
+  const switchTab = (tab: Tab) => {
     setActive(tab);
     setDisplayCount(PAGE);
   };
 
-  const allLeaders = (data?.[active] ?? []).map((entry) => {
+  const allLeaders = (active === 'form' || active === 'eff' ? [] : data ?? []).map((entry) => {
     const team = teams?.find((t) => t.id === entry.teamId);
     return team ? { ...entry, teamAbbr: team.abbreviation, teamColor: team.color } : entry;
   });
@@ -80,7 +92,11 @@ export function LeagueLeadersScreen() {
         </ScrollView>
       </Animated.View>
 
-      {isPending ? (
+      {active === 'form' ? (
+        <HotCold abbrOf={(id) => teams?.find((t) => t.id === id)?.abbreviation} />
+      ) : active === 'eff' ? (
+        <Efficiency abbrOf={(id) => teams?.find((t) => t.id === id)?.abbreviation} />
+      ) : isPending ? (
         <ListSkeleton count={10} />
       ) : error ? (
         <ErrorState message={error.message} onRetry={refetch} />

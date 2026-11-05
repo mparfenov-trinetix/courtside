@@ -14,93 +14,87 @@ export type LeaderEntry = {
   displayValue: string;
 };
 
-export type LeagueLeaders = {
-  ppg: LeaderEntry[];
-  rpg: LeaderEntry[];
-  apg: LeaderEntry[];
-  stpg: LeaderEntry[];
-  bpg: LeaderEntry[];
-  mpg: LeaderEntry[];
-  pfpg: LeaderEntry[];
-};
+/** The categories shown, keyed as the app names them, with ESPN's category name and how its value is read. */
+export const LEADER_CATEGORIES = {
+  ppg: { espn: 'pointsPerGame' },
+  rpg: { espn: 'reboundsPerGame' },
+  apg: { espn: 'assistsPerGame' },
+  stpg: { espn: 'stealsPerGame' },
+  bpg: { espn: 'blocksPerGame' },
+  tpm: { espn: '3PointsMadePerGame' },
+  // ESPN sends this one as a fraction (0.478) and its own display rounds it to "0.5": rescale and format here.
+  tppct: { espn: '3PointPct', scale: 100 },
+  fgpct: { espn: 'fieldGoalPercentage' },
+  ftpct: { espn: 'FreeThrowPct' },
+  topg: { espn: 'avgTurnovers' },
+  dd: { espn: 'doubleDouble', digits: 0 },
+  mpg: { espn: 'minutesPerGame' },
+  pfpg: { espn: 'foulsPerGame' },
+} as const satisfies Record<string, { espn: string; scale?: number; digits?: number }>;
 
-export async function fetchLeagueLeaders(): Promise<LeagueLeaders> {
-  const season = currentSeason();
-  const json = await getJson(`${CORE}/seasons/${season}/types/2/leaders?limit=50&lang=en&region=us`);
-  const cats: Json[] = json.categories ?? [];
+export type LeaderCategory = keyof typeof LEADER_CATEGORIES;
 
-  const CAT_NAMES = [
-    'pointsPerGame', 'reboundsPerGame', 'assistsPerGame',
-    'stealsPerGame', 'blocksPerGame', 'minutesPerGame', 'foulsPerGame',
-  ] as const;
+type AthleteInfo = { athleteId: string; name: string; shortName: string; headshot?: string };
 
-  type RawEntry = { ref: string; teamRef: string; value: number; displayValue: string };
-  const rawByCategory: Record<string, RawEntry[]> = {};
-  const allAthleteRefs = new Set<string>();
+/** Athlete records already read, by ref: the same player leads several categories, and the screen reads them one at a time. */
+const athletes = new Map<string, Promise<AthleteInfo>>();
 
-  for (const name of CAT_NAMES) {
-    const cat = cats.find((c) => c.name === name);
-    const leaders = ((cat?.leaders ?? []) as Json[]).slice(0, 50);
-    rawByCategory[name] = leaders.map((l) => {
-      const ref = String(l.athlete?.$ref ?? '').replace(/^http:\/\//, 'https://');
-      const teamRef = String(l.team?.$ref ?? '');
-      if (ref) allAthleteRefs.add(ref);
-      return { ref, teamRef, value: l.value ?? 0, displayValue: l.displayValue ?? '' };
-    });
+function athleteOf(ref: string): Promise<AthleteInfo> {
+  let known = athletes.get(ref);
+  if (!known) {
+    known = getJson(ref)
+      .then((data): AthleteInfo => {
+        const athleteId = String(data.id ?? '');
+        return {
+          athleteId,
+          name: data.displayName ?? data.fullName ?? 'Unknown',
+          shortName: data.shortName ?? data.displayName ?? '',
+          headshot: data.headshot?.href ?? (athleteId ? `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png` : undefined),
+        };
+      })
+      .catch((): AthleteInfo => {
+        athletes.delete(ref);
+        const athleteId = ref.match(/athletes\/(\d+)/)?.[1] ?? '';
+        return { athleteId, name: 'Unknown', shortName: '', headshot: athleteId ? `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png` : undefined };
+      });
+    athletes.set(ref, known);
   }
+  return known;
+}
 
-  // Resolve all athlete names in parallel (results cached for 1 h via TanStack Query)
-  const athleteMap = new Map<string, { athleteId: string; name: string; shortName: string; headshot?: string }>();
-  await Promise.all([...allAthleteRefs].map(async (ref) => {
-    try {
-      const data = await getJson(ref);
-      const athleteId = String(data.id ?? '');
-      athleteMap.set(ref, {
-        athleteId,
-        name: data.displayName ?? data.fullName ?? 'Unknown',
-        shortName: data.shortName ?? data.displayName ?? '',
-        headshot: data.headshot?.href ?? (athleteId ? `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png` : undefined),
-      });
-    } catch {
-      const m = ref.match(/athletes\/(\d+)/);
-      const athleteId = m?.[1] ?? '';
-      athleteMap.set(ref, {
-        athleteId,
-        name: 'Unknown',
-        shortName: '',
-        headshot: athleteId ? `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png` : undefined,
-      });
-    }
+/**
+ * One category's leaders (the top `limit`). Each category is read on its own, when its tab is opened: reading all fourteen at once
+ * meant about 230 athlete requests before the screen showed anything. The one list request carries every category, so asking
+ * again for another costs a single request; athletes already read are not asked for twice.
+ */
+export async function fetchLeaderCategory(key: LeaderCategory, limit = 50): Promise<LeaderEntry[]> {
+  const json = await getJson(`${CORE}/seasons/${currentSeason()}/types/2/leaders?limit=50&lang=en&region=us`);
+  const cats: Json[] = json.categories ?? [];
+  const { espn, ...fmt } = LEADER_CATEGORIES[key];
+  const scale = 'scale' in fmt ? fmt.scale : 1;
+  const digits = 'digits' in fmt ? fmt.digits : 1;
+  const raw = (((cats.find((c) => c.name === espn)?.leaders ?? []) as Json[]).slice(0, limit)).map((l) => ({
+    ref: String(l.athlete?.$ref ?? '').replace(/^http:\/\//, 'https://'),
+    teamRef: String(l.team?.$ref ?? ''),
+    value: (l.value ?? 0) as number,
+    displayValue: (l.displayValue ?? '') as string,
   }));
-
-  const buildEntries = (catName: string): LeaderEntry[] =>
-    (rawByCategory[catName] ?? []).map(({ ref, teamRef, value, displayValue }) => {
-      const athlete = athleteMap.get(ref);
-      const teamIdMatch = teamRef.match(/teams\/(\d+)/);
-      return {
-        athleteId: athlete?.athleteId ?? '',
-        name: athlete?.name ?? 'Unknown',
-        shortName: athlete?.shortName ?? '',
-        teamId: teamIdMatch?.[1] ?? '',
-        teamAbbr: '',
-        teamColor: '#1D428A',
-        headshot: athlete?.headshot,
-        value,
-        displayValue,
-      };
-    });
-
-  const leaders = {
-    ppg: buildEntries('pointsPerGame'),
-    rpg: buildEntries('reboundsPerGame'),
-    apg: buildEntries('assistsPerGame'),
-    stpg: buildEntries('stealsPerGame'),
-    bpg: buildEntries('blocksPerGame'),
-    mpg: buildEntries('minutesPerGame'),
-    pfpg: buildEntries('foulsPerGame'),
-  };
-  // Early in a season there can be no qualifiers at all; only flag it when some categories fill and others don't.
-  const sizes = Object.values(leaders).map((l) => l.length);
-  report('leaders', Math.max(...sizes) > 0 && Math.min(...sizes) === 0 ? 'some leader categories are empty' : null);
-  return leaders;
+  const people = await Promise.all(raw.map((r) => (r.ref ? athleteOf(r.ref) : Promise.resolve<AthleteInfo>({ athleteId: '', name: 'Unknown', shortName: '' }))));
+  const entries = raw.map(({ teamRef, value, displayValue }, i): LeaderEntry => {
+    const v = value * scale;
+    return {
+      athleteId: people[i].athleteId,
+      name: people[i].name,
+      shortName: people[i].shortName,
+      teamId: teamRef.match(/teams\/(\d+)/)?.[1] ?? '',
+      teamAbbr: '',
+      teamColor: '#1D428A',
+      headshot: people[i].headshot,
+      value: v,
+      displayValue: scale === 1 && digits === 1 ? displayValue : v.toFixed(digits),
+    };
+  });
+  // Early in a season there can be no qualifiers at all.
+  report('leaders', cats.length > 0 && entries.length === 0 && key === 'ppg' ? 'the points leaders are empty' : null);
+  return entries;
 }

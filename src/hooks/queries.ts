@@ -7,7 +7,7 @@ import {
   fetchHeadToHead,
   fetchAllStars,
   fetchCupGames,
-  fetchLeagueLeaders,
+  fetchLeaderCategory,
   fetchPostseason,
   currentSeason,
   fetchPlayerCareer,
@@ -25,8 +25,10 @@ import {
   fetchTeamSchedule,
   fetchTeamSeason,
   type Game,
+  type LeaderCategory,
   type ScoreboardGame,
 } from '@/lib/espn';
+import { scoreboardKeysFor, startsOnDay, toDateKey } from '@/lib/date';
 import { awaitsTipOff, boardPhase, gamePhase, shotsOf } from '@/lib/game';
 
 const HOUR = 60 * 60 * 1000;
@@ -82,10 +84,12 @@ export function useSeasonGames(teamId: string | null | undefined, season: number
   });
 }
 
-export function useLeagueLeaders() {
+/** One category of the league leaders (the top `limit`). The second part of the key is the shape of the data: bump it if it changes. */
+export function useLeaderCategory(category: LeaderCategory, limit = 50, enabled = true) {
   return useQuery({
-    queryKey: ['leaders'],
-    queryFn: fetchLeagueLeaders,
+    enabled,
+    queryKey: ['leaders', 3, category, limit],
+    queryFn: () => fetchLeaderCategory(category, limit),
     staleTime: HOUR,
   });
 }
@@ -178,7 +182,46 @@ export function useGameSummary(gameId?: string | null) {
   return query;
 }
 
-export function useScoreboardByDate(date: string) {
+/** Several games' summaries at once (the same cached queries the game page uses): for what shows a list of games' scores. */
+export function useGameSummaries(ids: string[]) {
+  return useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ['game', id],
+      queryFn: () => fetchGameSummary(id),
+      // A finished game never changes; one that is on or still to come is looked at again every couple of minutes.
+      staleTime: (q: { state: { data?: { completed: boolean } } }) => (q.state.data?.completed ? Infinity : 2 * 60 * 1000),
+    })),
+  });
+}
+
+/**
+ * The games starting on a day of the device's own calendar, from the Eastern-keyed scoreboards that hold them, as a Spanish
+ * evening sees it (a 02:00 tip-off is that morning's, not the American evening's). On today, a game that is on right now is
+ * also listed even if it started the evening before (it is still the game to look at at 01:00).
+ */
+export function useGamesOnDay(day: Date, today: Date, enabled = true) {
+  const [first, second] = scoreboardKeysFor(day);
+  const a = useScoreboardByDate(first, enabled);
+  const b = useScoreboardByDate(second ?? first, enabled);
+  const isToday = toDateKey(day) === toDateKey(today);
+  let games: ScoreboardGame[] | undefined;
+  if (!a.isPending && !b.isPending) {
+    const seen = new Set<string>();
+    games = [];
+    for (const g of [...(a.data ?? []), ...(b.data ?? [])]) {
+      if (seen.has(g.id)) continue;
+      if (startsOnDay(g.date, day) || (isToday && g.inProgress)) {
+        seen.add(g.id);
+        games.push(g);
+      }
+    }
+  }
+  const refetch = () => Promise.all([a.refetch(), b.refetch()]);
+  return { games, isPending: a.isPending || b.isPending, error: a.error ?? b.error, refetch, keys: second ? [first, second] : [first] };
+}
+
+/** `enabled: false` reads nothing from the network (a page that is only being scrolled past); what is cached is still returned. */
+export function useScoreboardByDate(date: string, enabled = true) {
   const focused = useIsFocused();
   const client = useQueryClient();
   const query = useQuery({
@@ -192,7 +235,7 @@ export function useScoreboardByDate(date: string) {
       const phase = boardPhase(q.state.data);
       return phase === 'live' ? 20_000 : phase === 'soon' ? 30_000 : false;
     },
-    enabled: !!date,
+    enabled: !!date && enabled,
   });
   useCatchUpOnFocus(focused, query);
   useMinuteTick(focused && awaitsTipOff(query.data));
@@ -284,6 +327,12 @@ export function usePlayerProfile(athleteId?: string | null) {
   });
 }
 
+/** Start reading the meeting history of two teams ahead of the page that shows it (the away team first, as it reads it). */
+export function prefetchHeadToHead(client: QueryClient, teamId?: string | null, rivalId?: string | null) {
+  if (!teamId || !rivalId || teamId === rivalId) return;
+  client.prefetchQuery({ queryKey: ['headToHead', teamId, rivalId], queryFn: () => fetchHeadToHead(teamId, rivalId), staleTime: 6 * HOUR });
+}
+
 export function useHeadToHead(teamId?: string | null, rivalId?: string | null) {
   return useQuery({
     queryKey: ['headToHead', teamId, rivalId],
@@ -359,4 +408,11 @@ export function usePlayerShots(athleteId: string, gameIds: string[], enabled: bo
   const loaded = results.filter((r) => r.data).length;
   const shots = results.flatMap((r) => (r.data ? shotsOf(r.data.plays, athleteId) : []));
   return { shots, loaded, total: gameIds.length };
+}
+
+/** Reads the scoreboards of a local day ahead of time (a page the pager is likely to come to), into the same cache the pages use. */
+export function prefetchGamesOnDay(client: QueryClient, day: Date) {
+  for (const key of scoreboardKeysFor(day)) {
+    client.prefetchQuery({ queryKey: ['scoreboard', key], queryFn: scoreboardQueryFn(client, key), staleTime: 5 * 60 * 1000 });
+  }
 }

@@ -86,8 +86,12 @@ export async function fetchHeadToHead(teamId: string, rivalId: string, limit = 1
   const found = new Map<string, HeadToHeadGame>();
   let failures = 0;
   let requests = 0;
-  for (let season = currentSeason(); season > currentSeason() - maxSeasons && found.size < limit; season--) {
-    const results = await Promise.allSettled([2, 3].map((seasonType) => fetchTeamSchedule(teamId, { season, seasonType })));
+  // Seasons are read three at a time (six requests together) rather than one by one: ten meetings are usually within the
+  // last three seasons, and the page waits for the slowest of them, not for their sum.
+  const CHUNK = 3;
+  for (let from = currentSeason(); from > currentSeason() - maxSeasons && found.size < limit; from -= CHUNK) {
+    const seasons = Array.from({ length: CHUNK }, (_, i) => from - i).filter((season) => season > currentSeason() - maxSeasons);
+    const results = await Promise.allSettled(seasons.flatMap((season) => [2, 3].map((seasonType) => fetchTeamSchedule(teamId, { season, seasonType }))));
     for (const r of results) {
       requests++;
       if (r.status === 'rejected') failures++;

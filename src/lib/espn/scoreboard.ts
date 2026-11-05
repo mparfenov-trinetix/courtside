@@ -9,6 +9,8 @@ export type ScoreboardTeam = {
   logo: string;
   score?: number;
   winner?: boolean;
+  /** Overall record, "4-2". */
+  record?: string;
 };
 
 export type ScoreboardGame = {
@@ -39,6 +41,7 @@ export async function fetchScoreboardByDate(date: string): Promise<ScoreboardGam
       logo: teamLogo(c.team?.abbreviation, c.team?.logo ?? c.team?.logos?.[0]?.href),
       score: c.score != null ? parseFloat(String(c.score)) || undefined : undefined,
       winner: c.winner === true,
+      record: ((c.records as Json[] | undefined)?.find((r) => r.type === 'total') ?? (c.records as Json[] | undefined)?.[0])?.summary || undefined,
     });
 
     const home = parseTeam(competitors.find((c) => c.homeAway === 'home') ?? competitors[0] ?? {});

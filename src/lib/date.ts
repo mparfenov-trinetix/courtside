@@ -44,3 +44,30 @@ export function kickoffLabel(iso: string, now: number = Date.now()): string {
     days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : days === -1 ? 'Yesterday' : `${pad(start.getDate())}.${pad(start.getMonth() + 1)}.${start.getFullYear()}`;
   return `${day} · ${pad(start.getHours())}:${pad(start.getMinutes())}`;
 }
+
+/** Today on the device's own clock, as a local-midnight Date. */
+export function localToday(): Date {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+/** An ESPN timestamp ("2026-11-03T00:30Z", without seconds; not every JS engine reads that) as a Date. */
+export function parseEspnDate(iso: string): Date {
+  return new Date(iso.replace(/T(\d\d:\d\d)Z$/, 'T$1:00Z'));
+}
+
+/** Does a game starting at `iso` start on this day of the device's own calendar? */
+export function startsOnDay(iso: string, day: Date): boolean {
+  return toDateKey(parseEspnDate(iso)) === toDateKey(day);
+}
+
+/**
+ * The ESPN scoreboards (keyed by Eastern date) that hold the games starting on a day of the device's own calendar: one or
+ * two, since a day in Spain spans Eastern evening of the day before and the afternoon of the day itself.
+ */
+export function scoreboardKeysFor(day: Date): string[] {
+  const start = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+  const end = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+  const keys = [toNbaDateKey(start), toNbaDateKey(new Date(end.getTime() - 1))];
+  return keys[0] === keys[1] ? [keys[0]] : keys;
+}

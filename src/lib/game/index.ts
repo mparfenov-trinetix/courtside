@@ -1,3 +1,4 @@
+export * from './clutch';
 export * from './game-model';
 export * from './heat';
 export * from './live-poll';

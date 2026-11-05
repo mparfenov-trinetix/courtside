@@ -1,4 +1,5 @@
 export * from './BoxScoreTab';
+export * from './ClutchCard';
 export * from './GameBackdrop';
 export * from './GameFlow';
 export * from './GameLogos';
