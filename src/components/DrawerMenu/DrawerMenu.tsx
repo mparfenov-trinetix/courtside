@@ -223,7 +223,9 @@ function Corner({ color, flip }: { color: string; flip?: boolean }) {
 let launchScene = true;
 
 /** How long a screen takes to settle once the menu sends you to it. */
-const SCENE_IN_MS = 360;
+// Longer and with a long, soft tail (an ease-out quint): the first frames carry the motion, the end just settles.
+const SCENE_IN_MS = 520;
+const SCENE_EASE = Easing.bezier(0.22, 1, 0.36, 1);
 
 export function SceneFrame({ children }: { children: ReactNode }) {
   const progress = useDrawerProgress() as SharedValue<number>;
@@ -250,11 +252,13 @@ export function SceneFrame({ children }: { children: ReactNode }) {
     // team page opened over it also focuses it again, and that must not slide it in: it looked like the menu dragging open.
     if (progress.get() < 0.05 && !takeSettle()) return;
     enter.set(0);
-    enter.set(withTiming(1, { duration: SCENE_IN_MS, easing: Easing.out(Easing.cubic) }));
+    enter.set(withTiming(1, { duration: SCENE_IN_MS, easing: SCENE_EASE }));
   }, [focused, enter, progress]);
+  // A shorter slide (the soft tail makes it read further), no scale (a scaled layer is resampled and goes soft mid-move), and the
+  // opacity finishes first so the screen is solid before it stops moving.
   const content = useAnimatedStyle(() => ({
-    opacity: 0.5 + 0.5 * enter.get(),
-    transform: [{ translateX: (1 - enter.get()) * 26 }, { scale: 0.985 + 0.015 * enter.get() }],
+    opacity: 0.55 + 0.45 * Math.min(1, enter.get() * 1.8),
+    transform: [{ translateX: (1 - enter.get()) * 22 }],
   }));
 
   // The corners must be solid as soon as any of the menu shows (they sit right next to it), not fade in with the slide.
