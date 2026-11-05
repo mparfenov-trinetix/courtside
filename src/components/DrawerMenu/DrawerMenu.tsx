@@ -252,7 +252,16 @@ export function SceneFrame({ children }: { children: ReactNode }) {
     // team page opened over it also focuses it again, and that must not slide it in: it looked like the menu dragging open.
     if (progress.get() < 0.05 && !takeSettle()) return;
     enter.set(0);
-    enter.set(withTiming(1, { duration: SCENE_IN_MS, easing: SCENE_EASE }));
+    // Not in the same frame the screen is built in: the first render of a heavy screen (the Calendar's pager and its queries) takes
+    // the frames the first part of the motion needs, and the slide would start with a hitch. Two frames later it has drawn.
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => enter.set(withTiming(1, { duration: SCENE_IN_MS, easing: SCENE_EASE })));
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+    };
   }, [focused, enter, progress]);
   // A shorter slide (the soft tail makes it read further), no scale (a scaled layer is resampled and goes soft mid-move), and the
   // opacity finishes first so the screen is solid before it stops moving.
