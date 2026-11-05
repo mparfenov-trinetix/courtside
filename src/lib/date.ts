@@ -31,3 +31,16 @@ function easternParts(d: Date) {
   const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
   return { year: get('year'), month: get('month'), day: get('day') };
 }
+
+/** When a game starts in the device's own time, as "Tomorrow · 01:00", or "06.11.2026 · 01:00" further out. */
+export function kickoffLabel(iso: string, now: number = Date.now()): string {
+  // ESPN sends "2026-11-03T00:30Z", without seconds; not every JS engine reads that.
+  const start = new Date(iso.replace(/T(\d\d:\d\d)Z$/, 'T$1:00Z'));
+  if (Number.isNaN(start.getTime())) return '';
+  const dayOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((dayOf(start) - dayOf(new Date(now))) / 86_400_000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const day =
+    days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : days === -1 ? 'Yesterday' : `${pad(start.getDate())}.${pad(start.getMonth() + 1)}.${start.getFullYear()}`;
+  return `${day} · ${pad(start.getHours())}:${pad(start.getMinutes())}`;
+}

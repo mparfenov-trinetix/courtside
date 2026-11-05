@@ -1,5 +1,6 @@
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useIsFocused } from 'expo-router';
+import { useEffect, useState } from 'react';
 
 import {
   fetchGameSummary,
@@ -22,10 +23,11 @@ import {
   fetchTeams,
   searchPlayers,
   fetchTeamSchedule,
+  fetchTeamSeason,
   type Game,
   type ScoreboardGame,
 } from '@/lib/espn';
-import { shotsOf } from '@/lib/game';
+import { awaitsTipOff, boardPhase, gamePhase, shotsOf } from '@/lib/game';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -70,6 +72,16 @@ export function useTeamSchedule(teamId?: string | null) {
   });
 }
 
+/** A team's whole season (regular season, play-in, playoffs); a finished season never changes. */
+export function useSeasonGames(teamId: string | null | undefined, season: number) {
+  return useQuery({
+    queryKey: ['teamSeason', teamId, season],
+    queryFn: () => fetchTeamSeason(teamId!, season),
+    enabled: !!teamId,
+    staleTime: season === currentSeason() ? 30 * 60 * 1000 : Infinity,
+  });
+}
+
 export function useLeagueLeaders() {
   return useQuery({
     queryKey: ['leaders'],
@@ -90,28 +102,101 @@ export function useStandings(season?: number) {
   });
 }
 
+const LIVE_STALE_MS = 10_000;
+
+/** A page that comes back into view (a page above it was closed) catches up at once if its data has gone stale. */
+function useCatchUpOnFocus(focused: boolean, query: { isStale: boolean; refetch: () => unknown }) {
+  useEffect(() => {
+    if (focused && query.isStale) query.refetch();
+    // Only a change of focus matters; staleness is read at that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focused]);
+}
+
+/**
+ * Re-renders once a minute while `waiting`. The polling interval is worked out from the clock whenever the hook runs, so a
+ * page left open before tip-off has to run it again to notice the game is about to start; without this it would sit
+ * on its old snapshot until something else made it render.
+ */
+export function useMinuteTick(waiting: boolean) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!waiting) return;
+    const id = setInterval(() => setTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, [waiting]);
+}
+
+/** What a game that has just finished changes elsewhere: the team's record and form, the standings, the schedule. */
+export function refreshAfterFinal(client: QueryClient) {
+  const season = currentSeason();
+  const keys = ['schedule', 'team', 'teamSeason', 'leagueTeamStats', 'standings', 'leaders', 'playerStats', 'playerGameLog'];
+  client.invalidateQueries({
+    predicate: (q) => {
+      const [kind, year] = q.queryKey as [string, unknown];
+      // Seasons that are over never change; only the current one is touched.
+      if (kind === 'standings' || kind === 'teamSeason') return year === undefined || year === season || typeof year === 'string';
+      return keys.includes(kind);
+    },
+  });
+  client.invalidateQueries({ queryKey: ['cup', season] });
+  client.invalidateQueries({ queryKey: ['postseason', season] });
+}
+
+/** The scoreboard query's fetch: when it shows a game that was on and now is over, the data that game changes is refreshed. */
+export function scoreboardQueryFn(client: QueryClient, date: string) {
+  return async () => {
+    const next = await fetchScoreboardByDate(date);
+    const prev = client.getQueryData<ScoreboardGame[]>(['scoreboard', date]);
+    if (prev && next.some((g) => g.completed && prev.some((p) => p.id === g.id && !p.completed))) refreshAfterFinal(client);
+    return next;
+  };
+}
+
 export function useGameSummary(gameId?: string | null) {
   // A page buried under others must not keep polling ESPN for a game nobody is looking at.
   const focused = useIsFocused();
-  return useQuery({
+  const phaseOf = (data?: { live: boolean; completed: boolean; info: { date?: string } }) =>
+    data ? gamePhase({ live: data.live, completed: data.completed, date: data.info.date }) : 'idle';
+  const query = useQuery({
     queryKey: ['game', gameId],
     queryFn: () => fetchGameSummary(gameId!),
     enabled: !!gameId,
-    // A finished game never changes, so it never needs refetching.
-    staleTime: (query) => (query.state.data?.completed ? Infinity : 30 * 60 * 1000),
-    refetchInterval: (query) => (focused && query.state.data?.live ? 15_000 : false),
+    // A finished game never changes. One that is on, or about to start, goes stale in seconds, so coming back to it
+    // refreshes it; anything else keeps the long window.
+    staleTime: (q) => (q.state.data?.completed ? Infinity : phaseOf(q.state.data) === 'idle' ? 30 * 60 * 1000 : LIVE_STALE_MS),
+    // Polls from twenty minutes before tip-off, so a page opened early is still there when the game starts.
+    refetchInterval: (q) => {
+      if (!focused) return false;
+      const phase = phaseOf(q.state.data);
+      return phase === 'live' ? 15_000 : phase === 'soon' ? 30_000 : false;
+    },
   });
+  useCatchUpOnFocus(focused, query);
+  // A game still to be played: look at the clock again each minute, so polling starts when tip-off nears.
+  useMinuteTick(focused && !!query.data && !query.data.completed && !query.data.live);
+  return query;
 }
 
 export function useScoreboardByDate(date: string) {
   const focused = useIsFocused();
-  return useQuery({
+  const client = useQueryClient();
+  const query = useQuery({
     queryKey: ['scoreboard', date],
-    queryFn: () => fetchScoreboardByDate(date),
-    staleTime: 5 * 60 * 1000, // 5 min — scores change during games
-    refetchInterval: (query) => (focused && query.state.data?.some((g) => g.inProgress) ? 20_000 : false),
+    queryFn: scoreboardQueryFn(client, date),
+    // A day with a game on (or about to start) goes stale in seconds; a quiet or finished day keeps the long window.
+    staleTime: (q) => (boardPhase(q.state.data) === 'idle' ? 5 * 60 * 1000 : LIVE_STALE_MS),
+    // The first fetch of a day often shows nothing live yet, so polling has to begin before tip-off, not once a game is on.
+    refetchInterval: (q) => {
+      if (!focused) return false;
+      const phase = boardPhase(q.state.data);
+      return phase === 'live' ? 20_000 : phase === 'soon' ? 30_000 : false;
+    },
     enabled: !!date,
   });
+  useCatchUpOnFocus(focused, query);
+  useMinuteTick(focused && awaitsTipOff(query.data));
+  return query;
 }
 
 export function usePlayerStats(athleteId?: string | null) {
@@ -175,10 +260,11 @@ export function useCupGames(season?: number) {
   });
 }
 
-export function usePostseason(season: number) {
+export function usePostseason(season: number, enabled = true) {
   const current = currentSeason();
   return useQuery({
     queryKey: ['postseason', season],
+    enabled,
     queryFn: () => fetchPostseason(season),
     staleTime: season === current ? 5 * 60 * 1000 : Infinity,
     // Games in progress move the series score.

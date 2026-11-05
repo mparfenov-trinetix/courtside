@@ -60,6 +60,18 @@ export async function fetchTeamSchedule(
   });
 }
 
+/**
+ * Every game a team played (or has still to play) in a season: regular season, play-in and playoffs, oldest first.
+ * ESPN serves each as its own schedule, so the three are read together; a part that fails or is empty is skipped.
+ */
+export async function fetchTeamSeason(teamId: string, season: number): Promise<Game[]> {
+  const results = await Promise.allSettled([2, 5, 3].map((seasonType) => fetchTeamSchedule(teamId, { season, seasonType })));
+  if (results.every((r) => r.status === 'rejected')) throw (results[0] as PromiseRejectedResult).reason;
+  const byId = new Map<string, Game>();
+  for (const r of results) if (r.status === 'fulfilled') for (const g of r.value) byId.set(g.id, g);
+  return [...byId.values()].sort((x, y) => x.date.localeCompare(y.date));
+}
+
 /** A finished meeting between two teams, from the first team's side. */
 export type HeadToHeadGame = Game & { result: 'W' | 'L'; teamScore: number; opponentScore: number };
 

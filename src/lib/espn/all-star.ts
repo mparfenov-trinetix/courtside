@@ -12,6 +12,9 @@ const GAME_DAYS: Record<number, string> = {
   2019: '0217', 2020: '0216', 2021: '0307', 2022: '0220', 2023: '0219', 2024: '0218', 2025: '0216', 2026: '0215',
 };
 
+/** The scoreboard day (YYYYMMDD, US Eastern) of a season's All-Star Game, when it is known. */
+export const allStarGameKey = (season: number): string | null => (GAME_DAYS[season] ? `${season}${GAME_DAYS[season]}` : null);
+
 /** Seasons each athlete played in an All-Star Game, newest first, keyed by athlete id. Never changes once read. */
 export async function fetchAllStars(): Promise<Record<string, number[]>> {
   const seen = new Map<string, Set<number>>();

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { hasPlayIn, buildCupBracket, buildPlayIn, buildPlayoffs, layoutTree, parsePlayInNote, parsePlayoffNote } from '../src/lib/league';
+import { calendarEvents, hasPlayIn, buildCupBracket, buildPlayIn, buildPlayoffs, layoutTree, parsePlayInNote, parsePlayoffNote } from '../src/lib/league';
 import type { CupGame } from '../src/lib/espn';
 
 const side = (id: number, score?: number) => ({ teamId: String(id), abbr: `T${id}`, logo: '', score });
@@ -151,4 +151,20 @@ test('the play-in tournament only exists from 2020-21', () => {
   assert.equal(hasPlayIn(2020), false);
   assert.equal(hasPlayIn(2021), true);
   assert.equal(hasPlayIn(2027), true);
+});
+
+test('calendar events: the All-Star Game and every Finals game, by Eastern day', () => {
+  const game = (stage: string, date: string) => ({ id: stage + date, date, stage, completed: true, home: { teamId: '1', abbr: 'A', logo: '' }, away: { teamId: '2', abbr: 'B', logo: '' } });
+  const events = calendarEvents(2025, [
+    game('NBA Finals - Game 3', '2025-06-11T00:30Z'),
+    game('East Finals - Game 7', '2025-05-31T00:30Z'),
+    game('West 1st Round - Game 1', '2025-04-20T00:30Z'),
+  ]);
+  assert.deepEqual(events['20250216'], { kind: 'allstar', label: 'ASG' });
+  assert.deepEqual(events['20250610'], { kind: 'finals', label: 'G3' });
+  assert.equal(Object.keys(events).length, 2);
+});
+
+test('calendar events: a season without a known All-Star day and no playoffs has none', () => {
+  assert.deepEqual(calendarEvents(2040), {});
 });

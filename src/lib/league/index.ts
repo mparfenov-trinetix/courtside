@@ -1,4 +1,5 @@
 export * from './bracket';
+export * from './calendar-events';
 export * from './catch-up';
 export * from './conference-standing';
 export * from './cup';

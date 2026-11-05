@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import { normalizeGameSummary } from '../src/lib/espn';
-import { shotsOf, buildFourFactors, deriveFlow, deriveQuarterStats, sumLineups, sumPeriods } from '../src/lib/game';
+import { shotsOf, timeoutInProgress, buildFourFactors, deriveFlow, deriveQuarterStats, sumLineups, sumPeriods } from '../src/lib/game';
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/game-final.json', import.meta.url), 'utf8'));
 const game = normalizeGameSummary(fixture, '401909912');
@@ -106,4 +106,48 @@ test('shotsOf: one player field goals with locations, free throws left out', () 
   assert.ok(shots.every((s) => s.x >= 0 && s.x <= 50 && s.y >= 0 && s.y <= 47));
   assert.ok(shots.some((s) => s.made) && shots.some((s) => !s.made));
   assert.deepEqual(shotsOf(plays, 'nobody'), []);
+});
+
+test('a timeout is in progress only while it is the newest play of a live game', () => {
+  const at = plays.findIndex((p) => /timeout/i.test(p.typeText) && p.teamId);
+  assert.ok(at > 0);
+  const timeout = plays[at];
+  // The feed stops on the timeout: it is on, and belongs to the team that called it.
+  assert.deepEqual(timeoutInProgress(plays.slice(0, at + 1), true), { teamId: timeout.teamId });
+  // Play resumed (the next play exists), the game ended, or it never started: no timeout.
+  assert.equal(timeoutInProgress(plays.slice(0, at + 2), true), null);
+  assert.equal(timeoutInProgress(plays.slice(0, at + 1), false), null);
+  assert.equal(timeoutInProgress([], true), null);
+});
+
+test('a timeout with no team is an official one', () => {
+  const official = { ...plays[0], typeText: 'Official Timeout', teamId: undefined };
+  assert.deepEqual(timeoutInProgress([official], true), { teamId: undefined });
+});
+
+test('a game is polled from shortly before tip-off, not only once it is live', async () => {
+  const { gamePhase } = await import('../src/lib/game');
+  const now = Date.parse('2026-11-05T00:00:00Z');
+  const at = (minutes: number) => new Date(now + minutes * 60_000).toISOString();
+  assert.equal(gamePhase({ live: false, completed: false, date: at(120) }, now), 'idle');
+  assert.equal(gamePhase({ live: false, completed: false, date: at(15) }, now), 'soon');
+  assert.equal(gamePhase({ live: false, completed: false, date: at(-5) }, now), 'soon'); // should have started
+  assert.equal(gamePhase({ live: false, completed: false, date: at(-600) }, now), 'idle'); // long gone: postponed
+  assert.equal(gamePhase({ live: true, completed: false, date: at(-30) }, now), 'live');
+  assert.equal(gamePhase({ live: false, completed: true, date: at(-200) }, now), 'idle');
+  assert.equal(gamePhase({ live: false, completed: false, date: '2026-11-05T00:10Z' }, now), 'soon'); // ESPN's no-seconds dates
+});
+
+test('a day of games is polled while any is on or about to start, and a waiting day asks to be re-checked', async () => {
+  const { boardPhase, awaitsTipOff } = await import('../src/lib/game');
+  const now = Date.parse('2026-11-05T00:00:00Z');
+  const at = (minutes: number) => new Date(now + minutes * 60_000).toISOString();
+  const g = (inProgress: boolean, completed: boolean, minutes: number) => ({ inProgress, completed, date: at(minutes) });
+  assert.equal(boardPhase([g(false, true, -200), g(true, false, -60)], now), 'live');
+  assert.equal(boardPhase([g(false, true, -200), g(false, false, 10)], now), 'soon');
+  assert.equal(boardPhase([g(false, true, -200), g(false, false, 300)], now), 'idle');
+  assert.equal(boardPhase(undefined, now), 'idle');
+  // Night games hours away: nothing to poll yet, but the page must look at the clock again to notice tip-off.
+  assert.equal(awaitsTipOff([g(false, false, 300)]), true);
+  assert.equal(awaitsTipOff([g(false, true, -200)]), false);
 });
