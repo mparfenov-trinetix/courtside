@@ -3,11 +3,12 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { ArrowLeftIcon } from '@/components';
+import { ArrowLeftIcon, LarryOBrienIcon, NbaLogo, StarIcon } from '@/components';
 import { nbaToday, toDateKey, toNbaDateKey } from '@/lib/date';
 import type { Game } from '@/lib/espn';
+import type { CalendarEvent } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
-import { DOW, MONTHS, WIN, LOSS } from './constants';
+import { DOW, GOLD, MONTHS, WIN, LOSS } from './constants';
 
 export const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
 
@@ -35,6 +36,8 @@ function buildGrid(cursor: Date): Cell[][] {
 /** A month grid for the selected team's season: opponent logos on game days, tinted by result. */
 export function MonthView({
   games,
+  loading,
+  events,
   teamAbbr,
   accent,
   cursor,
@@ -43,6 +46,10 @@ export function MonthView({
   onPick,
 }: {
   games: Game[];
+  /** The month's season is still being fetched, so an empty month is not yet "no games". */
+  loading?: boolean;
+  /** League-wide days to mark (the All-Star Game, Finals games), by scoreboard day, whichever team is followed. */
+  events?: Record<string, CalendarEvent>;
   teamAbbr: string;
   accent: string;
   cursor: Date;
@@ -68,6 +75,10 @@ export function MonthView({
   const wins = monthGames.filter((g) => g.result === 'W').length;
   const losses = monthGames.filter((g) => g.result === 'L').length;
 
+  const prefix = `${cursor.getFullYear()}${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+  const marked = Object.entries(events ?? {}).filter(([k]) => k.startsWith(prefix)).map(([, e]) => e.kind);
+  const markedLabel = [marked.includes('allstar') && 'All-Star', marked.includes('finals') && 'Finals'].filter(Boolean).join(' · ');
+
   const shift = (n: number) => onCursor(new Date(cursor.getFullYear(), cursor.getMonth() + n, 1));
 
   return (
@@ -81,7 +92,9 @@ export function MonthView({
             {MONTHS[cursor.getMonth()]} <Text style={styles.monthYear}>{cursor.getFullYear()}</Text>
           </Text>
           <Text style={styles.monthSub}>
-            {monthGames.length === 0
+            {loading
+              ? 'Loading…'
+              : monthGames.length === 0
               ? `No ${teamAbbr} games`
               : `${monthGames.length} ${teamAbbr} game${monthGames.length === 1 ? '' : 's'}` +
                 (wins + losses > 0 ? ` · ${wins}–${losses}` : '')}
@@ -106,6 +119,7 @@ export function MonthView({
             {week.map(({ date, inMonth }) => {
               const key = toDateKey(date);
               const game = byDay.get(key);
+              const event = events?.[key];
               const isToday = key === todayKey;
               const isSelected = key === selectedKey;
               const tint = game?.result === 'W' ? WIN : game?.result === 'L' ? LOSS : accent;
@@ -114,16 +128,37 @@ export function MonthView({
                   key={key}
                   onPress={() => onPick(date)}
                   accessibilityRole="button"
-                  accessibilityLabel={`${MONTHS[date.getMonth()]} ${date.getDate()}${game ? `, ${game.home ? 'vs' : 'at'} ${game.opponentAbbr}` : ''}`}
+                  accessibilityLabel={`${MONTHS[date.getMonth()]} ${date.getDate()}${game ? `, ${game.home ? 'vs' : 'at'} ${game.opponentAbbr}` : ''}${event ? `, ${event.kind === 'allstar' ? 'All-Star Game' : `NBA Finals ${event.label}`}` : ''}`}
                   style={({ pressed }) => [
                     styles.cell,
                     game && { backgroundColor: withAlpha(tint, 0.14) },
+                    event && { borderColor: withAlpha(GOLD, 0.6), backgroundColor: game ? withAlpha(tint, 0.14) : withAlpha(GOLD, 0.12) },
                     isSelected && { borderColor: palette.chalk },
                     isToday && !isSelected && { borderColor: withAlpha(palette.chalk, 0.35) },
                     !inMonth && { opacity: 0.28 },
                     pressed && { opacity: 0.6 },
                   ]}>
                   <Text style={[styles.dayNum, isToday && styles.dayNumToday]}>{date.getDate()}</Text>
+                  {event && !game ? (
+                    <>
+                      {event.kind === 'allstar' ? (
+                        // ESPN's NBA logo with a gold star: the league's own mark, marked as the All-Star Game.
+                        <View style={styles.allStar}>
+                          <NbaLogo size={20} />
+                          <StarIcon size={11} color={GOLD} filled />
+                        </View>
+                      ) : (
+                        <LarryOBrienIcon size={27} color={GOLD} />
+                      )}
+                      <Text style={[styles.tag, { color: GOLD }]}>{event.label}</Text>
+                    </>
+                  ) : null}
+                  {/* A game of the followed team on the same day keeps its logo; the mark moves to the corner. */}
+                  {event && game ? (
+                    <View style={styles.badge}>
+                      {event.kind === 'allstar' ? <StarIcon size={11} color={GOLD} filled /> : <LarryOBrienIcon size={13} color={GOLD} />}
+                    </View>
+                  ) : null}
                   {game ? (
                     <>
                       {game.opponentLogo ? (
@@ -144,8 +179,8 @@ export function MonthView({
       </Animated.View>
 
       <Text style={styles.legend}>
-        {teamAbbr} games · <Text style={{ color: WIN }}>win</Text> · <Text style={{ color: LOSS }}>loss</Text> · tap a day to see
-        every game
+        {teamAbbr} games · <Text style={{ color: WIN }}>win</Text> · <Text style={{ color: LOSS }}>loss</Text>
+        {markedLabel ? <Text style={{ color: GOLD }}> · {markedLabel}</Text> : null} · tap a day to see every game
       </Text>
     </View>
   );
@@ -186,6 +221,8 @@ const styles = StyleSheet.create({
   opp: { width: 22, height: 22 },
   oppText: { fontFamily: fonts.bodyBold, fontSize: 10, color: palette.chalk, marginTop: 4 },
   tag: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 0.3 },
+  allStar: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  badge: { position: 'absolute', top: 4, right: 4 },
   legend: {
     marginTop: 14,
     textAlign: 'center',

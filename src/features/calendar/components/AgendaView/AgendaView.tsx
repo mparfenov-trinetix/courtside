@@ -1,11 +1,12 @@
 import { Image } from 'expo-image';
 import { useState, type ReactElement } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SeasonButton } from '@/components';
 import { CupBadge } from '@/features/cup';
-import type { Game } from '@/lib/espn';
+import { currentSeason, type Game } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { WIN, LOSS, DOW } from './constants';
@@ -33,15 +34,20 @@ export function AgendaView({
   games,
   teamAbbr,
   accent,
+  season,
+  onSeasonPress,
   refreshControl,
 }: {
   games: Game[];
   teamAbbr: string;
   accent: string;
-  refreshControl: ReactElement;
+  /** With `onSeasonPress`, a season button sits beside the tabs. A finished season opens on its results. */
+  season?: number;
+  onSeasonPress?: () => void;
+  refreshControl?: ReactElement;
 }) {
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = useState<'upcoming' | 'results'>('upcoming');
+  const [tab, setTab] = useState<'upcoming' | 'results'>(season != null && season < currentSeason() ? 'results' : 'upcoming');
 
   const sorted = [...games].filter((g) => g.date).sort((a, b) => a.date.localeCompare(b.date));
   const upcoming = sorted.filter((g) => !g.completed);
@@ -66,6 +72,11 @@ export function AgendaView({
             onPress={() => setTab('results')}
             accent={accent}
           />
+          {season != null && onSeasonPress ? (
+            <View style={styles.season}>
+              <SeasonButton season={season} onPress={onSeasonPress} />
+            </View>
+          ) : null}
         </View>
       }
       ListEmptyComponent={
@@ -75,7 +86,7 @@ export function AgendaView({
         item.type === 'month' ? (
           <Text style={styles.month}>{item.label}</Text>
         ) : (
-          <Animated.View entering={index < 10 ? FadeInDown.delay(index * 25).duration(240) : undefined}>
+          <Animated.View>
             <GameRow game={item.game} accent={accent} />
           </Animated.View>
         )
@@ -139,7 +150,8 @@ function GameRow({ game, accent }: { game: Game; accent: string }) {
 }
 
 const styles = StyleSheet.create({
-  tabs: { flexDirection: 'row', gap: 4, marginBottom: 4 },
+  tabs: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
+  season: { flex: 1, alignItems: 'flex-end' },
   tab: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabLabel: { fontFamily: fonts.bodySemi, fontSize: 14 },
   month: {

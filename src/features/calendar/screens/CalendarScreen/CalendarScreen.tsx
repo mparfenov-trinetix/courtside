@@ -1,14 +1,17 @@
 import { Image } from 'expo-image';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { AgendaView , MonthView, startOfMonth } from '../../components';
 import { CupBadge } from '@/features/cup';
-import { FlashOverlay, Tick, Segmented, slideIn, ErrorState, ListSkeleton, ScreenHeader } from '@/components';
-import { useScoreboardByDate, useTeam, useTeamSchedule , useRefresh } from '@/hooks';
-import { involvesTeam, type ScoreboardGame } from '@/lib/espn';
+import { FlashOverlay, Tick, Segmented, SeasonSheet, slideIn, ErrorState, ListSkeleton, ScreenHeader } from '@/components';
+import { usePostseason, useRefresh, useScoreboardByDate, useSeasonGames, useTeam } from '@/hooks';
+import { currentSeason, involvesTeam, type ScoreboardGame } from '@/lib/espn';
+import { calendarEvents } from '@/lib/league';
 import { nbaToday, toDateKey } from '@/lib/date';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
@@ -22,6 +25,12 @@ function addDays(d: Date, n: number): Date {
   r.setDate(r.getDate() + n);
   return r;
 }
+
+/** The season a month belongs to, named by the year it ends in (October starts the next one). */
+const seasonOfMonth = (d: Date) => d.getFullYear() + (d.getMonth() >= 9 ? 1 : 0);
+
+/** Months a Finals can fall in (April to July; the 2020 bubble ran into October). */
+const finalsMonth = (d: Date) => (d.getMonth() >= 3 && d.getMonth() <= 6) || (d.getFullYear() === 2020 && d.getMonth() >= 7 && d.getMonth() <= 9);
 
 function buildDates(): Date[] {
   const today = nbaToday();
@@ -42,11 +51,9 @@ const MODES: { key: Mode; label: string }[] = [
 
 export function CalendarScreen() {
   const insets = useSafeAreaInsets();
-  const { currentTeamId } = useTeamStore();
+  const currentTeamId = useTeamStore((s) => s.currentTeamId);
   const team = useTeam(currentTeamId);
   const theme = teamTheme(team);
-  const { data: schedule } = useTeamSchedule(currentTeamId);
-  const scheduleRefresh = useRefresh([['schedule']]);
 
   const today = useMemo(() => nbaToday(), []);
   const dates = useMemo(() => buildDates(), []);
@@ -55,11 +62,25 @@ export function CalendarScreen() {
   const [selected, setSelected] = useState<Date>(today);
   const [cursor, setCursor] = useState(() => startOfMonth(today));
   const dateKey = toDateKey(selected);
+  // Month and Agenda read the season they are showing: the month in view decides one, the season button the other,
+  // so browsing back through old months (or picking an old season) loads that season's whole schedule.
+  const [agendaSeason, setAgendaSeason] = useState(currentSeason);
+  const [seasonSheet, setSeasonSheet] = useState(false);
+  const monthSeason = seasonOfMonth(cursor);
+  const monthGames = useSeasonGames(currentTeamId, monthSeason);
+  const agendaGames = useSeasonGames(currentTeamId, agendaSeason);
+  // The All-Star Game and the Finals are marked for every team. The Finals come from the season's playoff games, which
+  // are only read once a month that can hold them is on screen (the Playoffs screen shares the same cache).
+  const postseason = usePostseason(monthSeason, mode === 'month' && finalsMonth(cursor));
+  const events = useMemo(() => calendarEvents(monthSeason, postseason.data?.playoffs), [monthSeason, postseason.data]);
+  const viewedSeason = mode === 'agenda' ? agendaSeason : monthSeason;
+  const scheduleRefresh = useRefresh([['teamSeason', currentTeamId, viewedSeason]], viewedSeason === currentSeason());
 
   const { data: scoreboard, isPending, error, refetch } = useScoreboardByDate(dateKey);
   // The selected team's game leads the list; Array.sort is stable, so the rest keep ESPN's order.
   const games = scoreboard && [...scoreboard].sort((a, b) => Number(involvesTeam(b, currentTeamId)) - Number(involvesTeam(a, currentTeamId)));
-  const refreshControl = useRefresh([['scoreboard', dateKey]]);
+  // Games on a past date are final.
+  const refreshControl = useRefresh([['scoreboard', dateKey]], selected >= today);
 
   const dateListRef = useRef<FlatList>(null);
   const centered = useRef(false);
@@ -68,6 +89,29 @@ export function CalendarScreen() {
     const index = dates.findIndex((x) => x.getTime() === d.getTime());
     if (index >= 0) dateListRef.current?.scrollToIndex({ index, animated, viewPosition: 0.5 });
   }, [dates]);
+
+  // Moving to a day slides the list in from the side it lies on, however it was picked.
+  const selectDay = (d: Date) => {
+    setSlide(d > selected ? 1 : -1);
+    setSelected(d);
+  };
+  // A sideways swipe on the games goes to the next or previous day (a list that scrolls up and down is unaffected).
+  const stepDay = (direction: 1 | -1) => {
+    setSlide(direction);
+    setSelected((current) => dates[dates.findIndex((x) => x.getTime() === current.getTime()) + direction] ?? current);
+  };
+  const swipe = usePanGesture({
+    activeOffsetX: [-24, 24],
+    failOffsetY: [-14, 14],
+    onDeactivate: (e) => {
+      'worklet';
+      if (Math.abs(e.translationX) > 70 || Math.abs(e.velocityX) > 700) scheduleOnRN(stepDay, e.translationX < 0 ? 1 : -1);
+    },
+  });
+  // The strip follows the selected day when something other than the strip changed it.
+  useEffect(() => {
+    if (mode === 'day' && centered.current) scrollToDate(selected, true);
+  }, [selected, mode, scrollToDate]);
 
   const isToday = (d: Date) => d.getTime() === today.getTime();
   const isPast = (d: Date) => d < today;
@@ -112,7 +156,7 @@ export function CalendarScreen() {
       {mode === 'day' && (
         <>
           {/* Date strip */}
-          <Animated.View entering={FadeIn.duration(300)} style={styles.strip}>
+          <Animated.View style={styles.strip}>
             <FlatList
               ref={dateListRef}
               data={dates}
@@ -136,7 +180,7 @@ export function CalendarScreen() {
                 const tod = isToday(d);
                 return (
                   <Pressable
-                    onPress={() => setSelected(d)}
+                    onPress={() => selectDay(d)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: sel }}
                     style={[
@@ -160,7 +204,7 @@ export function CalendarScreen() {
           </Animated.View>
 
           {/* Date label */}
-          <Animated.View key={`label-${dateKey}`} entering={FadeIn.duration(200)} style={styles.dateLabel}>
+          <Animated.View key={`label-${dateKey}`} style={styles.dateLabel}>
             <Text style={styles.dateLabelText}>
               {isToday(selected)
                 ? 'Today'
@@ -168,7 +212,9 @@ export function CalendarScreen() {
             </Text>
           </Animated.View>
 
-          {/* Games */}
+          {/* Games: swipe sideways for the next or previous day */}
+          <GestureDetector gesture={swipe}>
+            <Animated.View key={dateKey} entering={slideIn(slide)} style={styles.dayBody}>
           {isPending ? (
             <ListSkeleton count={4} />
           ) : error ? (
@@ -187,12 +233,14 @@ export function CalendarScreen() {
               contentContainerStyle={[styles.gamesList, { paddingBottom: insets.bottom + 24 }]}
               showsVerticalScrollIndicator={false}>
               {games.map((game, i) => (
-                <Animated.View key={game.id} entering={FadeInDown.delay(i * 40).duration(260)}>
+                <Animated.View key={game.id}>
                   <GameCard game={game} mine={involvesTeam(game, currentTeamId)} accent={theme.accent} abbr={team?.abbreviation} />
                 </Animated.View>
               ))}
             </ScrollView>
           )}
+            </Animated.View>
+          </GestureDetector>
         </>
       )}
 
@@ -207,7 +255,9 @@ export function CalendarScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           showsVerticalScrollIndicator={false}>
           <MonthView
-            games={schedule ?? []}
+            games={monthGames.data ?? []}
+            loading={monthGames.isPending}
+            events={events}
             teamAbbr={team?.abbreviation ?? ''}
             accent={theme.accent}
             cursor={cursor}
@@ -217,14 +267,34 @@ export function CalendarScreen() {
           />
         </ScrollView>
       ) : mode === 'agenda' ? (
-        <AgendaView
-          games={schedule ?? []}
-          teamAbbr={team?.abbreviation ?? ''}
-          accent={theme.accent}
-          refreshControl={scheduleRefresh}
-        />
+        agendaGames.isPending ? (
+          <ListSkeleton count={6} />
+        ) : agendaGames.error ? (
+          <ErrorState message={agendaGames.error.message} onRetry={agendaGames.refetch} />
+        ) : (
+          <AgendaView
+            // A new season starts afresh: a past one opens on its results, the current one on what is next.
+            key={agendaSeason}
+            games={agendaGames.data ?? []}
+            teamAbbr={team?.abbreviation ?? ''}
+            accent={theme.accent}
+            season={agendaSeason}
+            onSeasonPress={() => setSeasonSheet(true)}
+            refreshControl={scheduleRefresh}
+          />
+        )
       ) : null}
       </Animated.View>
+
+      <SeasonSheet
+        visible={seasonSheet}
+        season={agendaSeason}
+        onPick={(year) => {
+          setAgendaSeason(year);
+          setSeasonSheet(false);
+        }}
+        onClose={() => setSeasonSheet(false)}
+      />
     </View>
   );
 }
@@ -309,6 +379,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   view: { flex: 1 },
+  dayBody: { flex: 1 },
   strip: {
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
