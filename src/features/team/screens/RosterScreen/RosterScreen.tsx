@@ -1,246 +1,184 @@
+import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useRef, useState } from 'react';
+import {
+  FlatList,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
+import Animated, { Easing, interpolateColor, withTiming, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
-import { ErrorState, ListSkeleton, ScreenHeader } from '@/components';
-import { useRoster, useTeam , useRefresh } from '@/hooks';
-import type { Player } from '@/lib/espn';
-import { fonts, logoOn, palette, teamTheme, withAlpha, type TeamTheme } from '@/lib/theme';
+import { ListSkeleton, ScreenHeader } from '@/components';
+import { useTeams } from '@/hooks';
+import { fetchRoster, type Team } from '@/lib/espn';
+import { palette, teamTheme } from '@/lib/theme';
 import { useTeamStore } from '@/state';
-import { openDetail } from '@/navigation';
+import { TeamPills, TeamRoster } from '../../components';
 
+/** After the screen opens, and after the pager stops, how long before the rows are built. */
+const OPEN_MS = 350;
+/** Moves of up to this many teams slide; further ones jump. */
+const NEAR = 2;
+const JUMP_MS = 340;
+const STEADY_MS = 120;
+const ROSTER_STALE_MS = 6 * 60 * 60 * 1000;
+
+/** Every team's roster, one page per team: swipe sideways, tap a pill, or use the arrows to move between them. */
 export function RosterScreen() {
-  const insets = useSafeAreaInsets();
-  const { currentTeamId } = useTeamStore();
-  const team = useTeam(currentTeamId);
-  const theme = teamTheme(team);
-  const { data, isPending, error, refetch } = useRoster(currentTeamId);
-  const refreshControl = useRefresh([['roster', currentTeamId]]);
+  const { data: teams } = useTeams();
+  const { currentTeamId, favoriteTeamId } = useTeamStore();
 
-  const navigateToPlayer = (player: Player) => {
+  if (!teams) {
+    return (
+      <View style={styles.root}>
+        <ScreenHeader title="Rosters" />
+        <ListSkeleton count={10} />
+      </View>
+    );
+  }
+
+  const sorted = [...teams].sort((a, b) => a.displayName.localeCompare(b.displayName));
+  const viewing = currentTeamId ?? favoriteTeamId;
+  const found = sorted.findIndex((t) => t.id === viewing);
+  const start = found < 0 ? 0 : found;
+  // The screen stays mounted in the drawer: keyed by the team being viewed, so choosing another team elsewhere and coming
+  // back opens on that one (swiping here doesn't change it).
+  return <RosterPager key={viewing ?? 'none'} teams={sorted} start={start} />;
+}
+
+function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
+  const { width } = useWindowDimensions();
+  const pagerRef = useRef<FlatList<Team>>(null);
+  const [index, setIndex] = useState(start);
+  // The page a tap or arrow asked for while its scroll is still running. Rapid taps build on it, not on the page
+  // last settled on, and the scroll-end events of the animations they interrupted are ignored.
+  const pending = useRef<number | null>(null);
+  // The team the pager last came to rest on (null until the screen has opened): it and its neighbours show real rows.
+  const [settledAt, setSettledAt] = useState<number | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const settleSoon = (at: number, ms: number) => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setSettledAt(at), ms);
+  };
+  // The rows already built stay while the pager moves: the page that was settled on (and its neighbours) keeps its rows.
+  const unsettle = () => clearTimeout(timer.current);
+  useEffect(() => {
+    // The screen has opened (the drawer has finished sliding): now fill it in.
+    const t = setTimeout(() => setSettledAt(start), OPEN_MS);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(timer.current);
+    };
+  }, [start]);
+  // Once at rest, the teams a swipe or two away are fetched and their first headshots decoded, so the next page opens with
+  // everything it needs already in the cache (rosters are kept for a week and persisted, so this is paid once).
+  const client = useQueryClient();
+  useEffect(() => {
+    if (settledAt == null) return;
+    for (const at of [settledAt - 1, settledAt + 1, settledAt - 2, settledAt + 2]) {
+      const team = teams[at];
+      if (!team) continue;
+      client
+        .fetchQuery({ queryKey: ['roster', team.id], queryFn: () => fetchRoster(team.id), staleTime: ROSTER_STALE_MS })
+        .then((roster) => Image.prefetch(roster.players.slice(0, 9).flatMap((p) => (p.headshot ? [p.headshot] : []))))
+        .catch(() => {});
+    }
+  }, [settledAt, teams, client]);
+  // The pager's position as a fractional page (1.5 = halfway from the second team to the third). The screen's
+  // background follows it, so it blends from one team's color to the next as the pages slide, whatever moved them.
+  const page = useSharedValue(start);
+  const pages = teams.map((_, i) => i);
+  const colors = teams.map((t) => teamTheme(t).background);
+  // While a long jump plays, the screen's background, outline and strip are animated here and the pager itself is moved in
+  // one step: sliding through twenty pages would mean mounting them all, which is what made the screen heavy.
+  const jumping = useSharedValue(false);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    if (jumping.get()) return;
+    page.set(e.contentOffset.x / width);
+  });
+  const background = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(page.get(), pages, colors) }));
+
+  const goTo = (next: number) => {
+    const from = pending.current ?? index;
+    if (next < 0 || next >= teams.length || next === from) return;
     Haptics.selectionAsync();
-    openDetail({ pathname: '/player/[id]', params: { id: player.id, teamId: currentTeamId ?? '' } });
+    pending.current = next;
+    unsettle();
+    setIndex(next);
+    if (Math.abs(next - from) > NEAR) {
+      jumping.set(true);
+      pagerRef.current?.scrollToIndex({ index: next, animated: false });
+      page.set(
+        withTiming(next, { duration: JUMP_MS, easing: Easing.out(Easing.cubic) }, (finished) => {
+          if (finished) jumping.set(false);
+        }),
+      );
+      // The pager is already there: nothing more will report that it came to rest.
+      pending.current = null;
+      settleSoon(next, JUMP_MS);
+    } else {
+      pagerRef.current?.scrollToIndex({ index: next, animated: true });
+    }
+  };
+
+  const onSettled = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const settled = Math.round(e.nativeEvent.contentOffset.x / width);
+    if (pending.current != null && settled !== pending.current) return;
+    pending.current = null;
+    settleSoon(settled, STEADY_MS);
+    if (settled === index) return;
+    Haptics.selectionAsync();
+    setIndex(settled);
   };
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.background }]}>
-      <ScreenHeader title={team ? `${team.name} roster` : 'Roster'} />
+    <Animated.View style={[styles.root, background]}>
+      <ScreenHeader title="Rosters" />
 
-      {team && (
-        <Animated.View key={team.id} entering={FadeIn} style={[styles.banner, { backgroundColor: theme.primary }]}>
-          <Image source={logoOn(team, theme.onPrimary)} style={styles.bannerLogo} contentFit="contain" />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.bannerTitle, { color: theme.onPrimary }]}>{team.displayName}</Text>
-            <Text style={[styles.bannerSub, { color: withAlpha(theme.onPrimary, 0.75) }]}>
-              {data ? `${data.players.length} players` : ' '}
-            </Text>
-          </View>
-        </Animated.View>
-      )}
-
-      {isPending ? (
-        <ListSkeleton count={10} />
-      ) : error ? (
-        <ErrorState message={error.message} onRetry={refetch} />
-      ) : (
-        <FlatList
-          data={data?.players}
-          refreshControl={refreshControl}
-          keyExtractor={(p) => p.id}
-          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24, gap: 8 }}
-          ListHeaderComponent={
-            data?.coach ? <CoachRow coach={data.coach} theme={theme} /> : undefined
-          }
-          renderItem={({ item, index }) => (
-            <PlayerRow
-              player={item}
-              index={index}
-              theme={theme}
-              onPress={() => navigateToPlayer(item)}
-            />
-          )}
-        />
-      )}
-    </View>
-  );
-}
-
-function CoachRow({ coach, theme }: { coach: string; theme: TeamTheme }) {
-  return (
-    <Animated.View
-      entering={FadeInDown.duration(280).easing(Easing.out(Easing.cubic))}
-      layout={LinearTransition.duration(200)}
-      style={[styles.coachRow, { backgroundColor: withAlpha(theme.primary, 0.3) }]}>
-      <View style={[styles.coachIcon, { backgroundColor: withAlpha(theme.accent, 0.18) }]}>
-        <Text style={[styles.coachInitial, { color: theme.accent }]}>
-          {coach.charAt(0).toUpperCase()}
-        </Text>
+      <View style={styles.strip}>
+        <TeamPills teams={teams} page={page} selected={index} onSelect={goTo} />
       </View>
-      <View>
-        <Text style={styles.coachLabel}>Head Coach</Text>
-        <Text style={styles.coachName}>{coach}</Text>
-      </View>
-    </Animated.View>
-  );
-}
 
-function PlayerRow({
-  player,
-  index,
-  theme,
-  onPress,
-}: {
-  player: Player;
-  index: number;
-  theme: TeamTheme;
-  onPress: () => void;
-}) {
-  return (
-    <Animated.View
-      entering={FadeInDown.delay(Math.min(index, 12) * 25).duration(280).easing(Easing.out(Easing.cubic))}
-      layout={LinearTransition.duration(200)}
-      style={[styles.row, { backgroundColor: withAlpha('#FFFFFF', 0.05) }]}>
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={`${player.name}, number ${player.jersey ?? 'unknown'}, ${player.positionName ?? ''}`}
-        style={({ pressed }) => [
-          styles.rowMain,
-          pressed && { backgroundColor: withAlpha(theme.primary, 0.25) },
-        ]}>
-        <Text style={[styles.jersey, { color: theme.accent }]}>{player.jersey ?? '–'}</Text>
-        <View style={[styles.headshotWrap, { backgroundColor: withAlpha(theme.primary, 0.6) }]}>
-          {player.headshot ? (
-            <Image source={player.headshot} style={styles.headshot} contentFit="cover" transition={150} />
-          ) : (
-            <Text style={styles.initials}>
-              {player.name
-                .split(' ')
-                .map((n) => n[0])
-                .slice(0, 2)
-                .join('')}
-            </Text>
-          )}
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name} numberOfLines={1}>
-            {player.name}
-          </Text>
-          <Text style={styles.meta} numberOfLines={1}>
-            {[player.position, player.height, player.weight].filter(Boolean).join(', ')}
-          </Text>
-        </View>
-        <View style={styles.chevron}>
-          <Text style={{ color: palette.muted, fontSize: 18 }}>›</Text>
-        </View>
-      </Pressable>
+      <Animated.FlatList
+        ref={pagerRef}
+        data={teams}
+        horizontal
+        pagingEnabled
+        extraData={index}
+        keyExtractor={(t) => t.id}
+        showsHorizontalScrollIndicator={false}
+        initialScrollIndex={start}
+        getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+        // The visible page and two on each side. A longer jump is not scrolled through (see goTo).
+        windowSize={5}
+        initialNumToRender={3}
+        maxToRenderPerBatch={2}
+        // A finger on the pager takes over from any scroll a tap started.
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        onScrollBeginDrag={() => {
+          pending.current = null;
+          unsettle();
+        }}
+        onMomentumScrollEnd={onSettled}
+        renderItem={({ item, index: i }) => (
+          <TeamRoster
+            team={item}
+            width={width}
+            active={Math.abs(i - index) <= 1 || (settledAt != null && Math.abs(i - settledAt) <= 1)}
+            rows={settledAt != null && Math.abs(i - settledAt) <= 1}
+          />
+        )}
+      />
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  banner: {
-    marginHorizontal: 16,
-    marginBottom: 4,
-    padding: 14,
-    borderRadius: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  bannerLogo: {
-    width: 46,
-    height: 46,
-  },
-  bannerTitle: {
-    fontFamily: fonts.displayBold,
-    fontSize: 22,
-  },
-  bannerSub: {
-    fontFamily: fonts.body,
-    fontSize: 13,
-  },
-  coachRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 12,
-    borderRadius: 16,
-    marginBottom: 8,
-  },
-  coachIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  coachInitial: {
-    fontFamily: fonts.display,
-    fontSize: 22,
-  },
-  coachLabel: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    color: palette.muted,
-    marginBottom: 1,
-  },
-  coachName: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 16,
-    color: palette.chalk,
-  },
-  row: {
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  rowMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 10,
-    paddingRight: 12,
-  },
-  jersey: {
-    width: 44,
-    textAlign: 'center',
-    fontFamily: fonts.display,
-    fontSize: 32,
-  },
-  headshotWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headshot: {
-    width: 64,
-    height: 52,
-  },
-  initials: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 16,
-    color: palette.chalk,
-  },
-  name: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 17,
-    color: palette.chalk,
-  },
-  meta: {
-    fontFamily: fonts.body,
-    fontSize: 13,
-    color: palette.muted,
-    marginTop: 1,
-  },
-  chevron: {
-    paddingLeft: 4,
-  },
+  root: { flex: 1, backgroundColor: palette.arena },
+  strip: { paddingBottom: 8 },
 });

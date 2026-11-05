@@ -69,6 +69,14 @@ export function ChevronIcon({ size = 18, color }: IconProps) {
   );
 }
 
+export function ChevronLeftIcon({ size = 18, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M15 5l-7 7 7 7" {...stroke(color)} />
+    </Svg>
+  );
+}
+
 export function BasketballIcon({ size = 22, color }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -83,6 +91,25 @@ export function TrophyIcon({ size = 22, color }: IconProps) {
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path d="M8 21h8M12 17v4M17 3h3v4a3 3 0 0 1-3 3M7 3H4v4a3 3 0 0 0 3 3" {...stroke(color)} />
       <Path d="M7 3h10v6a5 5 0 0 1-10 0V3z" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+/** The Larry O'Brien Championship Trophy: a ball held up by a flared, spiraling base. Filled, in one color. */
+export function LarryOBrienIcon({ size = 22, color }: IconProps) {
+  const cut = 'rgba(0,0,0,0.38)';
+  return (
+    <Svg width={size * 0.8} height={size} viewBox="0 0 24 30">
+      {/* the ball and its seams */}
+      <Circle cx={12} cy={6.2} r={5.6} fill={color} />
+      <Path d="M6.4 6.2h11.2M12 0.6v11.2M8 2.4c1.6 2.4 1.6 5.2 0 7.6M16 2.4c-1.6 2.4-1.6 5.2 0 7.6" stroke={cut} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+      {/* the sculpted cradle, widening from the stem to the ball */}
+      <Path d="M5.4 10.6C7.4 14.4 10.2 14.8 10.4 20.2h3.2c0.2-5.4 3-5.8 5-9.6-2 1.8-4.4 2.6-6.6 2.6s-4.6-0.8-6.6-2.6z" fill={color} />
+      <Path d="M8.6 14.6c2 0.6 4.8 0.6 6.8 0" stroke={cut} strokeWidth={0.9} fill="none" strokeLinecap="round" />
+      {/* the stem and base */}
+      <Path d="M8.8 20.2h6.4l1.2 3.6H7.6z" fill={color} />
+      <Rect x={5.6} y={24.2} width={12.8} height={4.4} rx={1} fill={color} />
+      <Path d="M5.6 26h12.8" stroke={cut} strokeWidth={0.8} />
     </Svg>
   );
 }

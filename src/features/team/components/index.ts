@@ -4,5 +4,8 @@ export * from './ScoresStrip';
 export * from './SeasonSeries';
 export * from './TeamCard';
 export * from './TeamHome';
+export * from './TeamPills';
+export * from './TeamRefresh';
+export * from './TeamRoster';
 export * from './TeamSeasonStats';
 export * from './TeamSwitcher';
