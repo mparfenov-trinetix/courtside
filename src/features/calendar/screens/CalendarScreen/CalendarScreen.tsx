@@ -4,8 +4,7 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AgendaView, DayPager, MonthView, startOfMonth } from '../../components';
-import { router } from 'expo-router';
-import { CardIcon, IconButton, Segmented, SeasonSheet, slideIn, ErrorState, ListSkeleton, ScreenHeader } from '@/components';
+import { Segmented, SeasonSheet, slideIn, ErrorState, ListSkeleton, ScreenHeader } from '@/components';
 import { usePostseason, useRefresh, useSeasonGames, useTeam } from '@/hooks';
 import { currentSeason } from '@/lib/espn';
 import { calendarEvents } from '@/lib/league';
@@ -106,17 +105,7 @@ export function CalendarScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
-      <ScreenHeader
-        title="Calendar"
-        color={palette.chalk}
-        right={headerRight}
-        // The other main screen, one tap away.
-        afterMenu={
-          <IconButton label="Open the team card" onPress={() => router.navigate('/home')}>
-            <CardIcon color={palette.chalk} />
-          </IconButton>
-        }
-      />
+      <ScreenHeader title="Calendar" color={palette.chalk} right={headerRight} />
 
       {/* View switch */}
       <Segmented
