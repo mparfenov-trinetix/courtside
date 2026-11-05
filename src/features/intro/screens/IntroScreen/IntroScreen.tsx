@@ -16,7 +16,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import Svg, { Circle, Line } from 'react-native-svg';
+import Svg, { Circle, Defs, Line, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { Basketball, NbaLogo } from '@/components';
 import { useTeam } from '@/hooks';
@@ -47,6 +47,8 @@ export function IntroScreen() {
   const ring = useSharedValue(0); // center circle draw progress
   const floor = useSharedValue(0); // half-court line draw progress
   const word = useSharedValue(0); // wordmark reveal
+  const glow = useSharedValue(0); // the arena light coming up behind the ball
+  const pulse = useSharedValue(0); // one ring of light leaving the center circle as it closes
   const exit = useSharedValue(0);
 
   // Warm the cache while the intro plays, so team pickers open instantly.
@@ -79,6 +81,8 @@ export function IntroScreen() {
       fall(0, 130),
     );
     energy.value = withDelay(1300, withTiming(0, { duration: 200 }));
+    glow.value = withTiming(1, { duration: 1400, easing: Easing.out(Easing.cubic) });
+    pulse.value = withDelay(1850, withTiming(1, { duration: 900, easing: Easing.out(Easing.cubic) }));
     floor.value = withDelay(650, withTiming(1, { duration: 500, easing: Easing.out(Easing.cubic) }));
     ring.value = withDelay(1250, withTiming(1, { duration: 650, easing: Easing.inOut(Easing.cubic) }));
     word.value = withDelay(1450, withTiming(1, { duration: 700 }));
@@ -124,6 +128,17 @@ export function IntroScreen() {
     x2: width / 2 + (width / 2) * floor.value,
   }));
 
+  // The echo of the center circle: grows and fades once, as the circle finishes drawing.
+  const pulseProps = useAnimatedProps(() => ({
+    r: RING * (1 + 0.45 * pulse.value),
+    strokeOpacity: 0.55 * (1 - pulse.value) * (pulse.value > 0 ? 1 : 0),
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glow.value,
+    transform: [{ scale: 0.85 + 0.15 * glow.value }],
+  }));
+
   const containerStyle = useAnimatedStyle(() => ({
     opacity: 1 - exit.value,
   }));
@@ -137,6 +152,20 @@ export function IntroScreen() {
   return (
     <Pressable style={styles.root} onPress={skip} accessibilityLabel="Skip intro">
       <Animated.View style={[StyleSheet.absoluteFill, containerStyle]} onLayout={start}>
+        {/* The arena light: a wide, soft pool of the court color behind the ball, coming up as it is tossed. */}
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, glowStyle]}>
+          <Svg width={width} height={height}>
+            <Defs>
+              <RadialGradient id="arena-light" gradientUnits="userSpaceOnUse" cx={width / 2} cy={centerY} r={width * 0.95}>
+                <Stop offset={0} stopColor={lineColor} stopOpacity={0.3} />
+                <Stop offset={0.45} stopColor={lineColor} stopOpacity={0.08} />
+                <Stop offset={1} stopColor={lineColor} stopOpacity={0} />
+              </RadialGradient>
+            </Defs>
+            <Rect x={0} y={0} width={width} height={height} fill="url(#arena-light)" />
+          </Svg>
+        </Animated.View>
+
         <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
           <AnimatedLine
             y1={centerY + BALL / 2 + 2}
@@ -159,6 +188,7 @@ export function IntroScreen() {
             origin={`${width / 2}, ${centerY}`}
             animatedProps={ringProps}
           />
+          <AnimatedCircle cx={width / 2} cy={centerY} stroke={lineColor} strokeWidth={2} fill="none" animatedProps={pulseProps} />
         </Svg>
 
         <Animated.View
