@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
@@ -14,6 +15,26 @@ import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { goBack } from '@/navigation';
 import { useWatchlist } from '@/state';
 import { CareerSkeleton, CareerTable, ContractCard, FormCard, GameLog, GameLogSkeleton, HonorsCard, InfoSkeleton, PlayerPageSkeleton, PlayerShotChart, RatingCard, SplitsCard, StatsSkeleton } from '../../components';
+
+/** Fades a photo's left, right and bottom edges into `color` (the surface behind it). */
+function EdgeFade({ color }: { color: string }) {
+  // An eased ramp: a straight one reads as a band.
+  const ramp = [withAlpha(color, 0), withAlpha(color, 0.35), withAlpha(color, 0.78), color] as const;
+  const stops = [0, 0.4, 0.75, 1] as const;
+  return (
+    <>
+      <LinearGradient pointerEvents="none" colors={[ramp[3], ramp[2], ramp[1], ramp[0]]} locations={[0, 0.25, 0.6, 1]} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[fade.side, { left: 0 }]} />
+      <LinearGradient pointerEvents="none" colors={ramp} locations={stops} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={[fade.side, { right: 0 }]} />
+      <LinearGradient pointerEvents="none" colors={ramp} locations={[0, 0.35, 0.65, 0.85]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={fade.bottom} />
+    </>
+  );
+}
+
+const fade = StyleSheet.create({
+  side: { position: 'absolute', top: 0, bottom: 0, width: '16%' },
+  // A little past the photo's own edge: at a fractional position its last pixel row would otherwise show as a line.
+  bottom: { position: 'absolute', left: -1, right: -1, bottom: -2, height: '32%' },
+});
 
 const MAX_ROTATE = 10;
 
@@ -213,34 +234,22 @@ export function PlayerScreen() {
               />
             )}
 
-            {/* Jersey number ghost */}
-            {player.jersey && (
-              <Animated.Text
-                style={[
-                  styles.jerseyGhost,
-                  {
-                    color: withAlpha(theme.onPrimary, 0.09),
-                    fontSize: cardWidth * 0.88,
-                    lineHeight: cardWidth * 0.88,
-                  },
-                  jerseyParallax,
-                ]}
-                accessibilityElementsHidden>
-                {player.jersey}
-              </Animated.Text>
-            )}
-
             {/* Headshot */}
             <Animated.View style={[styles.headshotContainer, headshotParallax]}>
               {player.headshot ? (
-                <Image
-                  source={player.headshot}
-                  style={{ width: cardWidth * 0.72, height: cardWidth * 0.78 }}
-                  contentFit="cover"
-                  allowDownscaling={false}
-                  priority="high"
-                  cachePolicy="memory-disk"
-                />
+                <View style={{ width: cardWidth * 0.72, height: cardWidth * 0.78 }}>
+                  <Image
+                    source={player.headshot}
+                    style={StyleSheet.absoluteFill}
+                    contentFit="cover"
+                    allowDownscaling={false}
+                    priority="high"
+                    cachePolicy="memory-disk"
+                  />
+                  {/* ESPN's photo is a rectangle with the shoulders cut off square: melt the sides and the bottom into the card
+                      color, so the body fades out instead of ending at hard edges. */}
+                  <EdgeFade color={theme.primary} />
+                </View>
               ) : (
                 <View
                   style={[
@@ -258,6 +267,27 @@ export function PlayerScreen() {
                 </View>
               )}
             </Animated.View>
+
+            {/* Jersey number: in the upper right corner of the card, drawn over the photo's frame (not under it), so the fade at the
+                photo's edges never cuts it. The corner beside the head is empty, so the number sits there in full view. */}
+            {player.jersey && (
+              <Animated.Text
+                pointerEvents="none"
+                style={[
+                  styles.jerseyCorner,
+                  {
+                    color: withAlpha(theme.onPrimary, 0.16),
+                    fontSize: cardWidth * (player.jersey.length < 2 ? 0.5 : 0.36),
+                    lineHeight: cardWidth * (player.jersey.length < 2 ? 0.5 : 0.36),
+                    top: cardWidth * 0.03,
+                    right: cardWidth * 0.05,
+                  },
+                  jerseyParallax,
+                ]}
+                accessibilityElementsHidden>
+                {player.jersey}
+              </Animated.Text>
+            )}
 
             {/* Card footer */}
             <View style={styles.cardFooter}>
@@ -317,7 +347,6 @@ export function PlayerScreen() {
               <StatsSkeleton />
             ) : stats && Object.values(stats).some((v) => v != null) ? (
               <Animated.View style={styles.statsBlock}>
-                {rating2k && <RatingCard rating={rating2k} />}
                 <Text style={styles.sectionLabel}>
                   Averages{stats.gamesPlayed != null ? ` · ${stats.gamesPlayed} games${stats.gamesStarted != null ? `, ${stats.gamesStarted} started` : ''}` : ''}
                 </Text>
@@ -364,6 +393,8 @@ export function PlayerScreen() {
                 {gameLog && gameLog.length > 0 && <PlayerShotChart athleteId={player.id} log={gameLog} accent={theme.accent} />}
 
                 {gameLog && gameLog.length > 3 && <SplitsCard log={gameLog} />}
+
+                {rating2k && <View style={{ marginTop: 18 }}><RatingCard rating={rating2k} scrollY={scrollY} /></View>}
               </Animated.View>
             ) : (
               <Animated.View style={styles.emptyTab}>
@@ -482,18 +513,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
+  // Centred behind the head, a touch lower than the top so a two-digit number above it stays clear.
   logoWatermark: {
     position: 'absolute',
-    top: '10%',
+    top: '14%',
     left: '12%',
     opacity: 0.08,
   },
-  jerseyGhost: {
-    position: 'absolute',
-    fontFamily: fonts.display,
-    right: -24,
-    bottom: 44,
-  },
+  jerseyCorner: { position: 'absolute', fontFamily: fonts.display },
   headshotContainer: {
     position: 'absolute',
     bottom: 64,
