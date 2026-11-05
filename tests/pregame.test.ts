@@ -111,3 +111,11 @@ test('conference standing text: always the conference place, never the division'
   assert.equal(conferenceStanding(standings, '9'), undefined);
   assert.equal(conferenceStanding(undefined, '1'), undefined);
 });
+
+test('the last minute is written with a decimal and still parses (4th and overtime)', () => {
+  assert.deepEqual(parseLiveStatus('38.2 - 4th'), { period: 4, seconds: 38.2 });
+  assert.deepEqual(parseLiveStatus('7.5 - OT'), { period: 5, seconds: 7.5 });
+  assert.deepEqual(parseLiveStatus('2:15 - 2OT'), { period: 6, seconds: 135 });
+  assert.equal(gameHeat(100, 99, '12.0 - 4th').level, 'clutch');
+  assert.equal(gameHeat(100, 99, '4:00 - OT').level, 'clutch');
+});

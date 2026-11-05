@@ -4,11 +4,12 @@ const NONE: Heat = { level: 'none', label: '' };
 
 /** "3:12 - 4th" -> { period: 4, seconds: 192 }; "OT" -> overtime; anything else (halftime, final, tip time) -> null. */
 export function parseLiveStatus(status: string): { period: number; seconds: number } | null {
-  const m = /(\d+):(\d+)\s*-\s*(?:(\d)(?:st|nd|rd|th)|(\d)?OT)/i.exec(status);
+  // ESPN writes the last minute with a decimal and no minutes: "38.2 - 4th", "7.5 - OT".
+  const m = /(?:(\d+):(\d+)|(\d+(?:\.\d+)?))\s*-\s*(?:(\d)(?:st|nd|rd|th)|(\d)?OT)/i.exec(status);
   if (!m) return null;
-  const seconds = Number(m[1]) * 60 + Number(m[2]);
+  const seconds = m[3] !== undefined ? Number(m[3]) : Number(m[1]) * 60 + Number(m[2]);
   const overtime = /OT/i.test(status);
-  return { period: overtime ? 5 + (m[4] ? Number(m[4]) - 1 : 0) : Number(m[3]), seconds };
+  return { period: overtime ? 5 + (m[5] ? Number(m[5]) - 1 : 0) : Number(m[4]), seconds };
 }
 
 /**
