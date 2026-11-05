@@ -1,6 +1,5 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -11,6 +10,7 @@ import { useTeams } from '@/hooks';
 import type { Team } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
+import { goToScreen } from '@/navigation';
 
 export function TeamsScreen() {
   const insets = useSafeAreaInsets();
@@ -26,7 +26,7 @@ export function TeamsScreen() {
   const open = (team: Team) => {
     Haptics.selectionAsync();
     viewTeam(team.id);
-    router.navigate('/home');
+    goToScreen('/home');
   };
 
   return (

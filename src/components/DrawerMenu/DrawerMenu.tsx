@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTeam } from '@/hooks';
 import { fonts, logoOn, mix, palette, teamTheme, withAlpha } from '@/lib/theme';
-import { pushOnce } from '@/navigation';
+import { pushOnce, takeSettle } from '@/navigation';
 import { useTeamStore } from '@/state';
 import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, GridIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon } from '../Icons';
 import { NbaLogo } from '../NbaLogo';
@@ -246,9 +246,9 @@ export function SceneFrame({ children }: { children: ReactNode }) {
       launchScene = false;
       return;
     }
-    // Only for a screen chosen from the menu (it is still open, closing). Coming back to this screen from a game, player or
+    // Only for a screen chosen from the menu (it is still open, closing) or reached by a button through `goToScreen`. Coming back to this screen from a game, player or
     // team page opened over it also focuses it again, and that must not slide it in: it looked like the menu dragging open.
-    if (progress.get() < 0.05) return;
+    if (progress.get() < 0.05 && !takeSettle()) return;
     enter.set(0);
     enter.set(withTiming(1, { duration: SCENE_IN_MS, easing: Easing.out(Easing.cubic) }));
   }, [focused, enter, progress]);

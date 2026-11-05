@@ -1,10 +1,11 @@
-import { router, type Href } from 'expo-router';
+import type { Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { CupIcon } from '@/components';
 import { useCup } from '@/hooks';
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { goToScreen } from '@/navigation';
 
 const GOLD = '#FBBF24';
 const ordinal = (n: number) => ['1st', '2nd', '3rd', '4th', '5th'][n - 1] ?? `${n}th`;
@@ -22,7 +23,7 @@ export function MyCupCard({ teamId }: { teamId: string }) {
   return (
     <Animated.View style={styles.wrap}>
       <Pressable
-        onPress={() => router.navigate('/cup' as Href)}
+        onPress={() => goToScreen('/cup' as Href)}
         accessibilityRole="button"
         accessibilityLabel={`NBA Cup. ${group.label}. ${status}, ${row.w} and ${row.l}.`}
         style={({ pressed }) => [styles.card, pressed && { opacity: 0.75 }]}>

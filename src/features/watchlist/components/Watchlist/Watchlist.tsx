@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { router, type Href } from 'expo-router';
+import type { Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -8,7 +8,7 @@ import { usePlayerGameLog, usePlayerStats } from '@/hooks';
 import { headshotUrl } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { useWatchlist, type WatchedPlayer } from '@/state';
-import { openDetail } from '@/navigation';
+import { goToScreen, openDetail } from '@/navigation';
 
 /** Home card section: only the watched players who play for the team on screen. */
 export function Watchlist({ accent, teamId, teamAbbr }: { accent: string; teamId: string; teamAbbr?: string }) {
@@ -21,7 +21,7 @@ export function Watchlist({ accent, teamId, teamAbbr }: { accent: string; teamId
     <Animated.View style={styles.wrap}>
       <View style={styles.titleRow}>
         <Text style={styles.title}>Watchlist{teamAbbr && mine.length > 0 ? ` · ${teamAbbr}` : ''}</Text>
-        <Pressable onPress={() => router.navigate('/watchlist' as Href)} hitSlop={8}>
+        <Pressable onPress={() => goToScreen('/watchlist' as Href)} hitSlop={8}>
           <Text style={[styles.viewAll, { color: accent }]}>All watched · {players.length}</Text>
         </Pressable>
       </View>

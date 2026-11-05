@@ -13,7 +13,7 @@ import { NextGame } from '../NextGame';
 import { ScoresStrip } from '../ScoresStrip';
 import { TeamSwitcher } from '../TeamSwitcher';
 import { SeasonSeries } from '../SeasonSeries';
-import { goBack, sharedTag, openDetail, pushOnce } from '@/navigation';
+import { goBack, goToScreen, sharedTag, openDetail, pushOnce } from '@/navigation';
 import { CatchUp } from '../CatchUp';
 import { cardHeight, TeamCard } from '../TeamCard';
 import { motionOf, PULL_TO_REFRESH, useRefreshAnimation } from '../TeamRefresh';
@@ -128,7 +128,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         // Calendar is one of the two main screens: one tap from the Team card, next to the menu.
         afterMenu={
           pushed ? undefined : (
-            <IconButton label="Open the calendar" onPress={() => router.navigate('/calendar')}>
+            <IconButton label="Open the calendar" onPress={() => goToScreen('/calendar')}>
               <CalendarIcon color={palette.chalk} />
             </IconButton>
           )
@@ -146,7 +146,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
                 label={`Compare with ${favoriteTeamId ? 'your team' : 'another team'}`}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  router.navigate({
+                  goToScreen({
                     pathname: '/compare',
                     params: { mode: 'teams', a: favoriteTeamId ?? currentTeamId ?? '', b: team.id },
                   });
@@ -239,7 +239,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
           onPress={() => {
             // The roster screen follows the "current" team, so make this one current first.
             if (team.id !== currentTeamId) viewTeam(team.id);
-            router.navigate('/roster');
+            goToScreen('/roster');
           }}
           accessibilityRole="button"
           style={({ pressed }) => [
