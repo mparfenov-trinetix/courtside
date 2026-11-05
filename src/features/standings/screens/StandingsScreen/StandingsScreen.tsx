@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -12,7 +12,7 @@ import { currentSeason, type StandingEntry } from '@/lib/espn';
 import { hasPlayIn } from '@/lib/league';
 import { fonts, matchupColors, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
-import { openDetail, sharedTag } from '@/navigation';
+import { goBack, openDetail, sharedTag } from '@/navigation';
 
 type Conference = 'league' | 'east' | 'west';
 
@@ -41,7 +41,7 @@ export function StandingsScreen({ pushed = false }: { pushed?: boolean }) {
 
   return (
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
-      <ScreenHeader title="Standings" color={palette.chalk} onBack={pushed ? () => router.back() : undefined} right={<SeasonButton season={season} onPress={() => setPicking(true)} />} />
+      <ScreenHeader title="Standings" color={palette.chalk} onBack={pushed ? goBack : undefined} right={<SeasonButton season={season} onPress={() => setPicking(true)} />} />
       {/* Keyed by season, so switching replays the entrance instead of silently swapping data */}
       <Animated.View key={season} entering={FadeIn.duration(240)} style={{ flex: 1 }}>
         <StandingsTable season={season} highlight={highlight} chosen={chosen} setChosen={setChosen} />
@@ -69,7 +69,7 @@ function StandingsTable({
   const highlightKey = highlight.join(',');
   const past = season !== currentSeason();
   const { data, isPending, error, refetch } = useStandings(season);
-  const refreshControl = useRefresh([['standings']]);
+  const refreshControl = useRefresh([['standings']], !past);
 
   // "League" is all 30 teams ranked together by win %, then wins, then point differential.
   const league: StandingEntry[] = [...(data?.east ?? []), ...(data?.west ?? [])]
@@ -200,7 +200,7 @@ function SectionDivider({ title }: { title: string }) {
 }
 
 function TeamRow({ entry, index, cut, highlight }: { entry: StandingEntry; index: number; cut: string | null; highlight?: string }) {
-  const { favoriteTeamId } = useTeamStore();
+  const favoriteTeamId = useTeamStore((s) => s.favoriteTeamId);
   const gbText = entry.gamesBehind === 0 ? '—' : entry.gamesBehind.toFixed(1);
   const pctText = entry.winPct.toFixed(3).replace(/^0/, '');
   const streakColor = entry.streak.startsWith('W') ? '#34D399' : entry.streak.startsWith('L') ? '#F87171' : palette.muted;

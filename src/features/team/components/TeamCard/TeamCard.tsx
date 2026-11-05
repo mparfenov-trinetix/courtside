@@ -7,6 +7,7 @@ import Animated, {
   interpolate,
   Keyframe,
   useAnimatedStyle,
+  useSharedValue,
   type SharedValue,
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Line, RadialGradient, Rect, Stop } from 'react-native-svg';
@@ -14,7 +15,8 @@ import Svg, { Circle, Defs, Line, RadialGradient, Rect, Stop } from 'react-nativ
 import type { Tilt } from '@/hooks';
 import type { Team, TeamDetail } from '@/lib/espn';
 import { fonts, logoOn, mix, teamTheme, withAlpha } from '@/lib/theme';
-import { MAX_ROTATE, RADIUS, GLINT, OUTLINE, OUTLINED_LOGO } from './constants';
+import { waveAt, type RefreshAnimation } from '../TeamRefresh';
+import { MAX_ROTATE, RADIUS, GLINT, OUTLINE, OUTLINED_LOGO, REFRESH_REACH, SWEEPS } from './constants';
 
 const OUTLINE_STEPS: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]];
 
@@ -29,11 +31,6 @@ const dealIn = new Keyframe({
   },
 }).duration(650);
 
-const dealOut = new Keyframe({
-  0: { opacity: 1, transform: [{ perspective: 900 }, { rotateY: '0deg' }, { scale: 1 }] },
-  100: { opacity: 0, transform: [{ perspective: 900 }, { rotateY: '75deg' }, { scale: 0.86 }] },
-}).duration(260);
-
 export const cardHeight = (width: number) => Math.round(width * 1.4);
 
 type Props = {
@@ -46,25 +43,64 @@ type Props = {
   logoTag?: string;
   /** Place in the conference ("7th in the West"); falls back to ESPN's own text. */
   standing?: string;
+  /** The page's pull-to-refresh: the logo plays the team's own motion and a glint sweeps across the card. */
+  refresh?: RefreshAnimation;
 };
 
-export function TeamCard({ team, detail, width, tilt, logoTag, standing }: Props) {
+export function TeamCard({ team, detail, width, tilt, logoTag, standing, refresh }: Props) {
   const height = cardHeight(width);
   const theme = teamTheme(team);
   const { x, y } = tilt;
+
+  // Without a refresh animation these hold still, so the card works the same.
+  const idle = useSharedValue(0);
+  const clock = refresh?.clock ?? idle;
+  const busy = refresh?.busy ?? idle;
+  const punch = refresh?.punch ?? idle;
+  const logoMove = refresh?.motion.logo;
 
   const cardStyle = useAnimatedStyle(() => ({
     transform: [
       { perspective: 900 },
       { rotateY: `${x.value * MAX_ROTATE}deg` },
       { rotateX: `${-y.value * MAX_ROTATE}deg` },
+      // The card gives a small punch the moment a pull is far enough to refresh.
+      { scale: 1 + punch.get() * 0.03 },
     ],
   }));
 
-  // Logo floats above the card surface: it moves a little further than the card.
-  const logoStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value * 5 }, { translateY: y.value * 5 }],
-  }));
+  // Logo floats above the card surface: it moves a little further than the card. While refreshing it also plays the
+  // team's own motion (the Hawks' logo soars, the Rockets' launches...), scaled up from the small mark it was made for.
+  const logoStyle = useAnimatedStyle(() => {
+    // At rest the logo carries only its tilt shift: any other transform (a perspective, a scale a hair off 1) makes the
+    // system resample the image and it goes soft, so the refresh motion is applied only while it plays.
+    if (busy.get() < 0.5) return { transform: [{ translateX: x.value * 5 }, { translateY: y.value * 5 }] };
+    const c = clock.get();
+    return {
+      transform: [
+        { perspective: 900 },
+        { translateX: x.value * 5 + waveAt(logoMove?.x, c) * REFRESH_REACH },
+        { translateY: y.value * 5 + waveAt(logoMove?.y, c) * REFRESH_REACH },
+        { rotate: `${waveAt(logoMove?.r, c)}deg` },
+        { rotateY: `${(logoMove?.flip ?? 0) * 360 * c}deg` },
+        { scale: 1 + waveAt(logoMove?.s, c) },
+        // A stretch makes the logo taller and thinner, keeping its volume.
+        { scaleY: 1 + waveAt(logoMove?.st, c) },
+        { scaleX: 1 / (1 + waveAt(logoMove?.st, c)) },
+      ],
+    };
+  });
+
+  // A band of light sweeping across the card: pulled across by the finger, then repeating while refreshing.
+  const sweepStyle = useAnimatedStyle(() => {
+    const raw = (clock.get() * SWEEPS) % 1;
+    const u = raw < 0 ? raw + 1 : raw;
+    const show = busy.get();
+    return {
+      opacity: show * Math.sin(Math.PI * u),
+      transform: [{ translateX: -width * 0.5 + u * width * 1.6 }, { rotate: '22deg' }],
+    };
+  });
 
   // Court lines sit "under" the surface and drift the other way.
   const courtStyle = useAnimatedStyle(() => ({
@@ -84,7 +120,6 @@ export function TeamCard({ team, detail, width, tilt, logoTag, standing }: Props
     <GestureDetector gesture={tilt.gesture}>
       <Animated.View
         entering={dealIn}
-        exiting={dealOut}
         style={{ width, height }}
         accessible
         accessibilityRole="image"
@@ -159,6 +194,16 @@ export function TeamCard({ team, detail, width, tilt, logoTag, standing }: Props
           <Animated.View pointerEvents="none" style={[styles.sheen, { width: width * 0.9, height: height * 2 }, sheenStyle]}>
             <LinearGradient
               colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.32)', 'rgba(255,255,255,0)']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
+
+          {/* The refresh sweep: a soft band of light crossing the card. */}
+          <Animated.View pointerEvents="none" style={[styles.sweep, { width: width * 0.4, height: height * 1.6 }, sweepStyle]}>
+            <LinearGradient
+              colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.3)', 'rgba(255,255,255,0)']}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={StyleSheet.absoluteFill}
@@ -329,6 +374,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayBold,
     fontSize: 22,
   },
+  sweep: { position: 'absolute', top: '-30%', left: 0 },
   sheen: {
     position: 'absolute',
     top: '-50%',

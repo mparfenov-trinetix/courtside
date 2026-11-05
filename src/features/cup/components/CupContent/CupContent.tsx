@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ErrorState, ListSkeleton, Segmented, slideIn } from '@/components';
 import { Bracket } from '@/features/playoffs';
 import { useCup, useRefresh } from '@/hooks';
-import { seasonLabel } from '@/lib/espn';
+import { currentSeason, seasonLabel } from '@/lib/espn';
 import { buildCupBracket, projectedField, type Cup } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
@@ -28,9 +28,9 @@ const GOLD = '#FBBF24';
 /** The NBA Cup for a season: groups, every game, and the knockout bracket. */
 export function CupContent({ season }: { season?: number }) {
   const insets = useSafeAreaInsets();
-  const { favoriteTeamId } = useTeamStore();
+  const favoriteTeamId = useTeamStore((s) => s.favoriteTeamId);
   const { cup, conferenceOf, isPending, error, refetch } = useCup(season);
-  const refreshControl = useRefresh([['cup'], ['standings']]);
+  const refreshControl = useRefresh([['cup', season ?? currentSeason()], ['standings']], !season || season === currentSeason());
   const [view, setView] = useState<View_>('groups');
   const [slide, setSlide] = useState<1 | -1>(1);
   const [onlyMine, setOnlyMine] = useState(false);

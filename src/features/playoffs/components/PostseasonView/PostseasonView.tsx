@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import type { Href } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Bracket } from '../Bracket';
@@ -27,9 +27,9 @@ export function PlayInView({ season }: { season: number }) {
 
 function PostseasonPane({ season, kind }: { season: number; kind: 'playoffs' | 'playin' }) {
   const insets = useSafeAreaInsets();
-  const { favoriteTeamId } = useTeamStore();
+  const favoriteTeamId = useTeamStore((s) => s.favoriteTeamId);
   const { data, isPending, error, refetch } = usePostseason(season);
-  const refreshControl = useRefresh([['postseason', season]]);
+  const refreshControl = useRefresh([['postseason', season]], season === currentSeason());
 
   if (isPending) return <ListSkeleton count={8} avatar="square" />;
   if (error || !data) return <ErrorState message={error?.message ?? 'Failed to load'} onRetry={refetch} />;
@@ -47,7 +47,7 @@ function PostseasonPane({ season, kind }: { season: number; kind: 'playoffs' | '
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 24 }}>
       {champion && finals && (
-        <Animated.View entering={FadeIn.duration(300)}>
+        <Animated.View>
           <Pressable
             onPress={() => openDetail(`/team/${champion.teamId}` as Href)}
             accessibilityRole="button"

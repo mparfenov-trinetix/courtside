@@ -1,18 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import Animated, {
-  Easing,
-  FadeIn,
-  FadeInDown,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useDerivedValue,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
+import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TeamMark , CompareIcon, PeopleIcon, SearchIcon, StarIcon , IconButton, ScreenHeader, Skeleton, SkeletonGroup, TITLE_INSET, headerHeight } from '@/components';
@@ -21,12 +13,13 @@ import { NextGame } from '../NextGame';
 import { ScoresStrip } from '../ScoresStrip';
 import { TeamSwitcher } from '../TeamSwitcher';
 import { SeasonSeries } from '../SeasonSeries';
-import { sharedTag , openDetail } from '@/navigation';
+import { goBack, sharedTag , openDetail } from '@/navigation';
 import { CatchUp } from '../CatchUp';
 import { cardHeight, TeamCard } from '../TeamCard';
+import { motionOf, PULL_TO_REFRESH, useRefreshAnimation } from '../TeamRefresh';
 import { TeamSeasonStats } from '../TeamSeasonStats';
 import { Watchlist } from '@/features/watchlist';
-import { useRefresh, useStandings, useTeam, useTeamDetail, useTeamSchedule, useTilt } from '@/hooks';
+import { useManualRefresh, useStandings, useTeam, useTeamDetail, useTeamSchedule, useTilt } from '@/hooks';
 import { conferenceStanding } from '@/lib/league';
 import type { Game } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
@@ -36,6 +29,9 @@ import { useTeamStore } from '@/state';
  * The team card page. As the drawer's "Team card" screen it shows the current team and a menu button;
  * pushed from elsewhere (a game, a leaderboard) it shows any team with a back arrow and swipe-back.
  */
+// The refresh animation is worth seeing through a few dribbles, even when the data is back sooner.
+const REFRESH_MIN_MS = 2400;
+
 export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string | null; pushed?: boolean; origin?: string }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -51,7 +47,8 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
 
   const cardWidth = Math.round(Math.min(width * 0.78, 360, (height - insets.top - insets.bottom - 230) / 1.4));
   const tilt = useTilt({ width: cardWidth, height: cardHeight(cardWidth) }, { scrollSafe: true });
-  const refreshControl = useRefresh([['team'], ['schedule'], ['leagueTeamStats'], ['scoreboard']]);
+  // Pull the page down past the threshold and let go: the card plays the team's own refresh (see TeamRefresh/motions.ts).
+  const { refreshing, refresh } = useManualRefresh([['team', teamId], ['schedule', teamId], ['standings'], ['leagueTeamStats'], ['scoreboard']], REFRESH_MIN_MS);
 
   // The header is empty while the card is on screen; once it has scrolled away the team's name takes over.
   const scrollY = useSharedValue(0);
@@ -59,11 +56,17 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
   // scrolling up doesn't make it vanish while the card is still half off screen. Both ease in time.
   const titleShown = useSharedValue(0);
   const cardH = cardHeight(cardWidth);
-  const onScroll = useAnimatedScrollHandler((e) => {
-    scrollY.set(e.contentOffset.y);
-    if (e.contentOffset.y > cardH * 0.7) titleShown.set(1);
-    else if (e.contentOffset.y < cardH * 0.1) titleShown.set(0);
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollY.set(e.contentOffset.y);
+      if (e.contentOffset.y > cardH * 0.7) titleShown.set(1);
+      else if (e.contentOffset.y < cardH * 0.1) titleShown.set(0);
+    },
+    onEndDrag: (e) => {
+      if (e.contentOffset.y < -PULL_TO_REFRESH) scheduleOnRN(refresh);
+    },
   });
+  const refreshAnimation = useRefreshAnimation({ refreshing, scrollY, motion: motionOf(team?.abbreviation ?? '') });
   const titleProgress = useDerivedValue(() => withTiming(titleShown.get(), { duration: 260, easing: Easing.out(Easing.cubic) }));
   // The drawer's "Team card" screen is reused for every team, so a new team must start at the top.
   // Keying the ScrollView remounts it at offset 0; the shared value is reset to match.
@@ -92,6 +95,10 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
   }, [schedule]);
 
   const isFavorite = !!team && team.id === favoriteTeamId;
+  // Choosing another team shows its card and header at once; the sections below it are built in a second, interruptible
+  // pass, so the switch doesn't wait for (or stutter on) the whole page.
+  const settled = useDeferredValue(team?.id, undefined);
+  const lower = !!team && settled === team.id;
 
   if (!team) {
     return (
@@ -117,7 +124,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
       <View style={[styles.headerWrap, { height: headerHeight(insets.top) }]} pointerEvents="box-none">
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, bgStyle, headerFill]} />
       <ScreenHeader
-        onBack={pushed ? () => router.back() : undefined}
+        onBack={pushed ? goBack : undefined}
         centerTitle
         title={
           <Animated.View style={[styles.headerTitle, titleStyle]} pointerEvents="none">
@@ -163,12 +170,11 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        refreshControl={refreshControl}
         contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight(insets.top), paddingBottom: insets.bottom + 32 }]}>
         {/* Team card */}
         <View style={styles.cardArea}>
           {pushed ? (
-            <TeamCard key={team.id} team={team} detail={detail} standing={standing} width={cardWidth} tilt={tilt} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
+            <TeamCard key={team.id} team={team} detail={detail} standing={standing} width={cardWidth} tilt={tilt} refresh={refreshAnimation} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
           ) : (
             // Hold the card to switch team. A drag tilts it instead (the gesture takes over before the hold completes).
             <Pressable
@@ -178,16 +184,18 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
               }}
               delayLongPress={420}
               accessibilityHint="Hold to switch team">
-              <TeamCard key={team.id} team={team} detail={detail} standing={standing} width={cardWidth} tilt={tilt} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
+              <TeamCard key={team.id} team={team} detail={detail} standing={standing} width={cardWidth} tilt={tilt} refresh={refreshAnimation} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
             </Pressable>
           )}
         </View>
 
+        {lower && (
+          <>
         {/* What happened while the app was closed (own team only). */}
         {team.id === favoriteTeamId && <CatchUp teamId={team.id} schedule={schedule} accent={theme.accent} />}
 
         {/* Team stats row */}
-        <Animated.View entering={FadeIn.duration(400)} style={styles.splits}>
+        <Animated.View style={styles.splits}>
           <Split label="Home" value={detail?.homeRecord} />
           <Split label="Away" value={detail?.awayRecord} />
           <Split label="Arena" value={detail?.venue} wide />
@@ -204,7 +212,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
 
         {/* Recent games */}
         {completedGames.length > 0 && (
-          <Animated.View entering={FadeInDown.delay(120).duration(300)} style={styles.gamesSection}>
+          <Animated.View style={styles.gamesSection}>
             <Text style={[styles.gamesSectionTitle, { color: withAlpha(palette.chalk, 0.55) }]}>
               Recent Games
             </Text>
@@ -237,6 +245,8 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         {!tilt.sensorAvailable && (
           <Text style={styles.hint}>No motion sensor found. Drag the card to tilt it.</Text>
         )}
+          </>
+        )}
       </Animated.ScrollView>
       <TeamSwitcher visible={switching} onClose={() => setSwitching(false)} />
     </Animated.View>
@@ -260,7 +270,7 @@ function GameRow({ game, index }: { game: Game; index: number }) {
   const isWin = game.result === 'W';
 
   return (
-    <Animated.View entering={FadeInDown.delay(140 + index * 35).duration(260)}>
+    <Animated.View>
       <Pressable
         onPress={() => openDetail({ pathname: '/game/[id]', params: { id: game.id } })}
         accessibilityRole="button"

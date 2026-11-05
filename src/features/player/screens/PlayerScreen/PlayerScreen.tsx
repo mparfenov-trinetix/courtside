@@ -4,21 +4,14 @@ import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
-  Extrapolation,
-  FadeIn,
-  FadeInDown,
-  interpolate,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from 'react-native-reanimated';
+import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, CompareIcon, StarIcon } from '@/components';
 import { useAllStars, usePlayerBio, usePlayerCareer, usePlayerGameLog, usePlayerProfile, usePlayerStats, useRefresh, useRoster, useTeam, useTilt } from '@/hooks';
 import { titleSeasons } from '@/lib/league';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
+import { goBack } from '@/navigation';
 import { useWatchlist } from '@/state';
 import { CareerSkeleton, CareerTable, ContractCard, FormCard, GameLog, GameLogSkeleton, HonorsCard, InfoSkeleton, PlayerPageSkeleton, PlayerShotChart, SplitsCard, StatsSkeleton } from '../../components';
 
@@ -61,7 +54,8 @@ export function PlayerScreen() {
   const { data: career, isPending: careerPending } = usePlayerCareer(activeTab === 'career' || activeTab === 'info' ? player?.id : undefined);
   const { data: allStars } = useAllStars(activeTab === 'info');
   const { data: profile, isPending: profilePending } = usePlayerProfile(activeTab === 'info' ? player?.id : undefined);
-  const refreshControl = useRefresh([['playerStats', id], ['playerGameLog', id], ['playerCareer', id], ['roster', teamId], ['playerBio', id]]);
+  // A retired player's pages are history; only someone still on a roster has numbers that move.
+  const refreshControl = useRefresh([['playerStats', id], ['playerGameLog', id], ['playerCareer', id], ['roster', teamId], ['playerBio', id]], onRoster);
 
   const cardWidth = Math.min(width * 0.6, 240);
   const cardHeight = Math.round(cardWidth * 1.22);
@@ -104,7 +98,7 @@ export function PlayerScreen() {
       <View style={[styles.root, { backgroundColor: theme.background }]}>
         <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={goBack}
             accessibilityRole="button"
             accessibilityLabel="Go back"
             hitSlop={14}
@@ -152,7 +146,7 @@ export function PlayerScreen() {
       {/* Back button */}
       <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={goBack}
           accessibilityRole="button"
           accessibilityLabel="Go back"
           hitSlop={14}
@@ -200,7 +194,6 @@ export function PlayerScreen() {
       <View style={styles.cardArea}>
         <GestureDetector gesture={tilt.gesture}>
           <Animated.View
-            entering={FadeIn.duration(400)}
             style={[
               styles.card,
               { width: cardWidth, height: cardHeight, backgroundColor: theme.primary },
@@ -290,7 +283,7 @@ export function PlayerScreen() {
 
       {/* Tab selector (ScrollView overrides a sticky child's style, so the styled bar sits inside a plain View) */}
       <View>
-      <Animated.View entering={FadeInDown.delay(40).duration(260)} style={[styles.tabBar, { backgroundColor: theme.background }]}>
+      <Animated.View style={[styles.tabBar, { backgroundColor: theme.background }]}>
         {([
           { key: 'season', label: 'Season' },
           { key: 'career', label: 'Career' },
@@ -322,7 +315,7 @@ export function PlayerScreen() {
             {statsPending ? (
               <StatsSkeleton />
             ) : stats && Object.values(stats).some((v) => v != null) ? (
-              <Animated.View entering={FadeInDown.delay(60).duration(300)} style={styles.statsBlock}>
+              <Animated.View style={styles.statsBlock}>
                 <Text style={styles.sectionLabel}>
                   Averages{stats.gamesPlayed != null ? ` · ${stats.gamesPlayed} games${stats.gamesStarted != null ? `, ${stats.gamesStarted} started` : ''}` : ''}
                 </Text>
@@ -371,7 +364,7 @@ export function PlayerScreen() {
                 {gameLog && gameLog.length > 3 && <SplitsCard log={gameLog} />}
               </Animated.View>
             ) : (
-              <Animated.View entering={FadeIn.duration(260)} style={styles.emptyTab}>
+              <Animated.View style={styles.emptyTab}>
                 <Text style={styles.emptyTitle}>{onRoster ? 'No stats yet' : 'Not on a roster'}</Text>
                 <Text style={styles.emptyText}>
                   {onRoster
@@ -390,7 +383,7 @@ export function PlayerScreen() {
             careerPending ? (
               <CareerSkeleton />
             ) : (
-              <Animated.View entering={FadeIn.duration(260)} style={styles.emptyTab}>
+              <Animated.View style={styles.emptyTab}>
                 <Text style={styles.emptyText}>Career stats are unavailable.</Text>
               </Animated.View>
             )
@@ -401,7 +394,7 @@ export function PlayerScreen() {
           logPending ? (
             <GameLogSkeleton />
           ) : (
-            <Animated.View entering={FadeInDown.delay(60).duration(300)}>
+            <Animated.View>
               <GameLog entries={gameLog ?? []} accent={theme.accent} />
             </Animated.View>
           )
@@ -416,7 +409,6 @@ export function PlayerScreen() {
             <ContractCard contract={profile?.contract} draft={profile?.draft} />
             {infoRows.length > 0 ? (
               <Animated.View
-                entering={FadeInDown.delay(60).duration(300)}
                 style={[styles.infoCard, { backgroundColor: withAlpha('#FFFFFF', 0.06) }]}>
                 {infoRows.map(([label, value], i) => (
                   <View key={label} style={[styles.infoRow, i < infoRows.length - 1 && styles.infoRowBorder]}>
@@ -426,7 +418,7 @@ export function PlayerScreen() {
                 ))}
               </Animated.View>
             ) : (
-              <Animated.View entering={FadeIn.duration(260)} style={styles.emptyTab}>
+              <Animated.View style={styles.emptyTab}>
                 <Text style={styles.emptyTitle}>No info</Text>
                 <Text style={styles.emptyText}>Player details not available.</Text>
               </Animated.View>
