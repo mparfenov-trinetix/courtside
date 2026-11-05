@@ -12,6 +12,7 @@ export * from './LiveFlash';
 export * from './NbaLogo';
 export * from './RollingNumber';
 export * from './Screen';
+export * from './SearchInput';
 export * from './SeasonPicker';
 export * from './Segmented';
 export * from './ShotMap';

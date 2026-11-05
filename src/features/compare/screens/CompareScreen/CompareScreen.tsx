@@ -9,14 +9,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CompareRow, PlayerExtras, type Row, Radar, type RadarAxis, TeamCompare } from '../../components';
-import { Segmented, slideIn, ScreenHeader } from '@/components';
+import { Segmented, slideIn, ScreenHeader, SearchInput } from '@/components';
 import { usePlayerCareer, usePlayerSearch, usePlayerStats, useTeams } from '@/hooks';
 import { headshotUrl, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
 import { nba2kRating } from '@/lib/league';
@@ -259,11 +258,10 @@ function PickerModal({
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} onDismiss={() => { setText(''); setQuery(''); }} presentationStyle="pageSheet">
       <View style={[styles.modal, { paddingTop: 16 }]}>
         <View style={styles.searchRow}>
-          <TextInput
+          <SearchInput
             value={text}
             onChangeText={setText}
             placeholder="Search players, e.g. Curry"
-            placeholderTextColor={palette.muted}
             autoFocus
             autoCorrect={false}
             autoCapitalize="words"
@@ -329,12 +327,8 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   input: {
     flex: 1,
-    height: 46,
     borderRadius: 23,
     paddingHorizontal: 18,
-    fontFamily: fonts.body,
-    fontSize: 16,
-    color: palette.chalk,
     backgroundColor: withAlpha('#FFFFFF', 0.08),
   },
   cancel: { fontFamily: fonts.bodySemi, fontSize: 15, color: palette.muted },

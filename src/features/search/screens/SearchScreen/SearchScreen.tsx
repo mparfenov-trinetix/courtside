@@ -2,11 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
 import type { Href } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { SearchIcon } from '@/components';
+import { SearchIcon, SearchInput } from '@/components';
 import { usePlayerSearch, useTeams } from '@/hooks';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { goBack, openDetail } from '@/navigation';
@@ -87,17 +87,16 @@ export function SearchScreen() {
       <View style={styles.bar}>
         <View style={styles.field}>
           <SearchIcon color={palette.muted} size={18} />
-          <TextInput
+          <SearchInput
             value={text}
             onChangeText={setText}
             placeholder="Search players and teams"
-            placeholderTextColor={palette.muted}
             autoFocus
             autoCorrect={false}
             autoCapitalize="words"
             returnKeyType="search"
             clearButtonMode="while-editing"
-            style={styles.input}
+            style={{ flex: 1 }}
           />
           {isFetching && <ActivityIndicator color={palette.muted} size="small" />}
         </View>
@@ -174,7 +173,6 @@ const styles = StyleSheet.create({
     borderRadius: 23,
     backgroundColor: withAlpha('#FFFFFF', 0.08),
   },
-  input: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: palette.chalk },
   cancel: { fontFamily: fonts.bodySemi, fontSize: 15, color: palette.muted },
   sectionRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   sectionRowTitle: { flex: 1 },

@@ -2,11 +2,11 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ChevronIcon, StarIcon , ErrorState, ListSkeleton, ScreenHeader } from '@/components';
+import { ChevronIcon, StarIcon, ErrorState, ListSkeleton, ScreenHeader, SearchInput } from '@/components';
 import { useTeams } from '@/hooks';
 import type { Team } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
@@ -33,11 +33,10 @@ export function TeamsScreen() {
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
       <ScreenHeader title="All teams" />
       <View style={styles.searchWrap}>
-        <TextInput
+        <SearchInput
           value={query}
           onChangeText={setQuery}
           placeholder="Search by city, name or abbreviation"
-          placeholderTextColor={palette.muted}
           style={styles.search}
           autoCorrect={false}
           clearButtonMode="while-editing"
@@ -123,13 +122,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   search: {
-    height: 46,
     borderRadius: 23,
     paddingHorizontal: 18,
     backgroundColor: withAlpha('#FFFFFF', 0.07),
-    color: palette.chalk,
-    fontFamily: fonts.body,
-    fontSize: 16,
   },
   row: {
     flexDirection: 'row',
