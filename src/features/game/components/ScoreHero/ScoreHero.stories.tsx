@@ -36,6 +36,22 @@ export const NotStarted: Story = {
   ),
 };
 
+export const LiveTimeouts: Story = {
+  render: () => (
+    <ScoreHero
+      away={{ ...away, timeoutsRemaining: 5 }}
+      home={{ ...home, timeoutsRemaining: 2 }}
+      status="5:41 - 2nd"
+      live
+      completed={false}
+      hasStarted
+      periodCount={2}
+      selPeriods={null}
+      timeout={`${home.team.abbreviation} TO`}
+    />
+  ),
+};
+
 export const LiveBadge: Story = { render: () => <View style={{ alignItems: 'center' }}><LivePill label="8:13 - 4th" /></View> };
 
 function TopBarDemo({ live }: { live: boolean }) {
@@ -44,10 +60,9 @@ function TopBarDemo({ live }: { live: boolean }) {
   // Fades in as the slider passes the hero, like the real bar does when the tabs pin.
   const pinned = useDerivedValue(() => Math.min(1, Math.max(0, (scrollY.get() - 90) / 60)));
   const collapsed = useDerivedValue(() => Math.min(1, Math.max(0, (scrollY.get() - 70) / 60)));
-  const [updatedAt] = useState(() => Date.now() - 12000);
   return (
     <View>
-      <GameTopBar collapsed={collapsed} away={away} home={home} status={live ? '8:13 - 4th' : 'Final'} live={live} hasStarted updatedAt={updatedAt} tint={[mix(palette.arena, awayColor, 0.34), mix(palette.arena, homeColor, 0.34)]} pinned={pinned} />
+      <GameTopBar collapsed={collapsed} away={away} home={home} status={live ? '8:13 - 4th' : 'Final'} live={live} hasStarted watched={false} onWatch={() => {}} tint={[mix(palette.arena, awayColor, 0.34), mix(palette.arena, homeColor, 0.34)]} pinned={pinned} />
       <View style={{ padding: 20, gap: 8 }}>
         <Text style={{ fontFamily: fonts.bodySemi, color: palette.muted }}>Scroll position: {Math.round(value)}px</Text>
         <Slider

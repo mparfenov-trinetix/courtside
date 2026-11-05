@@ -1,25 +1,16 @@
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, type Href } from 'expo-router';
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated';
+import type { Href } from 'expo-router';
+import { useEffect, useRef, type RefObject } from 'react';
+import { Pressable, StyleSheet, Text, View, type HostInstance, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, type AnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ArrowLeftIcon, HeatBadge, Tick, RollingNumber, UpdatedAgo } from '@/components';
+import { ArrowLeftIcon, HeatBadge, StarIcon, Tick, RollingNumber } from '@/components';
 import type { BoxScoreTeam } from '@/lib/espn';
-import { gameHeat, periodLabel } from '@/lib/game';
+import { gameHeat, periodLabel, TIMEOUTS_PER_GAME } from '@/lib/game';
 import { fonts, palette, withAlpha } from '@/lib/theme';
-import { openDetail, sharedTag } from '@/navigation';
+import { goBack, openDetail, sharedTag } from '@/navigation';
+import { BAR_LOGO, HERO_LOGO } from '../GameLogos';
 
 // ─── Big header ───────────────────────────────────────────────────────────────
 
@@ -34,6 +25,9 @@ export function ScoreHero({
   selPeriods,
   gameId,
   origin,
+  onLogoSlot,
+  scrollY,
+  timeout,
 }: {
   away: BoxScoreTeam;
   home: BoxScoreTeam;
@@ -43,15 +37,29 @@ export function ScoreHero({
   hasStarted: boolean;
   periodCount: number;
   selPeriods: number[] | null;
-  /** With `origin`, names the logos and scores that fly in from the list this game was opened from. */
+  /** With `origin`, names the scores that fly in from the list this game was opened from. */
   gameId?: string;
   origin?: string;
+  /** Reports where each logo's slot is on screen (its center); the logos themselves are drawn by `GameLogos`. */
+  onLogoSlot?: (side: 'away' | 'home', x: number, y: number) => void;
+  /** The page's scroll: the timeout bars fade out as the header starts to collapse, so they never ride under the top bar. */
+  scrollY?: SharedValue<number>;
+  /** Set while a timeout is on: "NOP TO" for a team's, "Official TO" for an official one. */
+  timeout?: string;
 }) {
   const filtered = selPeriods != null;
+  const bars = useAnimatedStyle(() => ({ opacity: scrollY ? Math.max(0, 1 - scrollY.get() / 36) : 1 }));
+  const awaySlot = useRef<HostInstance>(null);
+  const homeSlot = useRef<HostInstance>(null);
+  // Called whenever the row or a slot is laid out: a live badge appearing makes the row taller and moves the slots.
+  const measure = () => {
+    awaySlot.current?.measureInWindow((x, y, w, h) => onLogoSlot?.('away', x + w / 2, y + h / 2));
+    homeSlot.current?.measureInWindow((x, y, w, h) => onLogoSlot?.('home', x + w / 2, y + h / 2));
+  };
   return (
     <View>
-      <Animated.View entering={FadeIn.duration(350)} style={styles.scoreHeader}>
-        <TeamScore team={away} tag={sharedTag(origin, 'game', gameId ?? '', 'away', 'logo')} />
+      <Animated.View onLayout={measure} style={styles.scoreHeader}>
+        <TeamScore team={away} slot={awaySlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
         <View
           style={styles.scoreCenter}
           accessible
@@ -75,13 +83,14 @@ export function ScoreHero({
             <Text style={styles.vsScore}>vs</Text>
           )}
           {live ? <LivePill label={status} /> : <Text style={styles.gameStatus}>{status}</Text>}
+          {live && timeout ? <TimeoutPill label={timeout} /> : null}
           {live ? <HeatBadge heat={gameHeat(away.score, home.score, status)} /> : null}
         </View>
-        <TeamScore team={home} right tag={sharedTag(origin, 'game', gameId ?? '', 'home', 'logo')} />
+        <TeamScore team={home} right slot={homeSlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
       </Animated.View>
 
       {periodCount > 0 && (
-        <Animated.View entering={FadeInDown.delay(60).duration(300)} style={styles.linescoreWrap}>
+        <Animated.View style={styles.linescoreWrap}>
           <View style={styles.linescoreTable}>
             <View style={styles.lsRow}>
               <Text style={[styles.lsCell, styles.lsTeamCell]} />
@@ -116,6 +125,15 @@ export function ScoreHero({
   );
 }
 
+/** "NOP TO": a timeout is on. Sits under the clock, which has stopped. */
+export function TimeoutPill({ label }: { label: string }) {
+  return (
+    <View style={styles.timeoutPill}>
+      <Text style={styles.timeoutPillText}>{label}</Text>
+    </View>
+  );
+}
+
 export function LivePill({ label }: { label: string }) {
   const pulse = useSharedValue(1);
   useEffect(() => {
@@ -130,7 +148,22 @@ export function LivePill({ label }: { label: string }) {
   );
 }
 
-function TeamScore({ team, right, tag }: { team: BoxScoreTeam; right?: boolean; tag?: string }) {
+function TeamScore({
+  team,
+  right,
+  slot,
+  onLayout,
+  showTimeouts,
+  barsStyle,
+}: {
+  team: BoxScoreTeam;
+  right?: boolean;
+  slot: RefObject<HostInstance | null>;
+  onLayout: () => void;
+  /** Live games only: ESPN reports the timeouts left just while the game is on. */
+  showTimeouts: boolean;
+  barsStyle: StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>;
+}) {
   return (
     <Pressable
       onPress={() => openDetail(`/team/${team.team.id}` as Href)}
@@ -138,12 +171,16 @@ function TeamScore({ team, right, tag }: { team: BoxScoreTeam; right?: boolean; 
       accessibilityLabel={`Open ${team.team.abbreviation}`}
       style={({ pressed }) => [styles.teamBlock, right && styles.teamBlockRight, pressed && { opacity: 0.7 }]}>
       <View style={styles.lockup}>
-        <Animated.View sharedTransitionTag={tag} style={styles.teamLogo}>
-          {team.team.logoDark || team.team.logo ? (
-            <Image source={team.team.logoDark || team.team.logo} style={StyleSheet.absoluteFill} contentFit="contain" />
-          ) : null}
-        </Animated.View>
+        {/* Empty: it only keeps the room. The logo is drawn above the page, so it can travel into the top bar. */}
+        <View ref={slot} onLayout={onLayout} style={styles.teamLogo} />
         <Text style={styles.teamAbbr}>{team.team.abbreviation}</Text>
+        {showTimeouts && team.timeoutsRemaining != null ? (
+          <Animated.View style={[styles.timeouts, barsStyle]} accessible accessibilityLabel={`${team.timeoutsRemaining} timeouts left`}>
+            {Array.from({ length: TIMEOUTS_PER_GAME }, (_, i) => (
+              <View key={i} style={[styles.timeoutBar, i < (team.timeoutsRemaining ?? 0) && styles.timeoutLeft]} />
+            ))}
+          </Animated.View>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -162,8 +199,11 @@ export function GameTopBar({
   status,
   live,
   hasStarted,
-  updatedAt,
   cup,
+  kickoff,
+  timeout,
+  watched,
+  onWatch,
   tint,
   pinned,
 }: {
@@ -174,9 +214,15 @@ export function GameTopBar({
   status: string;
   live: boolean;
   hasStarted: boolean;
-  updatedAt: number;
   /** NBA Cup stage, when this game is part of the Cup. */
   cup?: string;
+  /** When the game starts, in the device's time ("Tomorrow · 01:00"); shown under the matchup and, before tip-off, in the compact bar. */
+  kickoff?: string;
+  /** Set while a timeout is on ("NOP TO"); shown with the status in the compact bar. */
+  timeout?: string;
+  /** Whether the game is starred in the watchlist, and the star's handler. */
+  watched: boolean;
+  onWatch: () => void;
   /** Opaque left and right colors of the team-colored header surface. */
   tint: [string, string];
   /** 0 while the tabs are still in flow, 1 once they are pinned (see the game screen). */
@@ -190,6 +236,9 @@ export function GameTopBar({
   }));
   const label = useAnimatedStyle(() => ({ opacity: Math.min(1, Math.max(0, 1 - collapsed.get() * 2.2)) }));
   const surface = useAnimatedStyle(() => ({ opacity: pinned.get() }));
+  // The score fills the room between the two logos, leaving a little air on each side.
+  const { size, offset } = BAR_LOGO.started;
+  const miniWidth = 2 * (offset - size / 2 - 8);
 
   return (
     <View style={[styles.topBar, { paddingTop: insets.top + 10, paddingBottom: 4 }]}>
@@ -199,7 +248,7 @@ export function GameTopBar({
       <View style={styles.topRow}>
         <View style={styles.topSide}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={goBack}
             accessibilityRole="button"
             accessibilityLabel="Go back"
             hitSlop={14}
@@ -213,24 +262,44 @@ export function GameTopBar({
             <Text style={styles.matchup}>
               {away.team.abbreviation} @ {home.team.abbreviation}{cup ? ' · NBA CUP' : ''}
             </Text>
+            {kickoff ? (
+              <View style={styles.kickoffPill}>
+                <Text style={styles.kickoffText}>{kickoff}</Text>
+              </View>
+            ) : null}
           </Animated.View>
+          {/* The logos on either side of this are drawn by GameLogos; this only keeps them room. */}
           <Animated.View style={[styles.topLayer, compact]} pointerEvents="none">
-            <View style={styles.miniScore}>
-              {away.team.logoDark || away.team.logo ? (
-                <Image source={away.team.logoDark || away.team.logo} style={styles.miniLogo} contentFit="contain" />
-              ) : null}
-              <RollingNumber value={hasStarted ? away.score : '–'} fontSize={24} style={styles.miniNum} />
-              <Text style={styles.miniDash}>–</Text>
-              <RollingNumber value={hasStarted ? home.score : '–'} fontSize={24} style={styles.miniNum} />
-              {home.team.logoDark || home.team.logo ? (
-                <Image source={home.team.logoDark || home.team.logo} style={styles.miniLogo} contentFit="contain" />
-              ) : null}
-            </View>
-            <Text style={[styles.miniStatus, live && { color: '#F87171' }]} numberOfLines={1}>{status}</Text>
+            {hasStarted ? (
+              <>
+                <View style={[styles.miniScore, { width: miniWidth }]}>
+                  <RollingNumber value={away.score} fontSize={24} style={styles.miniNum} />
+                  <Text style={styles.miniDash}>–</Text>
+                  <RollingNumber value={home.score} fontSize={24} style={styles.miniNum} />
+                </View>
+                {/* The period and clock only while it is being played; a finished score needs no label. */}
+                {live ? <Text style={[styles.miniStatus, { color: '#F87171' }]} numberOfLines={1}>{timeout ? `${status} · ${timeout}` : status}</Text> : null}
+              </>
+            ) : (
+              <>
+                <Text style={styles.miniStatus} numberOfLines={1}>{status}</Text>
+                {kickoff ? <Text style={styles.miniKickoff} numberOfLines={1}>{kickoff}</Text> : null}
+              </>
+            )}
           </Animated.View>
         </View>
 
-        <View style={[styles.topSide, { alignItems: 'flex-end' }]}>{live ? <UpdatedAgo at={updatedAt} /> : null}</View>
+        <View style={[styles.topSide, { alignItems: 'flex-end' }]}>
+          <Pressable
+            onPress={onWatch}
+            accessibilityRole="button"
+            accessibilityLabel={watched ? 'Remove game from watchlist' : 'Add game to watchlist'}
+            accessibilityState={{ selected: watched }}
+            hitSlop={14}
+            style={[styles.backBtn, watched && { backgroundColor: withAlpha('#FBBF24', 0.18) }]}>
+            <StarIcon color={watched ? '#FBBF24' : palette.chalk} size={20} filled={watched} />
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -242,12 +311,19 @@ const styles = StyleSheet.create({
   // Logo and name share one vertical axis, whatever the logo's shape.
   lockup: { alignItems: 'center', gap: 6 },
   teamBlockRight: { alignItems: 'flex-end' },
-  teamLogo: { width: 52, height: 52 },
+  teamLogo: { width: HERO_LOGO, height: HERO_LOGO },
   teamAbbr: { fontFamily: fonts.display, fontSize: 24, color: palette.chalk },
   scoreCenter: { alignItems: 'center', gap: 4 },
   vsScore: { fontFamily: fonts.display, fontSize: 32, color: palette.chalk },
   bigScore: { flexDirection: 'row', alignItems: 'center' },
   gameStatus: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.5, textTransform: 'uppercase' },
+
+  // Seven short horizontal dashes under the team's name, one per timeout: lit for each one left. As wide as the logo.
+  timeouts: { flexDirection: 'row', gap: 2, marginTop: 7 },
+  timeoutBar: { width: 6, height: 3, borderRadius: 1.5, backgroundColor: withAlpha(palette.chalk, 0.16) },
+  timeoutLeft: { backgroundColor: '#34D399' },
+  timeoutPill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, backgroundColor: withAlpha('#FBBF24', 0.18) },
+  timeoutPillText: { fontFamily: fonts.bodyBold, fontSize: 11, color: '#FBBF24', letterSpacing: 0.6 },
 
   linescoreWrap: { paddingHorizontal: 16, marginBottom: 12 },
   linescoreTable: { backgroundColor: withAlpha('#FFFFFF', 0.05), borderRadius: 14, overflow: 'hidden', paddingVertical: 4 },
@@ -286,9 +362,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: withAlpha(palette.chalk, 0.08),
   },
-  matchup: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted, letterSpacing: 0.6 },
-  miniScore: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  miniLogo: { width: 22, height: 22 },
+  matchup: { fontFamily: fonts.bodySemi, fontSize: 11, lineHeight: 14, color: palette.muted, letterSpacing: 0.6 },
+  kickoffPill: { marginTop: 3, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 10, backgroundColor: withAlpha(palette.chalk, 0.1) },
+  kickoffText: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.chalk, letterSpacing: 0.3 },
+  miniScore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  miniKickoff: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.chalk, marginTop: 1 },
   miniNum: { fontFamily: fonts.display, fontSize: 24, color: palette.chalk },
   miniDash: { fontFamily: fonts.body, fontSize: 16, color: palette.muted },
   miniStatus: { fontFamily: fonts.bodySemi, fontSize: 10, color: palette.muted, letterSpacing: 0.5, textTransform: 'uppercase', marginTop: -2 },

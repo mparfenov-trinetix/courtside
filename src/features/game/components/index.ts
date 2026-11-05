@@ -1,6 +1,7 @@
 export * from './BoxScoreTab';
 export * from './GameBackdrop';
 export * from './GameFlow';
+export * from './GameLogos';
 export * from './GameLeaders';
 export * from './GameSkeleton';
 export * from './KeyMoments';

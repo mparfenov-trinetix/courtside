@@ -1,7 +1,8 @@
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
   Extrapolation,
@@ -14,12 +15,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BoxScoreTab, GameBackdrop, GameSkeleton, backdropColors, PlayByPlay, GameTopBar, ScoreHero, ShotChart, SummaryTab, GameStickyBar, type GameTab } from '../../components';
+import { BoxScoreTab, GameBackdrop, GameLogos, GameSkeleton, HERO_INSET, backdropColors, PlayByPlay, GameTopBar, ScoreHero, ShotChart, SummaryTab, GameStickyBar, type GameTab, type LogoSlot } from '../../components';
 import { ArrowLeftIcon, IconButton, slideIn, ErrorState } from '@/components';
 import { useGameSummary, useGameTeams, useRefresh, useTeams } from '@/hooks';
 import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
-import { buildPeriodOptions, deriveFlow, numsFromLine, numsFromTotals, playersWithStats, deriveQuarterStats, emptyLine, lineToStats, sumPeriods, type Line, type QuarterStats } from '@/lib/game';
+import { buildPeriodOptions, timeoutLabel, deriveFlow, numsFromLine, numsFromTotals, playersWithStats, deriveQuarterStats, emptyLine, lineToStats, sumPeriods, type Line, type QuarterStats } from '@/lib/game';
+import { kickoffLabel } from '@/lib/date';
 import { matchupColors, mix, palette } from '@/lib/theme';
+import { goBack } from '@/navigation';
+import { useWatchlist } from '@/state';
 
 const TAB_ORDER: GameTab[] = ['summary', 'box', 'plays', 'shots'];
 
@@ -29,14 +33,24 @@ const TAB_ORDER: GameTab[] = ['summary', 'box', 'plays', 'shots'];
  */
 export function GameScreen() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { id, o } = useLocalSearchParams<{ id: string; o?: string }>();
-  const { data, isPending, error, refetch, dataUpdatedAt } = useGameSummary(id);
-  const refreshControl = useRefresh([['game', id]]);
+  const { data, isPending, error, refetch } = useGameSummary(id);
+  // A finished game never changes (it is cached forever), so there is nothing to pull for.
+  const refreshControl = useRefresh([['game', id]], !data?.completed);
+  const { isGameWatched, toggleGame } = useWatchlist();
   const [tab, setTab] = useState<GameTab>('summary');
   const [slide, setSlide] = useState<1 | -1>(1);
   const [periodKey, setPeriodKey] = useState('full');
 
   const scrollY = useSharedValue(0);
+  // Where the big header's logo slots are on screen at scroll 0 (centers). These first guesses are replaced by the
+  // measured positions as soon as the header is laid out.
+  const slotY = insets.top + 94;
+  const awaySlot = useSharedValue<LogoSlot>({ x: HERO_INSET, y: slotY });
+  const homeSlot = useSharedValue<LogoSlot>({ x: width - HERO_INSET, y: slotY });
+  const onLogoSlot = (side: 'away' | 'home', x: number, y: number) =>
+    (side === 'away' ? awaySlot : homeSlot).set({ x, y: y + scrollY.get() });
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.set(e.contentOffset.y);
   });
@@ -52,7 +66,7 @@ export function GameScreen() {
   // Eased in time rather than tied to the finger: a fast flick would otherwise snap the compact score in a frame or two.
   // 1 once the big score has scrolled away and the compact one in the top bar takes over.
   const collapsed = useDerivedValue<number>(() =>
-    withTiming(scrollY.get() > 90 ? 1 : 0, { duration: 300, easing: Easing.out(Easing.cubic) }),
+    withTiming(scrollY.get() > 56 ? 1 : 0, { duration: 300, easing: Easing.out(Easing.cubic) }),
   );
   const heroTintStyle = useAnimatedStyle(() => ({ opacity: 1 - pinned.get() }));
   // While the game loads, its teams (and so its colors) are often already known from a list the user came from.
@@ -77,7 +91,7 @@ export function GameScreen() {
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <View style={[styles.errorBack, { top: insets.top + 8 }]}>
-          <IconButton onPress={() => router.back()} label="Go back">
+          <IconButton onPress={goBack} label="Go back">
             <ArrowLeftIcon color={palette.chalk} size={20} />
           </IconButton>
         </View>
@@ -105,6 +119,8 @@ export function GameScreen() {
       : null;
 
   const flow = deriveFlow(plays, home.team.id, away.team.id);
+  // "NOP TO" while a team's timeout is on (the clock has stopped), "Official TO" for a TV or official one.
+  const onTimeout = timeoutLabel(plays, live, [away, home]);
 
   const periodCount = Math.max(home.linescores.length, away.linescores.length, derived?.periods.length ?? 0);
   const options = buildPeriodOptions(derived ? periodCount : 0);
@@ -145,8 +161,19 @@ export function GameScreen() {
         status={status}
         live={live}
         hasStarted={hasStarted}
-        updatedAt={dataUpdatedAt}
+        timeout={onTimeout}
         cup={data.cup}
+        kickoff={info.date ? kickoffLabel(info.date) : undefined}
+        watched={isGameWatched(id)}
+        onWatch={() => {
+          Haptics.selectionAsync();
+          toggleGame({
+            id,
+            date: info.date ?? '',
+            away: { id: away.team.id, abbr: away.team.abbreviation, logo: away.team.logoDark || away.team.logo },
+            home: { id: home.team.id, abbr: home.team.abbreviation, logo: home.team.logoDark || home.team.logo },
+          });
+        }}
         tint={tint}
         pinned={pinned}
       />
@@ -170,6 +197,9 @@ export function GameScreen() {
           selPeriods={selPeriods}
           gameId={id}
           origin={o}
+          onLogoSlot={onLogoSlot}
+          scrollY={scrollY}
+          timeout={onTimeout}
         />
 
         {/* A plain View: ScrollView replaces the style of a sticky child, so the bar styles itself. */}
@@ -251,6 +281,19 @@ export function GameScreen() {
         </Animated.View>
       )}
       </View>
+
+      <GameLogos
+        away={away}
+        home={home}
+        scrollY={scrollY}
+        awaySlot={awaySlot}
+        homeSlot={homeSlot}
+        hasStarted={hasStarted}
+        awayBonus={live && !!away.fouls?.bonus}
+        homeBonus={live && !!home.fouls?.bonus}
+        gameId={id}
+        origin={o}
+      />
     </View>
   );
 }

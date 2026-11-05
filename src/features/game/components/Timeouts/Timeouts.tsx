@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 
 import { FlashOverlay, Tick } from '@/components';
 import type { BoxScoreTeam, Play } from '@/lib/espn';
@@ -97,7 +97,7 @@ function TeamRow({
       </View>
 
       {!live && (
-        <Animated.View entering={FadeIn.delay(200).duration(250)} style={styles.periods}>
+        <Animated.View style={styles.periods}>
           {Array.from({ length: periodCount }, (_, i) => i + 1).map((n) => (
             <Text key={n} style={[styles.period, byPeriod.has(n) && { color: palette.chalk }]}>
               {periodShort(n)} <Text style={styles.periodNum}>{byPeriod.get(n) ?? 0}</Text>
@@ -108,7 +108,7 @@ function TeamRow({
       )}
 
       {live && team.fouls && (
-        <Animated.View entering={FadeIn.duration(250)} style={styles.periods}>
+        <Animated.View style={styles.periods}>
           <Text style={[styles.period, { color: palette.chalk }]}>
             Fouls this period <Text style={styles.periodNum}>{team.fouls.period}</Text>
           </Text>

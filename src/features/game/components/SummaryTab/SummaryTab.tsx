@@ -1,7 +1,7 @@
 import { View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
-import { Collapsible } from '@/components';
+import { Collapsible, HeadToHead } from '@/components';
 import { GameFlow } from '../GameFlow';
 import { GameInfoCard, GameLeaders, InjuryReport } from '../GameLeaders';
 import { KeyMoments } from '../KeyMoments';
@@ -66,7 +66,7 @@ export function SummaryTab({
   const homeSide = { id: home.team.id, abbr: home.team.abbreviation, logo: home.team.logoDark || home.team.logo, color: homeColor };
 
   const leaders = hasStarted && (
-    <Animated.View key="leaders" entering={FadeInDown.delay(60).duration(280)}>
+    <Animated.View key="leaders">
       <GameLeaders
         away={{ teamId: away.team.id, abbr: away.team.abbreviation, color: awayColor, players: awayPlayers }}
         home={{ teamId: home.team.id, abbr: home.team.abbreviation, color: homeColor, players: homePlayers }}
@@ -75,7 +75,7 @@ export function SummaryTab({
   );
 
   const flowChart = plays.length > 1 && (
-    <Animated.View key="flow" entering={FadeInDown.delay(60).duration(280)}>
+    <Animated.View key="flow">
       <GameFlow
         plays={plays}
         winProb={winProb}
@@ -91,19 +91,19 @@ export function SummaryTab({
   );
 
   const timeouts = hasStarted && (
-    <Animated.View key="timeouts" entering={FadeInDown.delay(80).duration(280)}>
+    <Animated.View key="timeouts">
       <Timeouts away={away} home={home} plays={plays} live={live} awayColor={awayColor} homeColor={homeColor} />
     </Animated.View>
   );
 
   const moments = plays.length > 1 && (
-    <Animated.View key="moments" entering={FadeInDown.delay(100).duration(280)}>
+    <Animated.View key="moments">
       <KeyMoments flow={flow} away={away} home={home} awayColor={awayColor} homeColor={homeColor} />
     </Animated.View>
   );
 
   const stats = hasStarted && awayNums && homeNums && (
-    <Animated.View key="stats" entering={FadeInDown.delay(120).duration(280)}>
+    <Animated.View key="stats">
       <TeamStatsCard
         awayAbbr={away.team.abbreviation}
         homeAbbr={home.team.abbreviation}
@@ -129,18 +129,29 @@ export function SummaryTab({
       {!hasStarted && <Pregame away={awaySide} home={homeSide} data={pregame} info={info} date={info.date} />}
       {hasStarted && <StandingsLink away={awaySide} home={homeSide} date={info.date} />}
 
+      {/* Their meetings stay useful while the game is on; once it is over the result is the story. */}
+      {live && (
+        <View style={{ paddingHorizontal: 16 }}>
+          <HeadToHead a={awaySide} b={homeSide} />
+        </View>
+      )}
+
       {hasStarted && (
       <Collapsible
-        title="Injuries and game info"
-        hint={injuryCount > 0 ? `${injuryCount} injur${injuryCount === 1 ? 'y' : 'ies'}` : undefined}
+        title={live ? 'Injuries and game info' : 'Game info'}
+        hint={live && injuryCount > 0 ? `${injuryCount} injur${injuryCount === 1 ? 'y' : 'ies'}` : undefined}
         defaultOpen={false}>
-        <InjuryReport
-          injuries={info.injuries}
-          teams={[
-            { id: away.team.id, abbr: away.team.abbreviation, color: awayColor },
-            { id: home.team.id, abbr: home.team.abbreviation, color: homeColor },
-          ]}
-        />
+        {/* ESPN's injury report is today's, never the one from the day of the game: shown only while the game can
+            still be affected by it, never on a finished game. */}
+        {live && (
+          <InjuryReport
+            injuries={info.injuries}
+            teams={[
+              { id: away.team.id, abbr: away.team.abbreviation, color: awayColor },
+              { id: home.team.id, abbr: home.team.abbreviation, color: homeColor },
+            ]}
+          />
+        )}
         <GameInfoCard info={info} />
       </Collapsible>
       )}
