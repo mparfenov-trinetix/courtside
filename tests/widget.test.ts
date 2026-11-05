@@ -110,3 +110,43 @@ test('fixtures widget: unplayed games only, soonest first, capped at five', () =
   assert.deepEqual(f.games.map((g) => g.oppAbbr), ['T1', 'T2', 'T3', 'T0', 'T4']);
   assert.equal(f.games[0].gameId, '2');
 });
+
+test('live activity props: scores, status, who leads, and a timeout in progress', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { normalizeGameSummary } = await import('../src/lib/espn/index.ts');
+  const { buildLiveGameProps } = await import('../src/widgets/live-game.ts');
+  const final = normalizeGameSummary(JSON.parse(readFileSync(new URL('./fixtures/game-final.json', import.meta.url), 'utf8')), '401909912');
+  const done = buildLiveGameProps(final, { [final.away.team.logoDark || final.away.team.logo]: 'file:///away.png' });
+  assert.equal(done.final, true);
+  assert.equal(done.status, 'Final');
+  assert.equal(done.awayScore, String(final.away.score));
+  assert.equal(done.awayLogo, 'file:///away.png');
+  assert.equal(done.homeLogo, '');
+  assert.equal(done.awayLeads, final.away.score > final.home.score);
+  assert.equal(done.awayLeads && done.homeLeads, false);
+  assert.equal(done.timeout, '');
+  assert.equal(done.awayBonus || done.homeBonus, false); // a finished game shows no bonus
+  assert.match(done.awayBg, /^#[0-9a-f]{6}$/i);
+
+  // A live game stopped on a timeout: the label names the team that called it.
+  const at = final.plays.findIndex((p) => /timeout/i.test(p.typeText) && p.teamId);
+  const live = { ...final, completed: false, live: true, status: '9:17 - 1st', plays: final.plays.slice(0, at + 1) };
+  const onTimeout = buildLiveGameProps(live);
+  assert.match(onTimeout.timeout, /^[A-Z]+ TO$/);
+  assert.equal(onTimeout.status, '9:17 - 1st');
+  assert.equal(onTimeout.final, false);
+});
+
+test('live activity follows your team while it is on, else a starred game, else a final from today', async () => {
+  const { pickTrackedGame } = await import('../src/widgets/live-game.ts');
+  const side = (teamId: string) => ({ teamId, name: '', abbreviation: '', logo: '' });
+  const g = (id: string, a: string, h: string, inProgress: boolean, completed = false) =>
+    ({ id, date: '', status: '', completed, inProgress, away: side(a), home: side(h) });
+  const board = [g('1', '10', '11', true), g('2', '20', '21', true), g('3', '30', '31', false, true)];
+  assert.equal(pickTrackedGame(board, '21', ['1']), '2'); // my team's game beats a starred one
+  assert.equal(pickTrackedGame(board, '99', ['1']), '1'); // not playing: a starred live game
+  assert.equal(pickTrackedGame(board, '99', ['3']), '3'); // only a finished one: put its final up
+  assert.equal(pickTrackedGame(board, '99', []), null);
+  assert.equal(pickTrackedGame(undefined, '21', []), null);
+  assert.equal(pickTrackedGame([g('4', '40', '41', false)], '41', []), null); // not started yet
+});

@@ -82,7 +82,8 @@
                 "initialLayout": "./src/widgets/fixtures-widget.tsx"
               }
             }
-          ]
+          ],
+          "frequentUpdates": true
         }
       ],
       "./plugins/with-pods-deployment-target"
