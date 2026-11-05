@@ -26,11 +26,14 @@ const STEP = PILL_WIDTH + PILL_GAP;
 export function TeamPills({
   teams,
   page,
+  jump,
   selected,
   onSelect,
 }: {
   teams: Team[];
   page: SharedValue<number>;
+  /** During a long jump the outline slides along the strip but its colors cross-fade straight from the old team to the new one. */
+  jump?: { from: SharedValue<number>; to: SharedValue<number>; blend: SharedValue<number> };
   selected: number;
   onSelect: (index: number) => void;
 }) {
@@ -120,11 +123,21 @@ export function TeamPills({
     onSelect(index);
   };
 
-  const outline = useAnimatedStyle(() => ({
-    transform: [{ translateX: STRIP_PADDING + page.get() * STEP }],
-    borderColor: interpolateColor(page.get(), indexes, accents),
-    backgroundColor: interpolateColor(page.get(), indexes, tints),
-  }));
+  const outline = useAnimatedStyle(() => {
+    const blend = jump ? jump.blend.get() : -1;
+    if (jump && blend >= 0) {
+      return {
+        transform: [{ translateX: STRIP_PADDING + page.get() * STEP }],
+        borderColor: interpolateColor(blend, [0, 1], [accents[jump.from.get()], accents[jump.to.get()]]),
+        backgroundColor: interpolateColor(blend, [0, 1], [tints[jump.from.get()], tints[jump.to.get()]]),
+      };
+    }
+    return {
+      transform: [{ translateX: STRIP_PADDING + page.get() * STEP }],
+      borderColor: interpolateColor(page.get(), indexes, accents),
+      backgroundColor: interpolateColor(page.get(), indexes, tints),
+    };
+  });
 
   return (
     <Animated.ScrollView

@@ -96,11 +96,21 @@ function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
   // While a long jump plays, the screen's background, outline and strip are animated here and the pager itself is moved in
   // one step: sliding through twenty pages would mean mounting them all, which is what made the screen heavy.
   const jumping = useSharedValue(false);
+  // A long jump cross-fades the background and the outline straight from the old team's color to the new one; going through
+  // `page` would flash every team in between.
+  const jumpFrom = useSharedValue(0);
+  const jumpTo = useSharedValue(0);
+  const jumpBlend = useSharedValue(-1);
   const onScroll = useAnimatedScrollHandler((e) => {
     if (jumping.get()) return;
     page.set(e.contentOffset.x / width);
   });
-  const background = useAnimatedStyle(() => ({ backgroundColor: interpolateColor(page.get(), pages, colors) }));
+  const background = useAnimatedStyle(() => ({
+    backgroundColor:
+      jumpBlend.get() >= 0
+        ? interpolateColor(jumpBlend.get(), [0, 1], [colors[jumpFrom.get()], colors[jumpTo.get()]])
+        : interpolateColor(page.get(), pages, colors),
+  }));
 
   const goTo = (next: number) => {
     const from = pending.current ?? index;
@@ -111,10 +121,17 @@ function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
     setIndex(next);
     if (Math.abs(next - from) > NEAR) {
       jumping.set(true);
+      jumpFrom.set(Math.min(teams.length - 1, Math.max(0, Math.round(page.get()))));
+      jumpTo.set(next);
+      jumpBlend.set(0);
+      jumpBlend.set(withTiming(1, { duration: JUMP_MS, easing: Easing.inOut(Easing.cubic) }));
       pagerRef.current?.scrollToIndex({ index: next, animated: false });
       page.set(
         withTiming(next, { duration: JUMP_MS, easing: Easing.out(Easing.cubic) }, (finished) => {
-          if (finished) jumping.set(false);
+          if (finished) {
+            jumping.set(false);
+            jumpBlend.set(-1);
+          }
         }),
       );
       // The pager is already there: nothing more will report that it came to rest.
@@ -140,7 +157,7 @@ function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
       <ScreenHeader title="Rosters" />
 
       <View style={styles.strip}>
-        <TeamPills teams={teams} page={page} selected={index} onSelect={goTo} />
+        <TeamPills teams={teams} page={page} jump={{ from: jumpFrom, to: jumpTo, blend: jumpBlend }} selected={index} onSelect={goTo} />
       </View>
 
       <Animated.FlatList
