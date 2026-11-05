@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import type { Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import type { CupGroup, CupRow } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -11,7 +11,7 @@ import { GREEN, GOLD } from './constants';
 /** One Cup group: five teams ranked, with who would advance if the group ended now. */
 export function GroupCard({ group, favoriteTeamId, index = 0 }: { group: CupGroup; favoriteTeamId?: string | null; index?: number }) {
   return (
-    <Animated.View entering={FadeInDown.delay(Math.min(index, 6) * 50).duration(260)} style={styles.card}>
+    <Animated.View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>{group.label}</Text>
         <Text style={[styles.col, styles.colW]}>W-L</Text>

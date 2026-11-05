@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { CupBadge } from '../CupBadge';
 import type { CupGame } from '@/lib/espn';
@@ -20,7 +20,7 @@ export function CupGameList({ games, favoriteTeamId, showStage = false }: { game
         return (
           <View key={g.id}>
             {header && <Text style={styles.day}>{day}</Text>}
-            <Animated.View entering={FadeInDown.delay(Math.min(i, 8) * 25).duration(220)}>
+            <Animated.View>
               <GameRow game={g} mine={g.home.teamId === favoriteTeamId || g.away.teamId === favoriteTeamId} showStage={showStage} />
             </Animated.View>
           </View>

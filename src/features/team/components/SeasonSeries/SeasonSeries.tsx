@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import type { Game, Team } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -39,7 +39,7 @@ export function SeasonSeries({
         : `${wins > losses ? team.abbreviation : rival.abbreviation} leads ${Math.max(wins, losses)}–${Math.min(wins, losses)}`;
 
   return (
-    <Animated.View entering={FadeInDown.delay(100).duration(300)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Text style={styles.title}>Season series vs {rival.abbreviation}</Text>
       <View style={styles.card}>
         <View style={styles.top}>

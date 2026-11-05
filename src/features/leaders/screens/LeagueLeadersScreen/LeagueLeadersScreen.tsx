@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorState, ListSkeleton, ScreenHeader } from '@/components';
@@ -50,7 +50,7 @@ export function LeagueLeadersScreen() {
       <ScreenHeader title="League Leaders" color={palette.chalk} />
 
       {/* Category tabs — scrollable */}
-      <Animated.View entering={FadeIn.duration(300)}>
+      <Animated.View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -130,7 +130,6 @@ function LeaderRow({ entry, rank, index }: { entry: LeaderEntry; rank: number; i
       onPress={() => canNavigate && openDetail({ pathname: '/player/[id]', params: { id: entry.athleteId, teamId: entry.teamId } })}
       style={({ pressed }) => pressed && canNavigate ? { opacity: 0.7 } : undefined}>
     <Animated.View
-      entering={FadeInDown.delay(Math.min(index, 8) * 30).duration(280).easing(Easing.out(Easing.cubic))}
       style={styles.row}>
       {/* Rank */}
       <Text style={[styles.rank, rank <= 3 && styles.rankTop]}>{rank}</Text>

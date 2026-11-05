@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import Svg, { Line, Rect } from 'react-native-svg';
 
 import type { GameLogEntry } from '@/lib/espn';
@@ -84,7 +84,7 @@ export function GameLog({ entries, accent }: { entries: GameLogEntry[]; accent: 
       <Text style={[styles.sectionLabel, { marginTop: 18 }]}>Game log</Text>
       <View style={styles.list}>
         {entries.slice(0, 20).map((e, i) => (
-          <Animated.View key={e.gameId} entering={i < 10 ? FadeInDown.delay(i * 25).duration(240) : undefined}>
+          <Animated.View key={e.gameId}>
             <Pressable
               onPress={() => openDetail({ pathname: '/game/[id]', params: { id: e.gameId } })}
               style={({ pressed }) => [styles.row, i > 0 && styles.rowBorder, pressed && { opacity: 0.7 }]}>

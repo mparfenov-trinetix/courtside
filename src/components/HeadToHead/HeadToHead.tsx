@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { Expandable } from '../Expandable';
 import { useHeadToHead } from '@/hooks';
@@ -17,7 +17,7 @@ export type H2HTeam = { id: string; abbr: string; logo: string; color: string };
 export function HeadToHead({ a, b, delay = 100 }: { a: H2HTeam; b: H2HTeam; delay?: number }) {
   const { data, isPending, error } = useHeadToHead(a.id, b.id);
   return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(300)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Text style={styles.title}>Head to head</Text>
       {isPending ? (
         <View style={[styles.card, styles.center]}>

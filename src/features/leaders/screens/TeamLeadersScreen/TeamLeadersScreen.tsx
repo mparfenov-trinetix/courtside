@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useRef } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorState, ListSkeleton, ScreenHeader } from '@/components';
@@ -18,7 +18,7 @@ export function TeamLeadersScreen() {
   const insets = useSafeAreaInsets();
   const { stat } = useLocalSearchParams<{ stat?: string }>();
   const active = metricByKey((TEAM_METRICS.some((m) => m.key === stat) ? stat : 'ppg') as TeamMetric['key']);
-  const { currentTeamId } = useTeamStore();
+  const currentTeamId = useTeamStore((s) => s.currentTeamId);
   const { data: rows, isPending, error, refetch } = useLeagueTeamStats();
   const { data: teams } = useTeams();
   const refreshControl = useRefresh([['leagueTeamStats']]);
@@ -39,7 +39,7 @@ export function TeamLeadersScreen() {
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
       <ScreenHeader title="Team Leaders" color={palette.chalk} />
 
-      <Animated.View entering={FadeIn.duration(300)}>
+      <Animated.View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={styles.tabs}>
           {TEAM_METRICS.map((m) => {
             const isActive = m.key === active.key;
@@ -127,7 +127,6 @@ function TeamRow({
       accessibilityLabel={`${ordinal(rank)}, ${row.name}, ${formatMetric(metric, row[metric.key])}`}
       style={({ pressed }) => pressed && { opacity: 0.7 }}>
       <Animated.View
-        entering={FadeInDown.delay(Math.min(index, 10) * 28).duration(260).easing(Easing.out(Easing.cubic))}
         style={[styles.row, mine && { borderColor: withAlpha(color, 0.8), backgroundColor: withAlpha(color, 0.12) }]}>
         <Text style={[styles.rank, rank <= 3 && styles.rankTop]}>{rank}</Text>
         {team ? (

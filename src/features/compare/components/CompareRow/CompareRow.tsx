@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
@@ -42,7 +42,7 @@ export function CompareRow({ row, aColor, bColor, delay }: { row: Row; aColor: s
   const bStyle = useAnimatedStyle(() => ({ width: `${bFrac * progress.get() * 100}%` }));
 
   return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(260)} style={styles.row}>
+    <Animated.View style={styles.row}>
       <View style={styles.rowTop}>
         <View style={styles.valBox}>
           <Text style={[styles.val, aWins ? { color: palette.chalk } : styles.valDim]}>{a != null ? row.fmt(a) : '–'}</Text>

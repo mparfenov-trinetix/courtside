@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import Svg, { Circle, G, Line } from 'react-native-svg';
 
 import { CourtMarkings, HeatLayer, Segmented, binShots, COURT_H, COURT_W } from '@/components';
@@ -29,7 +29,7 @@ export function PlayerShotChart({ athleteId, log, accent }: { athleteId: string;
   const heat = binShots(shots);
 
   return (
-    <Animated.View entering={FadeInDown.delay(100).duration(300)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Text style={styles.title}>Shot chart · last {games.length} games</Text>
       {!open ? (
         <Pressable onPress={() => setOpen(true)} accessibilityRole="button" style={({ pressed }) => [styles.card, styles.closed, pressed && { opacity: 0.8 }]}>

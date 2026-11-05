@@ -12,7 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CompareRow, PlayerExtras, type Row, Radar, type RadarAxis, TeamCompare } from '../../components';
@@ -172,7 +172,7 @@ export function CompareScreen() {
         )}
 
         {rows.length > 0 ? (
-          <Animated.View key={scope} entering={FadeInDown.duration(300)} style={styles.card}>
+          <Animated.View key={scope} style={styles.card}>
             {axes && <Radar axes={axes} aColor={colors.away} bColor={colors.home} aName={slotA?.name} bName={slotB?.name} />}
             <View style={styles.tally}>
               <Text style={[styles.tallyNum, { color: colors.away }]}>{winsA}</Text>
@@ -184,7 +184,7 @@ export function CompareScreen() {
             ))}
           </Animated.View>
         ) : (
-          <Animated.View entering={FadeIn.duration(300)} style={styles.empty}>
+          <Animated.View style={styles.empty}>
             <Text style={styles.emptyTitle}>{slotA && slotB ? 'Loading stats' : 'Pick two players'}</Text>
             <Text style={styles.emptyText}>
               {slotA && slotB

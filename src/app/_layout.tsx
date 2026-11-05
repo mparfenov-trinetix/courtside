@@ -12,7 +12,7 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { QueryClient, focusManager, type Query } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useFonts } from 'expo-font';
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, Stack, ThemeProvider, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -45,7 +45,7 @@ const persister = createAsyncStoragePersister({ storage: AsyncStorage, key: 'cou
 
 // Slow-changing, small payloads are restored on launch. Game summaries are big and live games change,
 // but a *finished* game never does, so the latest few of those are kept too and open instantly, offline.
-const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'playerCareer', 'leagueTeamStats', 'allStars', 'cup', 'headToHead', 'playerProfile', 'playerBio', 'playerGameLog']);
+const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'playerCareer', 'leagueTeamStats', 'allStars', 'cup', 'headToHead', 'playerProfile', 'playerBio', 'playerGameLog', 'teamSeason']);
 const KEPT_FINISHED_GAMES = 8;
 
 const isFinished = (q: Query) => !!(q.state.data as { completed?: boolean } | undefined)?.completed;
@@ -79,6 +79,19 @@ export default function RootLayout() {
     BigShouldersDisplay_700Bold,
     BigShouldersDisplay_900Black,
   });
+
+  // The intro hides the native splash when it paints its first frame. A cold start straight onto another page (a widget,
+  // the Dynamic Island or a link opening a game) never mounts the intro, so the splash would stay up for good: hide it
+  // as soon as the app is ready on any other page, and, as a last resort, after a few seconds whatever happens.
+  const pathname = usePathname();
+  const ready = fontsLoaded || !!fontError;
+  useEffect(() => {
+    if (ready && pathname !== '/') SplashScreen.hide();
+  }, [ready, pathname]);
+  useEffect(() => {
+    const id = setTimeout(() => SplashScreen.hide(), 5000);
+    return () => clearTimeout(id);
+  }, []);
 
   // Refetch stale queries (and resume live-game polling) when the app returns to the foreground.
   useEffect(() => {

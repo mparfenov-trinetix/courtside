@@ -1,58 +1,78 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, use, useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
 
 const FAVORITE_KEY = 'courtside:favoriteTeamId';
 
-type TeamState = {
+type TeamData = {
   /** Has the stored favorite been read from disk yet? */
   hydrated: boolean;
   favoriteTeamId: string | null;
   /** The team shown on the home card. Defaults to the favorite. */
   currentTeamId: string | null;
+};
+
+type TeamActions = {
   setFavorite: (teamId: string) => void;
   viewTeam: (teamId: string) => void;
   clearFavorite: () => void;
 };
 
-const TeamContext = createContext<TeamState | null>(null);
+export type TeamState = TeamData & TeamActions;
 
-export function TeamProvider({ children }: { children: ReactNode }) {
-  const [hydrated, setHydrated] = useState(false);
-  const [favoriteTeamId, setFavoriteTeamId] = useState<string | null>(null);
-  const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
+// A tiny external store rather than a context: a context re-renders every consumer whenever any part of it changes, and
+// the drawer keeps a dozen screens mounted, so choosing another team used to re-render all of them. With a selector a
+// component hears only about the part it reads.
+let data: TeamData = { hydrated: false, favoriteTeamId: null, currentTeamId: null };
+const listeners = new Set<() => void>();
 
-  useEffect(() => {
-    AsyncStorage.getItem(FAVORITE_KEY)
-      .then((id) => {
-        setFavoriteTeamId(id);
-        setCurrentTeamId(id);
-      })
-      .catch(() => {})
-      .finally(() => setHydrated(true));
-  }, []);
-
-  const value: TeamState = {
-    hydrated,
-    favoriteTeamId,
-    currentTeamId,
-    setFavorite: (teamId) => {
-      setFavoriteTeamId(teamId);
-      setCurrentTeamId(teamId);
-      AsyncStorage.setItem(FAVORITE_KEY, teamId).catch(() => {});
-    },
-    viewTeam: (teamId) => setCurrentTeamId(teamId),
-    clearFavorite: () => {
-      setFavoriteTeamId(null);
-      setCurrentTeamId(null);
-      AsyncStorage.removeItem(FAVORITE_KEY).catch(() => {});
-    },
-  };
-
-  return <TeamContext value={value}>{children}</TeamContext>;
+function set(patch: Partial<TeamData>) {
+  data = { ...data, ...patch };
+  snapshot = { ...data, ...actions };
+  listeners.forEach((l) => l());
 }
 
-export function useTeamStore() {
-  const ctx = use(TeamContext);
-  if (!ctx) throw new Error('useTeamStore must be used inside <TeamProvider>');
-  return ctx;
+const actions: TeamActions = {
+  setFavorite: (teamId) => {
+    set({ favoriteTeamId: teamId, currentTeamId: teamId });
+    AsyncStorage.setItem(FAVORITE_KEY, teamId).catch(() => {});
+  },
+  viewTeam: (teamId) => set({ currentTeamId: teamId }),
+  clearFavorite: () => {
+    set({ favoriteTeamId: null, currentTeamId: null });
+    AsyncStorage.removeItem(FAVORITE_KEY).catch(() => {});
+  },
+};
+
+let snapshot: TeamState = { ...data, ...actions };
+
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
+
+/** Reads the stored favorite once, at the root. */
+export function TeamProvider({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    AsyncStorage.getItem(FAVORITE_KEY)
+      .then((id) => set({ favoriteTeamId: id, currentTeamId: id }))
+      .catch(() => {})
+      .finally(() => set({ hydrated: true }));
+  }, []);
+  return children;
+}
+
+/**
+ * The team state. With a selector (`useTeamStore((s) => s.favoriteTeamId)`) the component re-renders only when that
+ * value changes; without one it gets everything, and re-renders on any change.
+ */
+export function useTeamStore(): TeamState;
+export function useTeamStore<T>(selector: (state: TeamState) => T): T;
+export function useTeamStore<T>(selector?: (state: TeamState) => T) {
+  return useSyncExternalStore(
+    subscribe,
+    () => (selector ? selector(snapshot) : snapshot),
+    () => (selector ? selector(snapshot) : snapshot),
+  );
 }

@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CompareRow, rowWinner, type Row } from '../CompareRow';
@@ -47,7 +47,7 @@ function radarAxes(rows: TeamStatRow[], a: TeamStatRow, b: TeamStatRow): RadarAx
 
 /** Head-to-head season comparison for two teams, with league ranks computed from all 30. */
 export function TeamCompare() {
-  const { currentTeamId } = useTeamStore();
+  const currentTeamId = useTeamStore((s) => s.currentTeamId);
   const { data: teams } = useTeams();
   const { data: table, isPending } = useLeagueTeamStats();
   // The URL holds the two picks so other screens can deep-link a matchup (e.g. a team page's Compare button).
@@ -76,7 +76,7 @@ export function TeamCompare() {
       </View>
 
       {rows.length > 0 ? (
-        <Animated.View entering={FadeInDown.duration(300)} style={styles.card}>
+        <Animated.View style={styles.card}>
           <Radar axes={radarAxes(table!, statsA!, statsB!)} aColor={colors.away} bColor={colors.home} aName={statsA!.name} bName={statsB!.name} />
           <Text style={styles.radarNote}>Outer ring = best in the league</Text>
           <View style={styles.tally}>
@@ -89,7 +89,7 @@ export function TeamCompare() {
           ))}
         </Animated.View>
       ) : (
-        <Animated.View entering={FadeIn.duration(300)} style={styles.empty}>
+        <Animated.View style={styles.empty}>
           <Text style={styles.emptyTitle}>{idA && idB ? 'Loading stats' : 'Pick two teams'}</Text>
           <Text style={styles.emptyText}>
             {idA && idB

@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { useLeagueTeamStats } from '@/hooks';
 import { formatMetric, metricByKey, ordinal, rankOf } from '@/lib/league';
@@ -14,7 +14,7 @@ export function TeamSeasonStats({ teamId, accent }: { teamId: string; accent: st
   if (!rows || !me || me.gp === 0) return null;
 
   return (
-    <Animated.View entering={FadeInDown.delay(90).duration(300)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Text style={styles.title}>Team season · league rank</Text>
       <View style={styles.grid}>
         {TILES.map((key) => {

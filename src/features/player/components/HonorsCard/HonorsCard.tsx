@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { BasketballIcon, CupIcon, PeopleIcon, StarIcon, TrophyIcon } from '@/components';
 import { seasonLabel, type Contract, type Draft, type Honor } from '@/lib/espn';
@@ -44,7 +44,7 @@ export function HonorsCard({ honors, titles, allStars = [] }: { honors: Honor[];
   const note = titles.length > 0 ? titleNote(titles) : null;
 
   return (
-    <Animated.View entering={FadeInDown.delay(40).duration(280)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Text style={styles.title}>Honors</Text>
       <View style={styles.card}>
         {note && (
@@ -92,7 +92,7 @@ export function ContractCard({ contract, draft }: { contract?: Contract; draft?:
   ].filter(Boolean) as string[];
 
   return (
-    <Animated.View entering={FadeInDown.delay(80).duration(280)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Text style={styles.title}>Contract{contract ? ` · ${seasonLabel(contract.season)}` : ''}</Text>
       <View style={styles.card}>
         <View style={styles.stats}>

@@ -1,15 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
-import { router, type Href } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SearchIcon } from '@/components';
 import { usePlayerSearch, useTeams } from '@/hooks';
 import { fonts, palette, withAlpha } from '@/lib/theme';
-import { openDetail } from '@/navigation';
+import { goBack, openDetail } from '@/navigation';
 import { RECENT_KEY, MAX_RECENT } from './constants';
 
 type Hit =
@@ -101,7 +101,7 @@ export function SearchScreen() {
           />
           {isFetching && <ActivityIndicator color={palette.muted} size="small" />}
         </View>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
+        <Pressable onPress={goBack} hitSlop={10}>
           <Text style={styles.cancel}>Cancel</Text>
         </Pressable>
       </View>
@@ -131,7 +131,7 @@ export function SearchScreen() {
           )
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 25).duration(220)}>
+          <Animated.View>
             <Pressable
               onPress={() => {
                 remember(item);

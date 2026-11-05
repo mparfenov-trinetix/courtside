@@ -1,7 +1,6 @@
 import { Image } from 'expo-image';
-import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { FlashOverlay, HeatBadge, Tick } from '@/components';
 import { useScoreboardByDate } from '@/hooks';
@@ -12,7 +11,8 @@ import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail, sharedTag } from '@/navigation';
 
 export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highlightTeamId?: string | null }) {
-  const dateKey = useMemo(() => toDateKey(nbaToday()), []);
+  // Read each render, not once: a drawer screen stays mounted past midnight (Eastern) and must move on to the next day.
+  const dateKey = toDateKey(nbaToday());
   const { data: games } = useScoreboardByDate(dateKey);
 
   if (!games || games.length === 0) return null;
@@ -25,7 +25,7 @@ export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highl
   const anyLive = games.some((g) => g.inProgress);
 
   return (
-    <Animated.View entering={FadeInDown.delay(100).duration(300)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Around the league</Text>
         {anyLive && (

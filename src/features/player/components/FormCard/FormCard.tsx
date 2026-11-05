@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import type { GameLogEntry } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -43,7 +43,7 @@ export function FormCard({ log, accent }: { log: GameLogEntry[]; accent: string 
   ];
 
   return (
-    <Animated.View entering={FadeInDown.delay(80).duration(300)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Points · last {recent.length} games</Text>
         {form && form.label !== 'STEADY' ? (
@@ -71,7 +71,6 @@ export function FormCard({ log, accent }: { log: GameLogEntry[]; accent: string 
             <View key={g.gameId} style={styles.col}>
               <Text style={styles.barValue}>{g.pts}</Text>
               <Animated.View
-                entering={FadeInDown.delay(i * 30).duration(280)}
                 style={[
                   styles.bar,
                   {
@@ -133,7 +132,7 @@ export function SplitsCard({ log }: { log: GameLogEntry[] }) {
   if (log.length < 4 || splits.length < 2) return null;
 
   return (
-    <Animated.View entering={FadeInDown.delay(110).duration(300)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Text style={[styles.title, { marginBottom: 8 }]}>Splits</Text>
       <View style={styles.card}>
         <View style={styles.tableRow}>

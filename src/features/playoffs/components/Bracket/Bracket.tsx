@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
 import { MiniSeries, MINI_H, MINI_W, SeriesCard } from '../SeriesCard';
@@ -104,7 +104,7 @@ function RoundList({ round, favoriteTeamId, onOpen }: { round: Round; favoriteTe
         <View key={String(g.conf)}>
           {labelled && g.conf ? <Text style={styles.confLabel}>{g.conf === 'east' ? 'Eastern Conference' : 'Western Conference'}</Text> : null}
           {g.series.map((s, i) => (
-            <Animated.View key={s.id} entering={FadeInDown.delay(Math.min(i, 6) * 40).duration(240)}>
+            <Animated.View key={s.id}>
               <SeriesCard series={s} favoriteTeamId={favoriteTeamId} onPress={() => onOpen(s)} />
             </Animated.View>
           ))}

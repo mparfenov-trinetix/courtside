@@ -2,14 +2,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  Extrapolation,
-  FadeInDown,
-  interpolate,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from 'react-native-reanimated';
+import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
 import type { CareerRow, PlayerCareer } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -84,7 +77,7 @@ export function CareerTable({ career, accent, background = palette.arena }: { ca
   }
 
   return (
-    <Animated.View entering={FadeInDown.delay(60).duration(300)}>
+    <Animated.View>
       <Text style={styles.note}>Regular season, per game · tap a column to sort</Text>
 
       <View style={styles.table}>

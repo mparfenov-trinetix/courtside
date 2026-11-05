@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { useAllStars, usePlayerCareer, usePlayerProfile } from '@/hooks';
 import type { Honor, PlayerProfile } from '@/lib/espn';
@@ -72,7 +72,7 @@ export function PlayerExtras({ a, b, aColor, bColor }: { a: Who; b: Who; aColor:
 
 function Block({ title, lines, aColor, bColor, delay }: { title: string; lines: Line[]; aColor: string; bColor: string; delay: number }) {
   return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(280)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Text style={styles.title}>{title}</Text>
       <View style={styles.card}>
         {lines.map((l, i) => (

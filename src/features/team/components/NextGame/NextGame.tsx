@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { FormDots } from '@/components';
 import type { Game } from '@/lib/espn';
@@ -56,7 +56,7 @@ export function NextGame({ schedule, theme }: { schedule: Game[]; theme: TeamThe
   });
 
   return (
-    <Animated.View entering={FadeInDown.delay(80).duration(300)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Text style={styles.label}>{live ? 'Playing now' : 'Next game'}</Text>
       <Pressable
         onPress={() => openDetail({ pathname: '/game/[id]', params: { id: next.id } })}

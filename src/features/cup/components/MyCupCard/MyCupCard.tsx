@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { CupIcon } from '@/components';
 import { useCup } from '@/hooks';
@@ -20,7 +20,7 @@ export function MyCupCard({ teamId }: { teamId: string }) {
   const left = row.left === 0 ? 'Group play done' : `${row.left} group game${row.left === 1 ? '' : 's'} left`;
 
   return (
-    <Animated.View entering={FadeInDown.delay(105).duration(300)} style={styles.wrap}>
+    <Animated.View style={styles.wrap}>
       <Pressable
         onPress={() => router.navigate('/cup' as Href)}
         accessibilityRole="button"

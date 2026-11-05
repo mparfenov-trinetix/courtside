@@ -34,7 +34,7 @@ export default function DrawerLayout() {
       }}>
       <Drawer.Screen name="home" options={{ title: 'Team card' }} />
       <Drawer.Screen name="teams" options={{ title: 'All teams' }} />
-      <Drawer.Screen name="roster" options={{ title: 'Roster' }} />
+      <Drawer.Screen name="roster" options={{ title: 'Rosters' }} />
       <Drawer.Screen name="league-leaders" options={{ title: 'League Leaders' }} />
       <Drawer.Screen name="team-leaders" options={{ title: 'Team Leaders' }} />
       <Drawer.Screen name="standings" options={{ title: 'Standings' }} />

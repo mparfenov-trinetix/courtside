@@ -24,7 +24,7 @@ export const SECTIONS: MenuSection[] = [
     title: 'Team',
     items: [
       { route: 'home', href: '/home', label: 'Team card', Icon: CardIcon },
-      { route: 'roster', href: '/roster', label: 'Roster', Icon: PeopleIcon },
+      { route: 'roster', href: '/roster', label: 'Rosters', Icon: PeopleIcon },
       { route: 'team-leaders', href: '/team-leaders' as Href, label: 'Team leaders', Icon: PodiumIcon },
       { route: 'calendar', href: '/calendar' as Href, label: 'Calendar', Icon: CalendarIcon },
     ],
@@ -221,7 +221,7 @@ function Corner({ color, flip }: { color: string; flip?: boolean }) {
  */
 export function SceneFrame({ children }: { children: ReactNode }) {
   const progress = useDrawerProgress() as SharedValue<number>;
-  const { currentTeamId } = useTeamStore();
+  const currentTeamId = useTeamStore((s) => s.currentTeamId);
   const team = useTeam(currentTeamId);
   const primary = teamTheme(team).primary;
   const menu = menuBackground(primary);

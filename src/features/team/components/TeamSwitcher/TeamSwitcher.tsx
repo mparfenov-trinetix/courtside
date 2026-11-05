@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
+import { useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,12 +10,15 @@ import { fonts, palette, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
 
 const COLUMNS = 3;
+const SHEET_CLOSE_MS = 320;
 
 /** A bottom sheet with every team: tap one to look at it on the home screen. Opened by holding the team card. */
 export function TeamSwitcher({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { data: teams, isPending } = useTeams();
   const { currentTeamId, favoriteTeamId, viewTeam } = useTeamStore();
+  // The tile you tap lights up at once, so the sheet never seems to ignore the tap while it closes.
+  const [picked, setPicked] = useState<string | null>(null);
   const sorted = [...(teams ?? [])].sort((a, b) => a.displayName.localeCompare(b.displayName));
 
   return (
@@ -37,13 +41,19 @@ export function TeamSwitcher({ visible, onClose }: { visible: boolean; onClose: 
             columnWrapperStyle={styles.column}
             contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
             renderItem={({ item }) => {
-              const on = item.id === currentTeamId;
+              const on = item.id === (picked ?? currentTeamId);
               return (
                 <Pressable
                   onPress={() => {
                     Haptics.selectionAsync();
-                    viewTeam(item.id);
+                    setPicked(item.id);
                     onClose();
+                    // The sheet slides away first; the page is rebuilt for the new team only once it is gone, so the
+                    // rebuild doesn't stutter the sheet's own animation.
+                    setTimeout(() => {
+                      if (item.id !== currentTeamId) viewTeam(item.id);
+                      setPicked(null);
+                    }, SHEET_CLOSE_MS);
                   }}
                   accessibilityRole="button"
                   accessibilityState={{ selected: on }}
