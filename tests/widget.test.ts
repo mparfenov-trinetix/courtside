@@ -120,14 +120,14 @@ test('streak counts from the newest result', () => {
   assert.equal(streakOf([]), '');
 });
 
-test('fixtures widget: unplayed games only, soonest first, capped at five', () => {
+test('fixtures widget: unplayed games only, soonest first, capped at seven', () => {
   const schedule = [
     played('0', '2026-11-01T01:00:00Z', 'Z', 'W', 100, 90),
-    ...['2026-11-12', '2026-11-06', '2026-11-08', '2026-11-10', '2026-11-14', '2026-11-16'].map((d, i) => game(String(i + 1), `${d}T01:00:00Z`, `T${i}`, i % 2 === 0)),
+    ...['2026-11-12', '2026-11-06', '2026-11-08', '2026-11-10', '2026-11-14', '2026-11-16', '2026-11-18', '2026-11-20', '2026-11-22'].map((d, i) => game(String(i + 1), `${d}T01:00:00Z`, `T${i}`, i % 2 === 0)),
   ];
   const f = buildFixturesProps(team, schedule, theme, NOW);
-  assert.equal(f.games.length, 5);
-  assert.deepEqual(f.games.map((g) => g.oppAbbr), ['T1', 'T2', 'T3', 'T0', 'T4']);
+  assert.equal(f.games.length, 7);
+  assert.deepEqual(f.games.map((g) => g.oppAbbr), ['T1', 'T2', 'T3', 'T0', 'T4', 'T5', 'T6']);
   assert.equal(f.games[0].gameId, '2');
 });
 

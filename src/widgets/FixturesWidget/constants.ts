@@ -1,4 +1,4 @@
-import type { FixtureProps, FixturesProps } from '@/lib/widgets';
+import type { FixturesProps } from '@/lib/widgets';
 
 /** What the widget gallery and a never-opened widget show. */
 export const SAMPLE_FIXTURES: FixturesProps = {
@@ -13,5 +13,7 @@ export const SAMPLE_FIXTURES: FixturesProps = {
     { oppAbbr: 'MIN', oppName: 'Minnesota Timberwolves', oppLogo: '', home: true, day: 'Mon, Nov 9', time: '7:00 PM', tag: '', gameId: '' },
     { oppAbbr: 'SAS', oppName: 'San Antonio Spurs', oppLogo: '', home: false, day: 'Wed, Nov 11', time: '8:00 PM', tag: '', gameId: '' },
     { oppAbbr: 'LAC', oppName: 'LA Clippers', oppLogo: '', home: true, day: 'Fri, Nov 13', time: '10:00 PM', tag: '', gameId: '' },
+    { oppAbbr: 'HOU', oppName: 'Houston Rockets', oppLogo: '', home: false, day: 'Sun, Nov 15', time: '8:00 PM', tag: '', gameId: '' },
+    { oppAbbr: 'MEM', oppName: 'Memphis Grizzlies', oppLogo: '', home: true, day: 'Tue, Nov 17', time: '9:00 PM', tag: '', gameId: '' },
   ],
 };

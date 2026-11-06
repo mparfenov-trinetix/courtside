@@ -16,7 +16,7 @@ import type { FixtureProps, FixturesProps } from '@/lib/widgets';
 import { SAMPLE_FIXTURES } from './constants';
 
 /**
- * Home-screen widget: the selected team's next games as a list. Medium shows three, large shows five.
+ * Home-screen widget: the selected team's next games as a list. Medium shows three, large shows seven.
  * Runs in WidgetKit's own runtime: pure, synchronous, and nothing outside this function but the imports above.
  */
 const FixturesLayout = (props: FixturesProps, environment: WidgetEnvironment) => {
@@ -28,7 +28,9 @@ const FixturesLayout = (props: FixturesProps, environment: WidgetEnvironment) =>
     { type: 'linearGradient', colors: [props.bg2, props.bg], startPoint: { x: 0, y: 0 }, endPoint: { x: 1, y: 1 } },
     'widget',
   );
-  const shown = props.games.slice(0, large ? 5 : 3);
+  const shown = props.games.slice(0, large ? 7 : 3);
+  // Seven rows only fit with tighter spacing (the page does not scroll: an overfull one cuts off its top).
+  const gap = large ? (shown.length >= 7 ? 8 : shown.length === 6 ? 10 : 12) : 8;
 
   const crest = (file: string, abbr: string, size: number) =>
     file !== '' ? (
@@ -53,7 +55,7 @@ const FixturesLayout = (props: FixturesProps, environment: WidgetEnvironment) =>
   );
 
   return (
-    <VStack alignment="leading" spacing={large ? 12 : 8} modifiers={[padding({ all: 2 }), surface, widgetURL('courtside://')]}>
+    <VStack alignment="leading" spacing={gap} modifiers={[padding({ all: 2 }), surface, widgetURL('courtside://')]}>
       <HStack spacing={6}>
         <Text modifiers={[font({ size: 10, weight: 'heavy' }), kerning(1.2), foregroundStyle(props.accent)]}>UPCOMING</Text>
         <Spacer />
