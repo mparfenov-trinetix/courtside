@@ -21,6 +21,22 @@ export function toNbaDateKey(d: Date): string {
   return `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`;
 }
 
+/**
+ * The day on the device's own calendar (YYYYMMDD) of an evening on an Eastern scoreboard day (YYYYMMDD): 8 pm Eastern by default,
+ * which in Spain is already after midnight, so the day after. For marks that know only the Eastern day (the All-Star Game) and not
+ * the tip-off time, so they land on the same cell as the game the Day view finds there.
+ */
+export function easternEveningKey(key: string, hour = 20): string {
+  const y = Number(key.slice(0, 4));
+  const m = Number(key.slice(4, 6));
+  const d = Number(key.slice(6, 8));
+  // Eastern is UTC-5 or UTC-4: start from the first and correct by what Eastern's clock then says.
+  let at = Date.UTC(y, m - 1, d, hour + 5);
+  const shown = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: '2-digit', hourCycle: 'h23' }).format(at));
+  at += (hour - shown) * 3_600_000;
+  return toDateKey(new Date(at));
+}
+
 function easternParts(d: Date) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',

@@ -153,16 +153,32 @@ test('the play-in tournament only exists from 2020-21', () => {
   assert.equal(hasPlayIn(2027), true);
 });
 
-test('calendar events: the All-Star Game and every Finals game, by Eastern day', () => {
+test('calendar events: the All-Star Game and every Finals game, by day on the device calendar', () => {
   const game = (stage: string, date: string) => ({ id: stage + date, date, stage, completed: true, home: { teamId: '1', abbr: 'A', logo: '' }, away: { teamId: '2', abbr: 'B', logo: '' } });
-  const events = calendarEvents(2025, [
+  const playoffs = [
     game('NBA Finals - Game 3', '2025-06-11T00:30Z'),
     game('East Finals - Game 7', '2025-05-31T00:30Z'),
     game('West 1st Round - Game 1', '2025-04-20T00:30Z'),
-  ]);
-  assert.deepEqual(events['20250216'], { kind: 'allstar', label: 'ASG' });
-  assert.deepEqual(events['20250610'], { kind: 'finals', label: 'G3' });
-  assert.equal(Object.keys(events).length, 2);
+  ];
+  const zone = process.env.TZ;
+  try {
+    // In New York the game tipped off on the evening of the 10th ...
+    process.env.TZ = 'America/New_York';
+    let events = calendarEvents(2025, playoffs);
+    assert.deepEqual(events['20250216'], { kind: 'allstar', label: 'ASG' });
+    assert.deepEqual(events['20250610'], { kind: 'finals', label: 'G3' });
+    assert.equal(Object.keys(events).length, 2);
+    // ... in Spain it was already the 11th, and so was the All-Star Game (8 pm Eastern is 2 am the next day): the cells of the
+    // Calendar and the games its Day view lists for those days.
+    process.env.TZ = 'Europe/Madrid';
+    events = calendarEvents(2025, playoffs);
+    assert.deepEqual(events['20250217'], { kind: 'allstar', label: 'ASG' });
+    assert.deepEqual(events['20250611'], { kind: 'finals', label: 'G3' });
+    assert.equal(events['20250610'], undefined);
+  } finally {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+  }
 });
 
 test('calendar events: a season without a known All-Star day and no playoffs has none', () => {
