@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import {
   fetchGameSummary,
+  fetchGameVideos,
   fetchHeadToHead,
   fetchAllStars,
   fetchCupGames,
@@ -25,6 +26,7 @@ import {
   fetchTeamSchedule,
   fetchTeamSeason,
   type Game,
+  type GameVideo,
   type LeaderCategory,
   type ScoreboardGame,
 } from '@/lib/espn';
@@ -183,10 +185,11 @@ export function useGameSummary(gameId?: string | null) {
 }
 
 /** Several games' summaries at once (the same cached queries the game page uses): for what shows a list of games' scores. */
-export function useGameSummaries(ids: string[]) {
+export function useGameSummaries(ids: string[], enabled = true) {
   return useQueries({
     queries: ids.map((id) => ({
       queryKey: ['game', id],
+      enabled,
       queryFn: () => fetchGameSummary(id),
       // A finished game never changes; one that is on or still to come is looked at again every couple of minutes.
       staleTime: (q: { state: { data?: { completed: boolean } } }) => (q.state.data?.completed ? Infinity : 2 * 60 * 1000),
@@ -221,6 +224,38 @@ export function useGamesOnDay(day: Date, today: Date, enabled = true) {
 }
 
 /** `enabled: false` reads nothing from the network (a page that is only being scrolled past); what is cached is still returned. */
+/**
+ * The highlight clips of several games, one list per game in the order given (so newest first when the games are). Each is its own
+ * small query (`fetchGameVideos`: the clip list only, without normalizing the box score and plays), so a page that shows a few games'
+ * clips does not parse a few games' worth of everything.
+ */
+export function useGameVideos(ids: string[], enabled = true): { perGame: GameVideo[][]; pending: boolean } {
+  const queries = useQueries({
+    queries: ids.map((id) => ({
+      enabled,
+      queryKey: ['gameVideos', id],
+      queryFn: () => fetchGameVideos(id),
+      // Clips of a finished game hardly change; one that has just ended gets more cut for a while.
+      staleTime: 10 * 60 * 1000,
+    })),
+  });
+  return { perGame: queries.map((q) => q.data ?? []), pending: enabled && queries.some((q) => q.isPending) };
+}
+
+/**
+ * False until the screen has settled: a pause after it mounts. For work that is nice to have but not needed to draw the page
+ * (a row of clips, a prefetch), so it does not compete with the first frames or the first scroll.
+ */
+export function useAfterSettle(delayMs = 900) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    // Longer than a screen transition (about 400 ms), so the first frames and the first scroll are over.
+    const timer = setTimeout(() => setReady(true), delayMs);
+    return () => clearTimeout(timer);
+  }, [delayMs]);
+  return ready;
+}
+
 export function useScoreboardByDate(date: string, enabled = true) {
   const focused = useIsFocused();
   const client = useQueryClient();

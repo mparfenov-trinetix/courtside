@@ -14,7 +14,7 @@ import { nba2kRating, titleSeasons } from '@/lib/league';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { goBack } from '@/navigation';
 import { useWatchlist } from '@/state';
-import { CareerSkeleton, CareerTable, ContractCard, FormCard, GameLog, GameLogSkeleton, HonorsCard, InfoSkeleton, PlayerPageSkeleton, PlayerShotChart, RatingCard, SplitsCard, StatsSkeleton } from '../../components';
+import { CareerSkeleton, CareerTable, ContractCard, FormCard, GameLog, GameLogSkeleton, HonorsCard, InfoSkeleton, PlayerHighlights, PlayerPageSkeleton, PlayerShotChart, RatingCard, SplitsCard, StatsSkeleton } from '../../components';
 
 /** Fades a photo's left, right and bottom edges into `color` (the surface behind it). */
 function EdgeFade({ color }: { color: string }) {
@@ -389,6 +389,8 @@ export function PlayerScreen() {
                 )}
                 {/* How he is playing right now comes right after the averages; the shooting breakdown follows. */}
                 {gameLog && gameLog.length > 1 && <FormCard log={gameLog} accent={theme.accent} />}
+
+                {gameLog && gameLog.length > 0 && <PlayerHighlights name={player.name} log={gameLog} accent={theme.accent} />}
 
                 {gameLog && gameLog.length > 0 && <PlayerShotChart athleteId={player.id} log={gameLog} accent={theme.accent} />}
 

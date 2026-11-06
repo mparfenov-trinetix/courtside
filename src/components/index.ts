@@ -5,6 +5,7 @@ export * from './DrawerMenu';
 export * from './Expandable';
 export * from './Form';
 export * from './HeadToHead';
+export * from './Highlights';
 export * from './HeatBadge';
 export * from './Icons';
 export * from './ListSkeleton';

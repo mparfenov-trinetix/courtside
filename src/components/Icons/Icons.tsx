@@ -49,6 +49,14 @@ export function PeopleIcon({ size = 22, color }: IconProps) {
   );
 }
 
+export function PlayIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.6-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z" fill={color} />
+    </Svg>
+  );
+}
+
 export function StarIcon({ size = 22, color, filled }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">

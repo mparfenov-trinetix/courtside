@@ -151,3 +151,53 @@ test('a day of games is polled while any is on or about to start, and a waiting 
   assert.equal(awaitsTipOff([g(false, false, 300)]), true);
   assert.equal(awaitsTipOff([g(false, true, -200)]), false);
 });
+
+test('videos: clips are read from the summary, the game highlights are told apart, names are matched', async () => {
+  const { normalizeVideos, videosAbout, videoAllowed, clipLength } = await import('../src/lib/espn/video.ts');
+  const clip = (id: string, headline: string, over: object = {}) => ({
+    id, headline, duration: 72, thumbnail: `${id}.jpg`, originalPublishDate: '2026-11-05T00:00Z',
+    links: { source: { href: `https://cdn/${id}.mp4`, HD: { href: `https://cdn/${id}-hd.mp4` }, HLS: { href: `https://cdn/${id}/playlist.m3u8` } } }, ...over,
+  });
+  const videos = normalizeVideos({
+    videos: [
+      clip('a', 'Philadelphia 76ers vs. Detroit Pistons: Game Highlights', {
+        links: { web: { href: 'https://www.espn.com/video/clip/_/id/a/x' }, source: { href: 'https://cdn/a.mp4', HLS: { href: 'https://cdn/a/playlist.m3u8' } } },
+      }),
+      clip('b', 'Cade Cunningham stops and pops a jumper for Pistons', { duration: 16, geoRestrictions: { type: 'whitelist', countries: ['US'] } }),
+      { id: 'c', headline: 'No link' },
+    ],
+  });
+  assert.equal(videos.length, 2); // the one without a file is dropped
+  assert.equal(videos[0].fullGame, true);
+  assert.equal(videos[0].webUrl, 'https://www.espn.com/video/clip/_/id/a/x'); // the page to watch it on in a browser
+  assert.equal(videos[1].webUrl, ''); // none given
+  assert.equal(videos[0].url, 'https://cdn/a/playlist.m3u8'); // the stream is preferred to the MP4
+  assert.equal(normalizeVideos({ videos: [clip('m', 'Only a file', { links: { source: { href: 'https://cdn/m.mp4' } } })] })[0].url, 'https://cdn/m.mp4');
+  assert.deepEqual(videos[1].countries, ['US']);
+  assert.deepEqual(videosAbout(videos, 'Cade Cunningham').map((v) => v.id), ['b']);
+  assert.equal(videosAbout(videos, 'Jalen Duren').length, 0);
+  assert.equal(videoAllowed(videos[1], 'ES'), true); // the region list is not honored (see HONOR_VIDEO_REGIONS)
+  assert.equal(clipLength(72), '1:12');
+  assert.equal(clipLength(16), '0:16');
+});
+
+test('videos: a stream starts on its 720p level, not the 360p one the player would begin with', async () => {
+  const { sharpestVariant, absoluteUrl } = await import('../src/lib/espn/video.ts');
+  const level = (bw: number, res: string, fps: number, uri: string) => `#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=${bw},RESOLUTION=${res},FRAME-RATE=${fps},CODECS="avc1.64001e,mp4a.40.2"\n${uri}`;
+  const master = [
+    '#EXTM3U',
+    '#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs0",NAME="English",URI="index-svtt.m3u8"',
+    level(696000, '640x360', 29.97, 'index-f1.m3u8'),
+    level(2796000, '848x480', 29.97, 'index-f4.m3u8'),
+    level(4596000, '1280x720', 29.97, 'index-f6.m3u8'),
+    level(3696000, '1280x720', 29.97, 'index-f5.m3u8'),
+    level(6471000, '1280x720', 59.92, 'index-f7.m3u8'),
+    '#EXT-X-I-FRAME-STREAM-INF:BANDWIDTH=76686,RESOLUTION=640x360,URI="iframes-f1.m3u8"',
+  ].join('\n');
+  assert.equal(sharpestVariant(master, 'https://cdn.example/a/b/playlist.m3u8'), 'https://cdn.example/a/b/index-f5.m3u8');
+  // Only 480p offered: the tallest there is. Nothing listed: no pick.
+  assert.equal(sharpestVariant([level(696000, '640x360', 30, 'a.m3u8'), level(1896000, '848x480', 30, 'b.m3u8')].join('\n'), 'https://x/y/p.m3u8'), 'https://x/y/b.m3u8');
+  assert.equal(sharpestVariant('#EXTM3U\n', 'https://x/p.m3u8'), null);
+  assert.equal(absoluteUrl('https://other/z.m3u8', 'https://x/y/p.m3u8'), 'https://other/z.m3u8');
+  assert.equal(absoluteUrl('/root/z.m3u8', 'https://x/y/p.m3u8'), 'https://x/root/z.m3u8');
+});

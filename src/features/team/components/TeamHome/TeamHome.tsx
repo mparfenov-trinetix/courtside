@@ -17,6 +17,7 @@ import { goBack, sharedTag, openDetail, pushOnce } from '@/navigation';
 import { CatchUp } from '../CatchUp';
 import { cardHeight, TeamCard } from '../TeamCard';
 import { motionOf, PULL_TO_REFRESH, useRefreshAnimation } from '../TeamRefresh';
+import { TeamHighlights } from '../TeamHighlights';
 import { TeamSeasonStats } from '../TeamSeasonStats';
 import { Watchlist } from '@/features/watchlist';
 import { useManualRefresh, useStandings, useTeam, useTeamDetail, useTeamSchedule, useTilt } from '@/hooks';
@@ -229,6 +230,8 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
             ))}
           </Animated.View>
         )}
+
+        <TeamHighlights games={completedGames} accent={theme.accent} />
 
         <TeamSeasonStats teamId={team.id} accent={theme.accent} />
 
