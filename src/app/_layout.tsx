@@ -21,7 +21,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { WidgetSync } from '@/widgets/widget-sync';
 import { NavDepthTracker } from '@/navigation';
-import { DataHealthBanner } from '@/components';
+import { DataHealthBanner, ScreenError } from '@/components';
 import { reportIssue } from '@/lib/data-health';
 import { currentSeason, setHealthReporter } from '@/lib/espn';
 import { palette } from '@/lib/theme';
@@ -41,7 +41,13 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2, gcTime: WEEK } },
 });
 
-const persister = createAsyncStoragePersister({ storage: AsyncStorage, key: 'courtside:query-cache' });
+const persister = createAsyncStoragePersister({
+  storage: AsyncStorage,
+  key: 'courtside:query-cache',
+  // The whole cache (about 1 MB) is written as one string each time: serializing it on the JS thread every second while live data keeps
+  // changing was a hitch waiting to happen. Every eight seconds is plenty for a cache that is only read at start-up.
+  throttleTime: 8000,
+});
 
 // Slow-changing, small payloads are restored on launch. Game summaries are big and live games change,
 // but a *finished* game never does, so the latest few of those are kept too and open instantly, offline.
@@ -70,6 +76,11 @@ const navTheme = {
   ...DarkTheme,
   colors: { ...DarkTheme.colors, background: palette.arena, card: palette.arena },
 };
+
+/** Expo Router shows this instead of a screen that threw while rendering (the app stays up; "Try again" re-renders it). */
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+  return <ScreenError error={error} retry={retry} />;
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({

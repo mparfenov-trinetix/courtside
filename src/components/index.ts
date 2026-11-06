@@ -19,3 +19,4 @@ export * from './Segmented';
 export * from './ShotMap';
 export * from './Skeleton';
 export * from './TeamMark';
+export * from './ScreenError';
