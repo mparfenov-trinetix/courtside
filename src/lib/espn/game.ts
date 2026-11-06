@@ -1,6 +1,7 @@
 import { BASE, getJson, report } from './client';
 import type { Json } from './client';
-import { cupStage } from './common';
+import { normalizeVideos, type GameVideo } from './video';
+import { classifyGame, cupStage, seriesLine, type GameKind } from './common';
 import { normalizeTeam } from './teams';
 import type { Team } from './teams';
 
@@ -122,8 +123,18 @@ export type GameSummary = {
   winProb: Record<string, number>;
   info: GameInfo;
   pregame: Pregame;
+  /** The game's highlight clips (empty until ESPN has cut them). */
+  videos: GameVideo[];
   /** NBA Cup stage when the game is part of the Cup. */
   cup?: string;
+  /** Regular season, playoffs, play-in, Cup, All-Star or preseason: decides which table the page links to. */
+  kind: GameKind;
+  /** The season it belongs to, named by the year it ends in (2026 = 2025-26); undefined when ESPN does not say. */
+  season?: number;
+  /** ESPN's note for the game ("West Finals - Game 2"). */
+  note?: string;
+  /** A playoff game's series as it stands after it (or now, for one still to come): "ORL leads 3-2", "NYK won 4-2", "Tied 3-3". */
+  series?: string;
 };
 
 export async function fetchGameSummary(gameId: string): Promise<GameSummary> {
@@ -132,6 +143,14 @@ export async function fetchGameSummary(gameId: string): Promise<GameSummary> {
   const noBox = [...summary.home.starters, ...summary.home.bench, ...summary.away.starters, ...summary.away.bench].length === 0;
   report('game', started && (summary.plays.length === 0 || noBox) ? 'play-by-play or box score missing' : null);
   return summary;
+}
+
+/**
+ * Just the highlight clips of a game. The summary is one big response (box score, every play); the player and team pages only want the
+ * clip list, so this reads it without normalizing the rest, which is most of the work on the JS thread.
+ */
+export async function fetchGameVideos(gameId: string): Promise<GameVideo[]> {
+  return normalizeVideos(await getJson(`${BASE}/summary?event=${gameId}`));
 }
 
 export function normalizeGameSummary(json: Json, gameId: string): GameSummary {
@@ -262,6 +281,10 @@ export function normalizeGameSummary(json: Json, gameId: string): GameSummary {
         ? statusType.shortDetail ?? statusType.detail ?? 'Live'
         : statusType.description ?? statusType.shortDetail ?? '',
     cup: cupStage(json.header?.gameNote),
+    kind: classifyGame(json.header?.gameNote, json.header?.season?.type),
+    season: Number(json.header?.season?.year) || undefined,
+    note: typeof json.header?.gameNote === 'string' ? json.header.gameNote : undefined,
+    series: seriesLine(((comp.series ?? []) as Json[]).find((s) => s.type === 'playoff')?.summary),
     completed: statusType.completed === true,
     live: statusType.state === 'in',
     home: buildTeam(homeC),
@@ -270,6 +293,7 @@ export function normalizeGameSummary(json: Json, gameId: string): GameSummary {
     winProb,
     info,
     pregame: normalizePregame(json, String(homeC?.team?.id ?? ''), String(awayC?.team?.id ?? '')),
+    videos: normalizeVideos(json),
   };
 }
 

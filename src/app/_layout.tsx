@@ -51,7 +51,7 @@ const persister = createAsyncStoragePersister({
 
 // Slow-changing, small payloads are restored on launch. Game summaries are big and live games change,
 // but a *finished* game never does, so the latest few of those are kept too and open instantly, offline.
-const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'playerCareer', 'leagueTeamStats', 'allStars', 'cup', 'headToHead', 'playerProfile', 'playerBio', 'playerGameLog', 'teamSeason']);
+const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'playerCareer', 'leagueTeamStats', 'allStars', 'cup', 'headToHead', 'playerProfile', 'playerBio', 'playerGameLog', 'teamSeason', 'playoffSeeds']);
 const KEPT_FINISHED_GAMES = 8;
 
 const isFinished = (q: Query) => !!(q.state.data as { completed?: boolean } | undefined)?.completed;
@@ -149,6 +149,8 @@ export default function RootLayout() {
               <Stack.Screen name="team/[id]" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="search" options={{ animation: 'fade' }} />
               <Stack.Screen name="matchup-standings" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="matchup-playoffs" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="matchup-cup" options={{ animation: 'slide_from_right' }} />
             </Stack>
             <NavDepthTracker />
             <WidgetSync />

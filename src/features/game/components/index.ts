@@ -8,6 +8,7 @@ export * from './GameSkeleton';
 export * from './KeyMoments';
 export * from './LineupsCard';
 export * from './MarginChart';
+export * from './MatchupPlace';
 export * from './MatchupStandings';
 export * from './MatchupForm';
 export * from './PlayByPlay';

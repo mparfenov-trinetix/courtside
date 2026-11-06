@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SeasonButton } from '@/components';
 import { useTeams } from '@/hooks';
 import { CupBadge } from '@/features/cup';
+import { PlayoffBadge } from '@/features/playoffs';
 import { currentSeason, type Game } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
@@ -149,6 +150,7 @@ function GameRow({ game, accent, look }: { game: Game; accent: string; look: Opp
         <View style={styles.subRow}>
           <Text style={styles.sub}>{isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'long' })}</Text>
           {game.cup ? <CupBadge stage={game.cup} /> : null}
+          <PlayoffBadge note={game.note} />
         </View>
       </View>
       {game.completed && game.result ? (

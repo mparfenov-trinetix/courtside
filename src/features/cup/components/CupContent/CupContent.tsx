@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ErrorState, ListSkeleton, Segmented, slideIn } from '@/components';
+import { ErrorState, ListSkeleton, Segmented, slideIn, useSpotlight } from '@/components';
 import { Bracket } from '@/features/playoffs';
 import { useCup, useRefresh } from '@/hooks';
 import { currentSeason, seasonLabel } from '@/lib/espn';
@@ -26,12 +26,12 @@ const VIEWS = [
 const GOLD = '#FBBF24';
 
 /** The NBA Cup for a season: groups, every game, and the knockout bracket. */
-export function CupContent({ season }: { season?: number }) {
+export function CupContent({ season, initialView = 'groups' }: { season?: number; initialView?: View_ }) {
   const insets = useSafeAreaInsets();
   const favoriteTeamId = useTeamStore((s) => s.favoriteTeamId);
   const { cup, conferenceOf, isPending, error, refetch } = useCup(season);
   const refreshControl = useRefresh([['cup', season ?? currentSeason()], ['standings']], !season || season === currentSeason());
-  const [view, setView] = useState<View_>('groups');
+  const [view, setView] = useState<View_>(initialView);
   const [slide, setSlide] = useState<1 | -1>(1);
   const [onlyMine, setOnlyMine] = useState(false);
 
@@ -103,11 +103,16 @@ function Field({ cup }: { cup: Cup }) {
 }
 
 function Groups({ cup, favoriteTeamId }: { cup: Cup; favoriteTeamId: string | null }) {
+  const lit = useSpotlight();
+  // Opened from a game: the group that game was played in comes first (and its conference above the other).
+  const spotFirst = (a: Cup['groups'][number], b: Cup['groups'][number]) => Number(b.rows.some((r) => lit(r.teamId))) - Number(a.rows.some((r) => lit(r.teamId)));
   const sections = [
-    { title: 'Eastern Conference', groups: cup.groups.filter((g) => g.conference === 'east') },
-    { title: 'Western Conference', groups: cup.groups.filter((g) => g.conference === 'west') },
-    { title: 'Groups', groups: cup.groups.filter((g) => !g.conference) },
-  ].filter((s) => s.groups.length > 0);
+    { title: 'Eastern Conference', groups: cup.groups.filter((g) => g.conference === 'east').sort(spotFirst) },
+    { title: 'Western Conference', groups: cup.groups.filter((g) => g.conference === 'west').sort(spotFirst) },
+    { title: 'Groups', groups: cup.groups.filter((g) => !g.conference).sort(spotFirst) },
+  ]
+    .filter((s) => s.groups.length > 0)
+    .sort((a, b) => Number(b.groups.some((g) => g.rows.some((r) => lit(r.teamId)))) - Number(a.groups.some((g) => g.rows.some((r) => lit(r.teamId)))));
   return (
     <View style={{ paddingTop: 12 }}>
       <Text style={styles.progress}>

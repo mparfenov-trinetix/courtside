@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { calendarEvents, hasPlayIn, buildCupBracket, buildPlayIn, buildPlayoffs, layoutTree, parsePlayInNote, parsePlayoffNote } from '../src/lib/league';
+import { calendarEvents, hasPlayIn, playoffSeeds, playoffTag, buildCupBracket, buildPlayIn, buildPlayoffs, layoutTree, parsePlayInNote, parsePlayoffNote } from '../src/lib/league';
 import type { CupGame } from '../src/lib/espn';
 
 const side = (id: number, score?: number) => ({ teamId: String(id), abbr: `T${id}`, logo: '', score });
@@ -183,4 +183,26 @@ test('calendar events: the All-Star Game and every Finals game, by day on the de
 
 test('calendar events: a season without a known All-Star day and no playoffs has none', () => {
   assert.deepEqual(calendarEvents(2040), {});
+});
+
+test('playoff tag: round and game of a playoff or play-in note', () => {
+  assert.equal(playoffTag('West Finals - Game 2'), 'WCF · G2');
+  assert.equal(playoffTag('East Finals - Game 7'), 'ECF · G7');
+  assert.equal(playoffTag('East 1st Round - Game 3'), 'R1 · G3');
+  assert.equal(playoffTag('West Semifinals - Game 1'), 'SEMIS · G1');
+  assert.equal(playoffTag('NBA Finals - Game 4'), 'FINALS · G4');
+  assert.equal(playoffTag('NBA Play-In - East - 9th Place vs 10th Place'), 'PLAY-IN');
+  assert.equal(playoffTag('NBA Cup - Group Play'), null);
+  assert.equal(playoffTag(undefined), null);
+});
+
+test('playoff seeds: the 7 and 8 seeds come from the first round, the others from the standings', () => {
+  const side = (teamId: string, score?: number) => ({ teamId, abbr: teamId, logo: '', score });
+  const game = (id: string, a: string, b: string) => ({ id, date: '2025-04-20T00:30Z', stage: 'East 1st Round - Game 1', completed: true, home: side(a, 100), away: side(b, 90) });
+  // Team 1 is the top seed and meets the 8th; team 3 meets the 6th team (seed 6 from the standings).
+  const seeds = playoffSeeds([game('g1', 'A', 'B'), game('g2', 'C', 'D')], { A: 1, C: 3, D: 6 });
+  assert.equal(seeds.A, 1);
+  assert.equal(seeds.B, 8);
+  assert.equal(seeds.C, 3);
+  assert.equal(seeds.D, 6);
 });

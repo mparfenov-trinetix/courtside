@@ -19,7 +19,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BoxScoreTab, GameBackdrop, GameLogos, GameSkeleton, HERO_INSET, backdropColors, PlayByPlay, GameTopBar, ScoreHero, ShotChart, SummaryTab, GameStickyBar, type GameTab, type LogoSlot } from '../../components';
 import { ArrowLeftIcon, IconButton, slideIn, ErrorState } from '@/components';
-import { useGameSummary, useGameTeams, useHeadToHead, useRefresh, useTeams } from '@/hooks';
+import { playoffTag } from '@/lib/league';
+import { useGameSummary, useGameTeams, useHeadToHead, usePlayoffSeeds, useRefresh, useTeams } from '@/hooks';
 import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
 import { buildPeriodOptions, timeoutLabel, deriveFlow, numsFromLine, numsFromTotals, playersWithStats, deriveQuarterStats, emptyLine, lineToStats, sumPeriods, type Line, type QuarterStats } from '@/lib/game';
 import { kickoffLabel } from '@/lib/date';
@@ -100,6 +101,8 @@ export function GameScreen() {
   const heroTintStyle = useAnimatedStyle(() => ({ opacity: 1 - pinned.get() }));
   // While the game loads, its teams (and so its colors) are often already known from a list the user came from.
   const { data: allTeams } = useTeams();
+  // A playoff game shows each team's seed.
+  const seeds = usePlayoffSeeds(data?.season, data?.kind === 'playoffs');
   const pair = useGameTeams(id);
   // The head-to-head card reads a long history: start it as soon as the teams are known (often before the game itself has
   // arrived), under the same key the card uses. It is the away team's side, as the card reads it.
@@ -193,7 +196,7 @@ export function GameScreen() {
         status={status}
         live={live}
         hasStarted={hasStarted}
-        cup={data.cup}
+        tag={data.cup ? 'NBA CUP' : data.kind === 'playoffs' || data.kind === 'playin' ? (playoffTag(data.note) ?? undefined) : undefined}
         kickoff={info.date ? kickoffLabel(info.date) : undefined}
         watched={isGameWatched(id)}
         onWatch={() => {
@@ -232,6 +235,8 @@ export function GameScreen() {
           onLogoSlot={onLogoSlot}
           scrollY={scrollY}
           timeout={onTimeout}
+          seeds={seeds ? { away: seeds[away.team.id], home: seeds[home.team.id] } : undefined}
+          series={data.series}
         />
 
         {/* A plain View: ScrollView replaces the style of a sticky child, so the bar styles itself. */}
@@ -266,6 +271,10 @@ export function GameScreen() {
               flow={flow}
               info={info}
               pregame={data.pregame}
+              videos={data.videos}
+              kind={data.kind}
+              season={data.season}
+              note={data.note}
               live={live}
               hasStarted={hasStarted}
               selPeriods={selPeriods}

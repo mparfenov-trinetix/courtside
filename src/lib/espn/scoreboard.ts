@@ -1,6 +1,6 @@
 import { BASE, getJson } from './client';
 import type { Json } from './client';
-import { cupStage, teamLogo } from './common';
+import { classifyGame, cupStage, seriesLine, teamLogo, type GameKind } from './common';
 
 export type ScoreboardTeam = {
   teamId: string;
@@ -23,6 +23,12 @@ export type ScoreboardGame = {
   away: ScoreboardTeam;
   /** NBA Cup stage when the game is part of the Cup. */
   cup?: string;
+  /** Regular season, playoffs, play-in, Cup, All-Star or preseason. */
+  kind: GameKind;
+  /** ESPN's note for the game ("West Finals - Game 2"). */
+  note?: string;
+  /** A playoff game's series as it stands after it (or now, for one still to come): "ORL leads 3-2". */
+  series?: string;
 };
 
 export async function fetchScoreboardByDate(date: string): Promise<ScoreboardGame[]> {
@@ -56,6 +62,9 @@ export async function fetchScoreboardByDate(date: string): Promise<ScoreboardGam
       home,
       away,
       cup: cupStage(comp.notes?.[0]?.headline),
+      kind: classifyGame(comp.notes?.[0]?.headline, ev.season?.type),
+      note: typeof comp.notes?.[0]?.headline === 'string' ? comp.notes[0].headline : undefined,
+      series: comp.series?.type === 'playoff' ? seriesLine(comp.series.summary) : undefined,
     };
   });
 }

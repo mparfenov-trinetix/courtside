@@ -3,6 +3,7 @@ import type { Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { useSpotlight } from '@/components';
 import type { CupGroup, CupRow } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
@@ -26,6 +27,8 @@ export function GroupCard({ group, favoriteTeamId, index = 0 }: { group: CupGrou
 }
 
 function Row({ row, mine, last }: { row: CupRow; mine: boolean; last: boolean }) {
+  // A team of the game you came from.
+  const spot = useSpotlight()(row.teamId);
   const tint = row.position === 'leader' ? GREEN : row.position === 'wildcard' ? GOLD : null;
   return (
     <Pressable
@@ -36,6 +39,7 @@ function Row({ row, mine, last }: { row: CupRow; mine: boolean; last: boolean })
         styles.row,
         !last && styles.rowBorder,
         mine && { backgroundColor: withAlpha(palette.chalk, 0.07) },
+        spot && { backgroundColor: withAlpha(palette.chalk, 0.16) },
         pressed && { opacity: 0.7 },
       ]}>
       <View style={[styles.bar, { backgroundColor: tint ?? 'transparent' }]} />

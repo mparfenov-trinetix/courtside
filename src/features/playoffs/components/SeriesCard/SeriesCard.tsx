@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useSpotlight } from '@/components';
 import { ROUND_NAMES, type Series, type SeriesTeam } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
@@ -33,6 +34,9 @@ function TeamLine({ team, score, won, lost, mine, big }: { team: SeriesTeam; sco
 /** Full-width card for the Rounds view: both teams, the series score and where it stands. */
 export function SeriesCard({ series, favoriteTeamId, onPress }: { series: Series; favoriteTeamId?: string | null; onPress: () => void }) {
   const sc = sideScores(series);
+  const lit = useSpotlight();
+  // The series of the game you came from: both its teams are in the spotlight.
+  const spot = lit(series.top.teamId) && lit(series.bottom.teamId);
   const mine = series.top.teamId === favoriteTeamId || series.bottom.teamId === favoriteTeamId;
   const done = !!series.winnerId;
   return (
@@ -40,7 +44,7 @@ export function SeriesCard({ series, favoriteTeamId, onPress }: { series: Series
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${series.top.abbr} versus ${series.bottom.abbr}. ${series.status}`}
-      style={({ pressed }) => [styles.card, mine && { borderColor: withAlpha(palette.chalk, 0.4) }, pressed && { opacity: 0.75 }]}>
+      style={({ pressed }) => [styles.card, mine && { borderColor: withAlpha(palette.chalk, 0.4) }, spot && styles.spot, pressed && { opacity: 0.75 }]}>
       <View style={styles.cardHead}>
         <Text style={styles.cardTitle}>{series.title ?? (series.conference ? (series.conference === 'east' ? 'East' : 'West') : ROUND_NAMES[series.round])}</Text>
         <Text style={[styles.status, done && { color: GOLD }]}>{series.status}</Text>
@@ -58,6 +62,8 @@ export const MINI_H = 62;
 /** Compact card for the drawn bracket. */
 export function MiniSeries({ series, favoriteTeamId, onPress, style }: { series: Series; favoriteTeamId?: string | null; onPress: () => void; style?: object }) {
   const sc = sideScores(series);
+  const lit = useSpotlight();
+  const spot = lit(series.top.teamId) && lit(series.bottom.teamId);
   const done = !!series.winnerId;
   const mine = series.top.teamId === favoriteTeamId || series.bottom.teamId === favoriteTeamId;
   return (
@@ -65,7 +71,7 @@ export function MiniSeries({ series, favoriteTeamId, onPress, style }: { series:
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${series.top.abbr} versus ${series.bottom.abbr}. ${series.status}`}
-      style={({ pressed }) => [styles.mini, mine && { borderColor: withAlpha(palette.chalk, 0.45) }, pressed && { opacity: 0.75 }, style]}>
+      style={({ pressed }) => [styles.mini, mine && { borderColor: withAlpha(palette.chalk, 0.45) }, spot && styles.spot, pressed && { opacity: 0.75 }, style]}>
       <TeamLine team={series.top} score={sc.top} won={done && series.winnerId === series.top.teamId} lost={done && series.winnerId !== series.top.teamId} mine={series.top.teamId === favoriteTeamId} />
       <View style={styles.sep} />
       <TeamLine team={series.bottom} score={sc.bottom} won={done && series.winnerId === series.bottom.teamId} lost={done && series.winnerId !== series.bottom.teamId} mine={series.bottom.teamId === favoriteTeamId} />
@@ -89,5 +95,6 @@ const styles = StyleSheet.create({
   score: { fontFamily: fonts.display, fontSize: 18, color: withAlpha(palette.chalk, 0.75), minWidth: 22, textAlign: 'right' },
   scoreBig: { fontSize: 30, minWidth: 40 },
   mini: { width: MINI_W, height: MINI_H, paddingHorizontal: 8, borderRadius: 12, backgroundColor: withAlpha('#FFFFFF', 0.07), borderWidth: 1, borderColor: 'transparent', justifyContent: 'center' },
+  spot: { borderColor: withAlpha(palette.chalk, 0.9), backgroundColor: withAlpha('#FFFFFF', 0.14) },
   sep: { height: StyleSheet.hairlineWidth, backgroundColor: withAlpha(palette.chalk, 0.12) },
 });

@@ -58,6 +58,8 @@ export const ROUND_NAMES: Record<RoundKey, string> = {
 
 /** The play-in tournament began in 2020-21 (season 2021). The 2019-20 bubble had one play-in game, which isn't a tournament. */
 export const PLAY_IN_FROM = 2021;
+/** Playoff games only carry their round in ESPN's notes from the 2009-10 season on (named 2010); before that the bracket can't be rebuilt. */
+export const PLAYOFFS_FROM = 2010;
 export const hasPlayIn = (season: number) => season >= PLAY_IN_FROM;
 
 /** "West 1st Round - Game 3" -> { round: 'r1', conference: 'west', game: 3 }. */
@@ -345,4 +347,31 @@ export function layoutTree(
   });
   const height = placements.reduce((m, p) => Math.max(m, p.y + cardH), 0);
   return { placements, height };
+}
+
+/**
+ * A short tag for a playoff or play-in game's note, for the game card and the game page: "West Finals - Game 2" -> "WCF · G2",
+ * "East 1st Round - Game 3" -> "R1 · G3", "NBA Finals - Game 4" -> "FINALS · G4", a play-in game -> "PLAY-IN". Null for any other note.
+ */
+export function playoffTag(note?: string | null): string | null {
+  if (!note) return null;
+  if (/play-in/i.test(note)) return 'PLAY-IN';
+  const p = parsePlayoffNote(note);
+  if (!p) return null;
+  const round = p.round === 'r1' ? 'R1' : p.round === 'r2' ? 'SEMIS' : p.round === 'finals' ? 'FINALS' : p.conference === 'east' ? 'ECF' : 'WCF';
+  return p.game ? `${round} · G${p.game}` : round;
+}
+
+/**
+ * Each team's playoff seed, from the series of a season's playoffs (so the 7 and 8 seeds, which come from the play-in, are right too).
+ * `standingsSeeds` are the regular-season conference seeds (`seedMap`). Teams that did not make it are not in it.
+ */
+export function playoffSeeds(games: CupGame[], standingsSeeds: Record<string, number>): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const round of buildPlayoffs(games, standingsSeeds).rounds) {
+    for (const series of round.series) {
+      for (const team of [series.top, series.bottom]) if (team.seed != null) out[team.teamId] = team.seed;
+    }
+  }
+  return out;
 }

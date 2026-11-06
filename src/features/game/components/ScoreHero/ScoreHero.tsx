@@ -28,6 +28,8 @@ export function ScoreHero({
   onLogoSlot,
   scrollY,
   timeout,
+  seeds,
+  series,
 }: {
   away: BoxScoreTeam;
   home: BoxScoreTeam;
@@ -46,6 +48,10 @@ export function ScoreHero({
   scrollY?: SharedValue<number>;
   /** Set while a timeout is on: "NOP TO" for a team's, "Official TO" for an official one. */
   timeout?: string;
+  /** A playoff game: each team's seed, shown as "(3)" after its name. */
+  seeds?: { away?: number; home?: number };
+  /** A playoff game: its series as it stands after this game (or now, if it is still to come): "ORL leads 3-2". */
+  series?: string;
 }) {
   const filtered = selPeriods != null;
   const bars = useAnimatedStyle(() => ({ opacity: scrollY ? Math.max(0, 1 - scrollY.get() / 36) : 1 }));
@@ -62,7 +68,7 @@ export function ScoreHero({
   return (
     <View>
       <Animated.View onLayout={measure} style={styles.scoreHeader}>
-        <TeamScore team={away} slot={awaySlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
+        <TeamScore team={away} seed={seeds?.away} slot={awaySlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
         <View
           style={styles.scoreCenter}
           accessible
@@ -89,9 +95,10 @@ export function ScoreHero({
             {live ? <LivePill label={status} /> : <Text style={styles.gameStatus}>{status}</Text>}
             {live && timeout ? <TimeoutPill label={timeout} /> : null}
             {live ? <HeatBadge heat={gameHeat(away.score, home.score, status)} /> : null}
+            {series ? <Text style={styles.series}>{series}</Text> : null}
           </Animated.View>
         </View>
-        <TeamScore team={home} right slot={homeSlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
+        <TeamScore team={home} seed={seeds?.home} right slot={homeSlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
       </Animated.View>
 
       {periodCount > 0 && (
@@ -155,6 +162,7 @@ export function LivePill({ label }: { label: string }) {
 
 function TeamScore({
   team,
+  seed,
   right,
   slot,
   onLayout,
@@ -162,6 +170,7 @@ function TeamScore({
   barsStyle,
 }: {
   team: BoxScoreTeam;
+  seed?: number;
   right?: boolean;
   slot: RefObject<HostInstance | null>;
   onLayout: () => void;
@@ -178,7 +187,10 @@ function TeamScore({
       <View style={styles.lockup}>
         {/* Empty: it only keeps the room. The logo is drawn above the page, so it can travel into the top bar. */}
         <View ref={slot} onLayout={onLayout} style={styles.teamLogo} />
-        <Text style={styles.teamAbbr}>{team.team.abbreviation}</Text>
+        <Text style={styles.teamAbbr}>
+          {team.team.abbreviation}
+          {seed ? <Text style={styles.seed}> ({seed})</Text> : null}
+        </Text>
         {showTimeouts && team.timeoutsRemaining != null ? (
           <Animated.View style={[styles.timeouts, barsStyle]} accessible accessibilityLabel={`${team.timeoutsRemaining} timeouts left`}>
             {Array.from({ length: TIMEOUTS_PER_GAME }, (_, i) => (
@@ -204,7 +216,7 @@ export function GameTopBar({
   status,
   live,
   hasStarted,
-  cup,
+  tag,
   kickoff,
   watched,
   onWatch,
@@ -218,8 +230,8 @@ export function GameTopBar({
   status: string;
   live: boolean;
   hasStarted: boolean;
-  /** NBA Cup stage, when this game is part of the Cup. */
-  cup?: string;
+  /** What kind of game it is when it is not a regular-season one: "NBA CUP", "WCF · G2". */
+  tag?: string;
   /** When the game starts, in the device's time ("Tomorrow · 01:00"); shown under the matchup and, before tip-off, in the compact bar. */
   kickoff?: string;
   /** Whether the game is starred in the watchlist, and the star's handler. */
@@ -262,7 +274,7 @@ export function GameTopBar({
         <View style={styles.topCenter}>
           <Animated.View style={[styles.topLayer, label]} pointerEvents="none">
             <Text style={styles.matchup}>
-              {away.team.abbreviation} @ {home.team.abbreviation}{cup ? ' · NBA CUP' : ''}
+              {away.team.abbreviation} @ {home.team.abbreviation}{tag ? ` · ${tag}` : ''}
             </Text>
             {kickoff ? (
               <View style={styles.kickoffPill}>
@@ -319,6 +331,8 @@ const styles = StyleSheet.create({
   scoreCenter: { alignItems: 'center', gap: 4 },
   vsScore: { fontFamily: fonts.display, fontSize: 32, color: palette.chalk },
   bigScore: { flexDirection: 'row', alignItems: 'center' },
+  seed: { fontFamily: fonts.bodySemi, fontSize: 14, color: withAlpha(palette.chalk, 0.55) },
+  series: { fontFamily: fonts.bodySemi, fontSize: 12, color: withAlpha(palette.chalk, 0.75), marginTop: 2 },
   gameStatus: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.5, textTransform: 'uppercase' },
 
   // Seven short horizontal dashes under the team's name, one per timeout: lit for each one left. As wide as the logo.

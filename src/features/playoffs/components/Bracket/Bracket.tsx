@@ -5,7 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { MiniSeries, MINI_H, MINI_W, SeriesCard } from '../SeriesCard';
 import { SeriesSheet } from '../SeriesSheet';
-import { Segmented, slideIn } from '@/components';
+import { Segmented, slideIn, useSpotlight } from '@/components';
 import { layoutTree, type BracketSection, type Round, type Series } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { COL_GAP, CONF_GAP, ROW_GAP, TAG_H } from './constants';
@@ -27,14 +27,19 @@ export function Bracket({
   favoriteTeamId?: string | null;
   emptyText?: string;
 }) {
-  const [mode, setMode] = useState<'rounds' | 'tree'>('rounds');
+  const lit = useSpotlight();
+  const spotted = (s: Series) => lit(s.top.teamId) && lit(s.bottom.teamId);
+  // Opened from a game: on the drawn bracket, scrolled to that series, not on the list of rounds.
+  const [mode, setMode] = useState<'rounds' | 'tree'>(() => (rounds.some((r) => r.series.some(spotted)) ? 'tree' : 'rounds'));
   const [roundKey, setRoundKey] = useState<string | null>(null);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [open, setOpen] = useState<Series | null>(null);
 
   if (rounds.length === 0) return <Text style={styles.empty}>{emptyText}</Text>;
 
-  const active = rounds.find((r) => r.key === roundKey) ?? rounds[rounds.length - 1];
+  // Opened from a game: on the round that series is in, otherwise on the latest round that has begun.
+  const spotRound = rounds.find((r) => r.series.some(spotted));
+  const active = rounds.find((r) => r.key === roundKey) ?? spotRound ?? rounds[rounds.length - 1];
   const activeIndex = rounds.indexOf(active);
   // Jump straight to the stage that matters: the latest round that has begun.
   const pick = (key: string) => {
@@ -135,6 +140,10 @@ function TreeSection({ section, favoriteTeamId, onOpen }: { section: BracketSect
       })
     : [];
   const colX = (col: number) => col * (MINI_W + COL_GAP);
+  // Opened from a game: the tree starts scrolled to the column of that game's series.
+  const lit = useSpotlight();
+  const spot = placements.find((p) => lit(p.series.top.teamId) && lit(p.series.bottom.teamId));
+  const startX = spot ? Math.max(0, colX(spot.col) - 8) : 0;
   const width = section.rounds.length * (MINI_W + COL_GAP) - COL_GAP;
   const byId = new Map(placements.map((p) => [p.series.id, p]));
 
@@ -159,7 +168,7 @@ function TreeSection({ section, favoriteTeamId, onOpen }: { section: BracketSect
   return (
     <View style={styles.section}>
       {section.title ? <Text style={styles.sectionTitle}>{section.title}</Text> : null}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentOffset={{ x: startX, y: 0 }} contentContainerStyle={{ paddingHorizontal: 16 }}>
         <View style={{ width, height: height + 22 }}>
           <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
             {links.map((l) => (

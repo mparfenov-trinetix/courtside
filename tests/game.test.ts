@@ -202,6 +202,29 @@ test('videos: a stream starts on its 720p level, not the 360p one the player wou
   assert.equal(absoluteUrl('/root/z.m3u8', 'https://x/y/p.m3u8'), 'https://x/root/z.m3u8');
 });
 
+test('game kind: regular, preseason, playoffs, play-in, Cup and All-Star games are told apart', async () => {
+  const { classifyGame } = await import('../src/lib/espn/common.ts');
+  assert.equal(classifyGame(undefined, 2), 'regular');
+  assert.equal(classifyGame('NBA China Game', 1), 'preseason');
+  assert.equal(classifyGame('West Finals - Game 2', 3), 'playoffs');
+  assert.equal(classifyGame('NBA Finals - Game 4', 3), 'playoffs');
+  assert.equal(classifyGame('NBA Play-In - East - 9th Place vs 10th Place', 5), 'playin');
+  assert.equal(classifyGame('NBA Cup - Group Play', 2), 'cup-group');
+  assert.equal(classifyGame('NBA Cup Championship', 2), 'cup-knockout'); // a regular-season type, but the Cup is where it matters
+  assert.equal(classifyGame('NBA Cup - Semifinals', 2), 'cup-knockout');
+  assert.equal(classifyGame('NBA All-Star - Round Robin', 2), 'allstar'); // not in the standings, whatever its season type
+  assert.equal(classifyGame('NBA Rising Stars', 2), 'allstar');
+});
+
+test('series line: ESPN\'s playoff series text is shortened', async () => {
+  const { seriesLine } = await import('../src/lib/espn/common.ts');
+  assert.equal(seriesLine('ORL leads series 3-2'), 'ORL leads 3-2');
+  assert.equal(seriesLine('NYK wins series 4-2'), 'NYK won 4-2');
+  assert.equal(seriesLine('Series tied 3-3'), 'Tied 3-3');
+  assert.equal(seriesLine(''), undefined);
+  assert.equal(seriesLine(undefined), undefined);
+});
+
 test('player search: only NBA rows with a photo, retired players included, other sports, repeats and photoless players dropped', () => {
   const row = (uid: string, displayName: string, subtitle: string | null, photo = true) => ({
     type: 'player',

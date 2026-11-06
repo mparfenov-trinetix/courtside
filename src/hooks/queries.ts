@@ -31,6 +31,7 @@ import {
   type ScoreboardGame,
 } from '@/lib/espn';
 import { scoreboardKeysFor, startsOnDay, toDateKey } from '@/lib/date';
+import { playoffSeeds, seedMap } from '@/lib/league';
 import { awaitsTipOff, boardPhase, gamePhase, shotsOf } from '@/lib/game';
 
 const HOUR = 60 * 60 * 1000;
@@ -188,8 +189,8 @@ export function useGameSummary(gameId?: string | null) {
 export function useGameSummaries(ids: string[], enabled = true) {
   return useQueries({
     queries: ids.map((id) => ({
-      queryKey: ['game', id],
       enabled,
+      queryKey: ['game', id],
       queryFn: () => fetchGameSummary(id),
       // A finished game never changes; one that is on or still to come is looked at again every couple of minutes.
       staleTime: (q: { state: { data?: { completed: boolean } } }) => (q.state.data?.completed ? Infinity : 2 * 60 * 1000),
@@ -223,7 +224,6 @@ export function useGamesOnDay(day: Date, today: Date, enabled = true) {
   return { games, isPending: a.isPending || b.isPending, error: a.error ?? b.error, refetch, keys: second ? [first, second] : [first] };
 }
 
-/** `enabled: false` reads nothing from the network (a page that is only being scrolled past); what is cached is still returned. */
 /**
  * The highlight clips of several games, one list per game in the order given (so newest first when the games are). Each is its own
  * small query (`fetchGameVideos`: the clip list only, without normalizing the box score and plays), so a page that shows a few games'
@@ -256,6 +256,7 @@ export function useAfterSettle(delayMs = 900) {
   return ready;
 }
 
+/** `enabled: false` reads nothing from the network (a page that is only being scrolled past); what is cached is still returned. */
 export function useScoreboardByDate(date: string, enabled = true) {
   const focused = useIsFocused();
   const client = useQueryClient();
@@ -297,20 +298,20 @@ export function usePlayerGameLog(athleteId?: string | null) {
 
 export function usePlayerSearch(query: string) {
   const q = query.trim();
-  return useQuery({
   const { data: teams } = useTeams();
+  return useQuery({
     // A shape version: the older feed's results (current players only) are not reused.
     queryKey: ['playerSearch', 2, q.toLowerCase()],
     queryFn: () => searchPlayers(q),
     enabled: q.length >= 2,
     staleTime: HOUR,
-  });
     // The feed names a team but has no id: a team still in the league gets its id and abbreviation (a retired player's old club may not).
     select: (rows) =>
       rows.map((p) => {
         const team = teams?.find((t) => t.displayName === p.teamName);
         return team ? { ...p, teamId: team.id, teamAbbr: team.abbreviation } : p;
       }),
+  });
 }
 
 export function useLeagueTeamStats() {
@@ -359,6 +360,26 @@ export function usePostseason(season: number, enabled = true) {
         ? 60_000
         : false,
   });
+}
+
+/**
+ * Each team's playoff seed for a season, for the "(3)" next to a team in a playoff game. Built from the season's playoff games (the
+ * same data as the bracket, shared through its cache), so it is only asked for when `enabled` (the game is a playoff game); a seed
+ * never changes once the series are set, so it is kept for hours and persisted.
+ */
+export function usePlayoffSeeds(season: number | undefined, enabled: boolean) {
+  const client = useQueryClient();
+  const year = season ?? currentSeason();
+  const { data } = useQuery({
+    queryKey: ['playoffSeeds', year],
+    enabled: enabled && season != null,
+    staleTime: year === currentSeason() ? 6 * HOUR : Infinity,
+    queryFn: async () => {
+      const post = await client.ensureQueryData({ queryKey: ['postseason', year], queryFn: () => fetchPostseason(year) });
+      return playoffSeeds(post.playoffs, seedMap(post.standings));
+    },
+  });
+  return data;
 }
 
 export function usePlayerProfile(athleteId?: string | null) {

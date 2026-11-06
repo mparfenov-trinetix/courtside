@@ -4,9 +4,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FlashOverlay, Tick } from '@/components';
-import { prefetchHeadToHead } from '@/hooks';
+import { prefetchHeadToHead, usePlayoffSeeds } from '@/hooks';
 import { CupBadge } from '@/features/cup';
-import { type ScoreboardGame, type Team } from '@/lib/espn';
+import { PlayoffBadge } from '@/features/playoffs';
+import { seasonOfDate, type ScoreboardGame, type Team } from '@/lib/espn';
+import { playoffTag } from '@/lib/league';
 import { fonts, matchupColors, palette, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
@@ -52,7 +54,10 @@ export function GameCard({
   const line = completed ? 'Final' : inProgress ? status : tip;
   const lead = started ? leadOf(away.score, home.score) : 0;
   const showMine = mine && !!abbr;
-  const hasTags = Boolean(game.cup) || showMine;
+  const postseason = game.kind === 'playoffs' || game.kind === 'playin';
+  const hasTags = Boolean(game.cup) || (postseason && !!playoffTag(game.note)) || showMine;
+  // "(3)" beside a team in a playoff game: its seed.
+  const seeds = usePlayoffSeeds(seasonOfDate(game.date), game.kind === 'playoffs');
   const showLead = inProgress && lead > 0;
   const leader = leaderAbbr(away, home);
 
@@ -71,49 +76,61 @@ export function GameCard({
         end={{ x: 1, y: 0.5 }}
         style={StyleSheet.absoluteFill}
       />
-      <FlashOverlay radius={16} signature={`${away.score ?? ''}-${home.score ?? ''}-${status}`} />
+      {/* Only a game that is on can change under your eyes: the flash and the sliding numbers exist for those, and a finished or upcoming
+          card is plain text (a page of fifteen cards used to carry thirty animated views for nothing). */}
+      {inProgress ? <FlashOverlay radius={16} signature={`${away.score ?? ''}-${home.score ?? ''}-${status}`} /> : null}
 
-      <TeamSide team={away} logo={awayTeam?.logoDark || awayTeam?.logo || away.logo} winner={away.winner} completed={completed} />
+      <TeamSide team={away} logo={awayTeam?.logoDark || awayTeam?.logo || away.logo} winner={away.winner} completed={completed} seed={seeds?.[away.teamId]} />
 
       <View style={styles.mid}>
         {hasTags ? (
           <View style={styles.tags}>
             {game.cup ? <CupBadge stage={game.cup} /> : null}
+            {postseason ? <PlayoffBadge note={game.note} /> : null}
             {showMine ? <Text style={[styles.mineTag, { color: accent }]}>★ {abbr}</Text> : null}
           </View>
         ) : null}
         {started ? (
           <View style={styles.scores}>
-            <Score value={away.score} dim={completed && !away.winner} />
+            <Score value={away.score} dim={completed && !away.winner} live={inProgress} />
             <Text style={styles.dash}>–</Text>
-            <Score value={home.score} dim={completed && !home.winner} />
+            <Score value={home.score} dim={completed && !home.winner} live={inProgress} />
           </View>
         ) : (
           <Text style={styles.tipTime}>{tip}</Text>
         )}
         <View style={styles.statusRow}>
           {inProgress ? <View style={styles.liveDot} /> : null}
-          <Tick style={[styles.statusText, inProgress && { color: '#4ADE80' }, completed && { color: withAlpha(palette.chalk, 0.5) }]} value={started ? line : 'Tip-off'} />
+          <Status live={inProgress} done={completed} text={started ? line : 'Tip-off'} />
         </View>
         {showLead ? (
           <Text style={styles.leadText}>
             {leader} +{Math.round(lead)}
           </Text>
         ) : null}
+        {/* A playoff game's series: after this game once it is played ("NYK won 4-2"), as it stands for one still to come. */}
+        {game.series ? <Text style={styles.series} numberOfLines={1}>{game.series}</Text> : null}
       </View>
 
-      <TeamSide team={home} logo={homeTeam?.logoDark || homeTeam?.logo || home.logo} winner={home.winner} completed={completed} right />
+      <TeamSide team={home} logo={homeTeam?.logoDark || homeTeam?.logo || home.logo} winner={home.winner} completed={completed} seed={seeds?.[home.teamId]} right />
     </Pressable>
   );
 }
 
-function Score({ value, dim }: { value?: number; dim: boolean }) {
+function Score({ value, dim, live }: { value?: number; dim: boolean; live: boolean }) {
   if (value == null) return null;
-  return <Tick style={[styles.score, dim && { color: withAlpha(palette.chalk, 0.58) }]} value={Math.round(value)} />;
+  const style = [styles.score, dim && { color: withAlpha(palette.chalk, 0.58) }];
+  return live ? <Tick style={style} value={Math.round(value)} /> : <Text style={style}>{Math.round(value)}</Text>;
+}
+
+/** The clock or "Final": animated only while the game is on. */
+function Status({ live, done, text }: { live: boolean; done: boolean; text: string }) {
+  const style = [styles.statusText, live && { color: '#4ADE80' }, done && { color: withAlpha(palette.chalk, 0.5) }];
+  return live ? <Tick style={style} value={text} /> : <Text style={style}>{text}</Text>;
 }
 
 /** One team: logo, abbreviation and record; the home side is mirrored. */
-function TeamSide({ team, logo: source, winner, completed, right }: { team: ScoreboardGame['home']; logo: string; winner?: boolean; completed: boolean; right?: boolean }) {
+function TeamSide({ team, logo: source, winner, completed, seed, right }: { team: ScoreboardGame['home']; logo: string; winner?: boolean; completed: boolean; seed?: number; right?: boolean }) {
   const loser = completed && !winner;
   // Never an empty hole: a team without a logo shows its abbreviation in a disc.
   const logo = source ? (
@@ -129,6 +146,7 @@ function TeamSide({ team, logo: source, winner, completed, right }: { team: Scor
       <View style={{ alignItems: right ? 'flex-end' : 'flex-start' }}>
         <Text style={[styles.teamName, loser && { color: withAlpha(palette.chalk, 0.55) }]} numberOfLines={1}>
           {team.abbreviation || team.name}
+          {seed ? <Text style={styles.seed}> ({seed})</Text> : null}
         </Text>
         {team.record ? <Text style={styles.record}>{team.record}</Text> : null}
       </View>
@@ -166,6 +184,8 @@ const styles = StyleSheet.create({
   tipTime: { fontFamily: fonts.display, fontSize: 25, lineHeight: 28, color: palette.chalk },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   statusText: { fontFamily: fonts.bodySemi, fontSize: 11, letterSpacing: 0.3, color: withAlpha(palette.chalk, 0.6) },
+  seed: { fontFamily: fonts.bodySemi, fontSize: 12, color: withAlpha(palette.chalk, 0.55) },
+  series: { fontFamily: fonts.bodySemi, fontSize: 10, color: withAlpha(palette.chalk, 0.7), marginTop: 1 },
   leadText: { fontFamily: fonts.bodySemi, fontSize: 10, color: withAlpha(palette.chalk, 0.5) },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ADE80' },
 });

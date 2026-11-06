@@ -1,12 +1,12 @@
 import { View } from "react-native";
 import Animated from "react-native-reanimated";
 
-import { Collapsible, HeadToHead } from "@/components";
+import { Collapsible, HeadToHead, Highlights } from "@/components";
 import { ClutchCard } from "../ClutchCard";
 import { GameFlow } from "../GameFlow";
 import { GameInfoCard, GameLeaders, InjuryReport } from "../GameLeaders";
 import { KeyMoments } from "../KeyMoments";
-import { StandingsLink } from "../MatchupStandings";
+import { MatchupPlace } from "../MatchupPlace";
 import { Pregame } from "../Pregame";
 import { TeamStatsCard } from "../TeamStatsCard";
 import { Timeouts } from "../Timeouts";
@@ -14,6 +14,8 @@ import type {
   BoxScorePlayer,
   BoxScoreTeam,
   GameInfo,
+  GameKind,
+  GameVideo,
   Play,
   Pregame as PregameData,
 } from "@/lib/espn";
@@ -44,6 +46,10 @@ export function SummaryTab({
   flow,
   info,
   pregame,
+  videos,
+  kind,
+  season,
+  note,
   live,
   hasStarted,
   selPeriods,
@@ -62,6 +68,10 @@ export function SummaryTab({
   flow: Flow;
   info: GameInfo;
   pregame: PregameData;
+  videos: GameVideo[];
+  kind: GameKind;
+  season?: number;
+  note?: string;
   live: boolean;
   hasStarted: boolean;
   selPeriods: number[] | null;
@@ -157,6 +167,13 @@ export function SummaryTab({
     </Animated.View>
   );
 
+  // The game's own clips: the full highlights first, then the single plays in the order they were cut.
+  const highlights = videos.length > 0 && (
+    <Animated.View key="highlights">
+      <Highlights videos={[...videos].sort((a, b) => Number(b.fullGame) - Number(a.fullGame))} />
+    </Animated.View>
+  );
+
   // Only for the whole game: a quarter or half filter would cut the clutch window out of the story.
   const clutch = hasStarted && !selPeriods && (
     <Animated.View key="clutch">
@@ -171,8 +188,8 @@ export function SummaryTab({
   // Live: the swing first, then the numbers and who's producing. Final: who stood out, how the teams
   // compared, then the story of the game.
   const ordered = live
-    ? [flowChart, stats, leaders, clutch, timeouts, moments]
-    : [leaders, clutch, stats, flowChart, moments, timeouts];
+    ? [flowChart, stats, leaders, highlights, clutch, timeouts, moments]
+    : [highlights, leaders, clutch, stats, flowChart, moments, timeouts];
 
   return (
     <View>
@@ -184,10 +201,13 @@ export function SummaryTab({
           data={pregame}
           info={info}
           date={info.date}
+          kind={kind}
+          season={season}
+          note={note}
         />
       )}
       {hasStarted && (
-        <StandingsLink away={awaySide} home={homeSide} date={info.date} />
+        <MatchupPlace kind={kind} season={season} note={note} away={awaySide} home={homeSide} date={info.date} variant="link" />
       )}
 
       {/* Their meetings stay useful while the game is on; once it is over the result is the story. */}

@@ -1,5 +1,6 @@
 export { setHealthReporter, viaProxy } from './client';
-export { cupStage, currentSeason, seasonLabel, seasonOfDate, teamLogo } from './common';
+export { classifyGame, cupStage, seriesLine, currentSeason, seasonLabel, seasonOfDate, teamLogo } from './common';
+export type { GameKind } from './common';
 export { fetchRoster, fetchTeamDetail, fetchTeams } from './teams';
 export type { Player, Roster, Team, TeamDetail } from './teams';
 export { fetchHeadToHead, fetchTeamSchedule, fetchTeamSeason } from './schedule';
