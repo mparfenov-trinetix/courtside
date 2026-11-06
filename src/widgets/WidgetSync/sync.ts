@@ -2,10 +2,8 @@ import { Platform } from 'react-native';
 
 import type { Game, Team, TeamDetail } from '@/lib/espn';
 import { teamTheme } from '@/lib/theme';
+import { buildFixturesProps, buildFormProps, buildLockProps, buildTimeline, type LiveScore, type WatchlistProps } from '@/lib/widgets';
 import { shareLogos } from './logos';
-import { buildFixturesProps, buildFormProps, buildLockProps } from './snapshots';
-import { buildTimeline, type LiveScore } from './timeline';
-import type { WatchlistProps } from './watchlist-widget';
 
 /**
  * Push the selected team's fixtures, form and upcoming games to the iOS widgets. Safe everywhere: where the native module doesn't exist
@@ -16,7 +14,7 @@ export async function syncWidgets(team: Team, detail: TeamDetail | undefined, sc
   try {
     // Loaded lazily: importing expo-widgets resolves a native module, which a plain Expo Go build lacks.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const widget = (require('./next-game-widget') as typeof import('./next-game-widget')).default;
+    const widget = (require('../NextGameWidget') as typeof import('../NextGameWidget')).NextGameWidget;
     const entries = buildTimeline(team, detail, schedule, teamTheme(team), new Date(), live);
     const files = await shareLogos(entries.flatMap((e) => [e.props.logo, e.props.oppLogo]));
     widget.updateTimeline(
@@ -29,15 +27,15 @@ export async function syncWidgets(team: Team, detail: TeamDetail | undefined, sc
     const fixtures = buildFixturesProps(team, schedule, theme);
     const shared = await shareLogos([form.logo, ...fixtures.games.map((g) => g.oppLogo)]);
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    (require('./team-form-widget') as typeof import('./team-form-widget')).default.updateSnapshot({ ...form, logo: shared[form.logo] ?? '' });
+    (require('../TeamFormWidget') as typeof import('../TeamFormWidget')).TeamFormWidget.updateSnapshot({ ...form, logo: shared[form.logo] ?? '' });
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    (require('./fixtures-widget') as typeof import('./fixtures-widget')).default.updateSnapshot({
+    (require('../FixturesWidget') as typeof import('../FixturesWidget')).FixturesWidget.updateSnapshot({
       ...fixtures,
       logo: shared[fixtures.logo] ?? '',
       games: fixtures.games.map((g) => ({ ...g, oppLogo: shared[g.oppLogo] ?? '' })),
     });
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    (require('./lock-screen-widget') as typeof import('./lock-screen-widget')).default.updateSnapshot(buildLockProps(team, detail, schedule));
+    (require('../LockScreenWidget') as typeof import('../LockScreenWidget')).LockScreenWidget.updateSnapshot(buildLockProps(team, detail, schedule));
   } catch {
     // No widget support in this build.
   }
@@ -50,7 +48,7 @@ export async function syncWatchlistWidget(props: WatchlistProps) {
     // Widgets can't fetch: logos and headshots are downloaded once into the shared widget folder and passed as file URIs.
     const files = await shareLogos([...props.games.flatMap((g) => [g.awayLogo, g.homeLogo]), ...props.players.map((p) => p.avatar)]);
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    (require('./watchlist-widget') as typeof import('./watchlist-widget')).default.updateSnapshot({
+    (require('../WatchlistWidget') as typeof import('../WatchlistWidget')).WatchlistWidget.updateSnapshot({
       games: props.games.map((g) => ({ ...g, awayLogo: files[g.awayLogo] ?? '', homeLogo: files[g.homeLogo] ?? '' })),
       players: props.players.map((p) => ({ ...p, avatar: files[p.avatar] ?? '' })),
     });

@@ -4,8 +4,8 @@ import { useEffect } from 'react';
 import { useStandings, useTeam, useTeamDetail, useTeamSchedule } from '@/hooks';
 import { fetchGameSummary } from '@/lib/espn';
 import { conferenceStanding } from '@/lib/league';
+import { liveScoreOf } from '@/lib/widgets';
 import { useTeamStore } from '@/state';
-import { liveScoreOf } from './live-game';
 import { syncWidgets } from './sync';
 
 /** Keeps the home-screen widget on your favorite team's upcoming games, whenever that data changes. */

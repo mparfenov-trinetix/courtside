@@ -18,7 +18,7 @@ module.exports = defineConfig([
         {
           patterns: [
             {
-              group: ['@/components/*/*', '@/features/*/*', '@/lib/*/*', '@/hooks/*', '@/state/*', '@/navigation/*'],
+              group: ['@/components/*/*', '@/features/*/*', '@/lib/*/*', '@/widgets/*/*', '@/hooks/*', '@/state/*', '@/navigation/*'],
               message: "Import a folder's index ('@/features/game', '@/components', '@/lib/espn'), never a file inside it.",
             },
           ],

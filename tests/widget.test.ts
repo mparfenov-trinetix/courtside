@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildFixturesProps, buildFormProps, buildLockProps, buildWatchlistProps, streakOf } from '../src/widgets/snapshots.ts';
-import { liveScoreOf } from '../src/widgets/live-game.ts';
-import { buildTimeline } from '../src/widgets/timeline.ts';
+import { buildFixturesProps, buildFormProps, buildLockProps, buildTimeline, buildWatchlistProps, liveScoreOf, streakOf } from '../src/lib/widgets';
 
 const team = { abbreviation: 'PHI', name: '76ers', logo: 'light.png', logoDark: 'dark.png' };
 const theme = { background: '#06121F', surface: '#0B2A47', accent: '#2E9BEA' };
@@ -115,7 +113,7 @@ test('fixtures widget: unplayed games only, soonest first, capped at five', () =
 test('live activity props: scores, status, who leads, and a timeout in progress', async () => {
   const { readFileSync } = await import('node:fs');
   const { normalizeGameSummary } = await import('../src/lib/espn/index.ts');
-  const { buildLiveGameProps } = await import('../src/widgets/live-game.ts');
+  const { buildLiveGameProps } = await import('../src/lib/widgets');
   const final = normalizeGameSummary(JSON.parse(readFileSync(new URL('./fixtures/game-final.json', import.meta.url), 'utf8')), '401909912');
   const done = buildLiveGameProps(final, { [final.away.team.logoDark || final.away.team.logo]: 'file:///away.png' });
   assert.equal(done.final, true);
@@ -139,7 +137,7 @@ test('live activity props: scores, status, who leads, and a timeout in progress'
 });
 
 test('live activity follows your team while it is on, else a starred game, else a final from today', async () => {
-  const { pickTrackedGame } = await import('../src/widgets/live-game.ts');
+  const { pickTrackedGame } = await import('../src/lib/widgets');
   const side = (teamId: string) => ({ teamId, name: '', abbreviation: '', logo: '' });
   const g = (id: string, a: string, h: string, inProgress: boolean, completed = false) =>
     ({ id, date: '', status: '', completed, inProgress, away: side(a), home: side(h) });

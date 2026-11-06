@@ -2,8 +2,8 @@ import type { LiveActivityDismissalPolicy } from 'expo-widgets';
 import { Platform } from 'react-native';
 
 import type { GameSummary } from '@/lib/espn';
+import { buildLiveGameProps, isTrackable, type LiveGameProps } from '@/lib/widgets';
 import { shareLogos } from './logos';
-import { buildLiveGameProps, isTrackable, type LiveGameProps } from './live-game';
 
 type Activity = { update: (props: LiveGameProps, staleDate?: Date) => Promise<void>; end: (policy?: LiveActivityDismissalPolicy, props?: LiveGameProps, contentDate?: Date) => Promise<void> };
 
@@ -17,7 +17,7 @@ let current: { gameId: string; activity: Activity } | null = null;
 /** Loaded lazily: importing expo-widgets resolves a native module, which Expo Go and web don't have. */
 function layout() {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return (require('./live-game-activity') as typeof import('./live-game-activity')).default;
+  return (require('../LiveGameActivity') as typeof import('../LiveGameActivity')).LiveGameActivity;
 }
 
 /**

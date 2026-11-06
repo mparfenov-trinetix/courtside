@@ -55,7 +55,7 @@
                   "systemSmall",
                   "systemMedium"
                 ],
-                "initialLayout": "./src/widgets/next-game-widget.tsx"
+                "initialLayout": "./src/widgets/NextGameWidget/NextGameWidget.tsx"
               }
             },
             {
@@ -67,7 +67,7 @@
                   "systemSmall",
                   "systemMedium"
                 ],
-                "initialLayout": "./src/widgets/team-form-widget.tsx"
+                "initialLayout": "./src/widgets/TeamFormWidget/TeamFormWidget.tsx"
               }
             },
             {
@@ -79,7 +79,7 @@
                   "systemMedium",
                   "systemLarge"
                 ],
-                "initialLayout": "./src/widgets/fixtures-widget.tsx"
+                "initialLayout": "./src/widgets/FixturesWidget/FixturesWidget.tsx"
               }
             },
             {
@@ -92,7 +92,7 @@
                   "accessoryRectangular",
                   "accessoryInline"
                 ],
-                "initialLayout": "./src/widgets/lock-screen-widget.tsx"
+                "initialLayout": "./src/widgets/LockScreenWidget/LockScreenWidget.tsx"
               }
             },
             {
@@ -104,7 +104,7 @@
                   "systemMedium",
                   "systemLarge"
                 ],
-                "initialLayout": "./src/widgets/watchlist-widget.tsx"
+                "initialLayout": "./src/widgets/WatchlistWidget/WatchlistWidget.tsx"
               }
             }
           ],

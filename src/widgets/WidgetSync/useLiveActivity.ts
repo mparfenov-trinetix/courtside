@@ -5,8 +5,8 @@ import { scoreboardQueryFn, useMinuteTick } from '@/hooks';
 import { fetchGameSummary } from '@/lib/espn';
 import { awaitsTipOff, boardPhase } from '@/lib/game';
 import { toNbaDateKey } from '@/lib/date';
+import { pickTrackedGame } from '@/lib/widgets';
 import { useTeamStore, useWatchlist } from '@/state';
-import { pickTrackedGame } from './live-game';
 import { syncLiveActivity } from './live-activity';
 
 const BOARD_MS = 30_000;

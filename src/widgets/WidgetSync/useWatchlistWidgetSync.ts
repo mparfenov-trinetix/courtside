@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 
 import { useGameSummaries, usePlayerGameLogs } from '@/hooks';
 import { useWatchlist } from '@/state';
+import { buildWatchlistProps, WATCHLIST_ROWS } from '@/lib/widgets';
 import { syncWatchlistWidget } from './sync';
-import { buildWatchlistProps, WATCHLIST_ROWS } from './snapshots';
 
 /** Keeps the Watchlist widget on your starred games' scores and your starred players' latest lines. */
 export function useWatchlistWidgetSync() {

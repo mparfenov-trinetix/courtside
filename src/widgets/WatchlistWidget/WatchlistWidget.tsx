@@ -15,55 +15,15 @@ import {
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
-
-export type WatchlistGameProps = {
-  away: string;
-  home: string;
-  /** Logo file URIs inside the shared widget folder; empty when one couldn't be downloaded (the abbreviation shows instead). */
-  awayLogo: string;
-  homeLogo: string;
-  /** Empty before tip-off. */
-  awayScore: string;
-  homeScore: string;
-  /** "Q4 3:12", "Final", or the start time ("Thu 7:00 PM"). */
-  status: string;
-  live: boolean;
-};
-
-export type WatchlistPlayerProps = {
-  name: string;
-  /** Headshot file URI inside the shared widget folder; empty when it couldn't be downloaded. */
-  avatar: string;
-  /** "28 pts · 7 reb · 5 ast" from his latest game. */
-  line: string;
-  /** "W 112-104" for that game. */
-  result: string;
-};
-
-export type WatchlistProps = {
-  games: WatchlistGameProps[];
-  players: WatchlistPlayerProps[];
-};
-
-export const SAMPLE_WATCHLIST: WatchlistProps = {
-  games: [
-    { away: 'DEN', home: 'LAL', awayLogo: '', homeLogo: '', awayScore: '98', homeScore: '101', status: 'Q4 3:12', live: true },
-    { away: 'BOS', home: 'MIA', awayLogo: '', homeLogo: '', awayScore: '', homeScore: '', status: 'Thu 7:30 PM', live: false },
-    { away: 'PHI', home: 'DET', awayLogo: '', homeLogo: '', awayScore: '104', homeScore: '108', status: 'Final', live: false },
-  ],
-  players: [
-    { name: 'Luka Doncic', avatar: '', line: '41 pts · 10 reb · 8 ast', result: 'W 127-120' },
-    { name: 'Nikola Jokic', avatar: '', line: '28 pts · 14 reb · 9 ast', result: 'L 98-101' },
-    { name: 'Stephen Curry', avatar: '', line: '36 pts · 6 reb · 6 ast', result: 'W 118-110' },
-  ],
-};
+import type { WatchlistGameProps, WatchlistPlayerProps, WatchlistProps } from '@/lib/widgets';
+import { SAMPLE_WATCHLIST } from './constants';
 
 /**
  * Home-screen widget: the games and players you starred. Medium: games on the left, players on the right. Large: both in one
  * column, with more rows.
  * Runs in WidgetKit's own runtime: pure, synchronous, and nothing outside this function but the imports above.
  */
-const WatchlistWidget = (props: WatchlistProps, environment: WidgetEnvironment) => {
+const WatchlistLayout = (props: WatchlistProps, environment: WidgetEnvironment) => {
   'widget';
   const large = environment.widgetFamily === 'systemLarge';
   const white = '#F2F4F7';
@@ -191,4 +151,6 @@ const WatchlistWidget = (props: WatchlistProps, environment: WidgetEnvironment) 
   );
 };
 
-export default createWidget<WatchlistProps>('WatchlistWidget', WatchlistWidget, SAMPLE_WATCHLIST);
+export const WatchlistWidget = createWidget<WatchlistProps>('WatchlistWidget', WatchlistLayout, SAMPLE_WATCHLIST);
+
+export default WatchlistWidget;

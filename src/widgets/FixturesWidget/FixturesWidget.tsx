@@ -12,52 +12,14 @@ import {
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
-
-export type FixtureProps = {
-  oppAbbr: string;
-  oppName: string;
-  /** Logo file URI inside the shared widget folder; empty when it couldn't be downloaded. */
-  oppLogo: string;
-  home: boolean;
-  /** "Thu, Nov 5" and "7:00 PM", in the device's language and time zone when the app last synced. */
-  day: string;
-  time: string;
-  /** "NBA Cup" or a playoff round; empty for a regular game. */
-  tag: string;
-  gameId: string;
-};
-
-export type FixturesProps = {
-  teamAbbr: string;
-  bg: string;
-  bg2: string;
-  accent: string;
-  logo: string;
-  /** The next games, soonest first. */
-  games: FixtureProps[];
-};
-
-/** What the widget gallery and a never-opened widget show. */
-export const SAMPLE_FIXTURES: FixturesProps = {
-  teamAbbr: 'DEN',
-  bg: '#0D1B2E',
-  bg2: '#1B3A5F',
-  accent: '#FEC524',
-  logo: '',
-  games: [
-    { oppAbbr: 'TOR', oppName: 'Toronto Raptors', oppLogo: '', home: true, day: 'Thu, Nov 5', time: '7:00 PM', tag: '', gameId: '' },
-    { oppAbbr: 'POR', oppName: 'Portland Trail Blazers', oppLogo: '', home: false, day: 'Sat, Nov 7', time: '9:30 PM', tag: 'NBA Cup', gameId: '' },
-    { oppAbbr: 'MIN', oppName: 'Minnesota Timberwolves', oppLogo: '', home: true, day: 'Mon, Nov 9', time: '7:00 PM', tag: '', gameId: '' },
-    { oppAbbr: 'SAS', oppName: 'San Antonio Spurs', oppLogo: '', home: false, day: 'Wed, Nov 11', time: '8:00 PM', tag: '', gameId: '' },
-    { oppAbbr: 'LAC', oppName: 'LA Clippers', oppLogo: '', home: true, day: 'Fri, Nov 13', time: '10:00 PM', tag: '', gameId: '' },
-  ],
-};
+import type { FixtureProps, FixturesProps } from '@/lib/widgets';
+import { SAMPLE_FIXTURES } from './constants';
 
 /**
  * Home-screen widget: the selected team's next games as a list. Medium shows three, large shows five.
  * Runs in WidgetKit's own runtime: pure, synchronous, and nothing outside this function but the imports above.
  */
-const FixturesWidget = (props: FixturesProps, environment: WidgetEnvironment) => {
+const FixturesLayout = (props: FixturesProps, environment: WidgetEnvironment) => {
   'widget';
   const large = environment.widgetFamily === 'systemLarge';
   const white = '#F2F4F7';
@@ -103,4 +65,6 @@ const FixturesWidget = (props: FixturesProps, environment: WidgetEnvironment) =>
   );
 };
 
-export default createWidget<FixturesProps>('FixturesWidget', FixturesWidget, SAMPLE_FIXTURES);
+export const FixturesWidget = createWidget<FixturesProps>('FixturesWidget', FixturesLayout, SAMPLE_FIXTURES);
+
+export default FixturesWidget;

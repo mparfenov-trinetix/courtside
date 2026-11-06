@@ -14,90 +14,8 @@ import {
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
-
-/** Everything the widget shows, already formatted by the app: the widget itself can't fetch or compute. */
-export type NextGameProps = {
-  /** The selected team. */
-  teamAbbr: string;
-  teamName: string;
-  record: string;
-  /** The app's own look: dark team-tinted background (top-left to bottom-right) and the team's accent. */
-  bg: string;
-  bg2: string;
-  accent: string;
-  /** Logo file URIs inside the shared widget folder; empty when a logo couldn't be downloaded. */
-  logo: string;
-  oppLogo: string;
-  /** The next fixture; `iso` is empty when the team has no game scheduled. */
-  oppAbbr: string;
-  oppName: string;
-  home: boolean;
-  iso: string;
-  /** "Thu, Nov 5" in the device's language. */
-  day: string;
-  /** Between tip-off and the end of the game: the widget turns red and sends you to the live game. */
-  live: boolean;
-  gameId: string;
-  /** For the footer: stage like "NBA Cup" or "Round 1", when there is one. */
-  tag: string;
-  /** The score while the game is on (the selected team's first, as the logos are) and its clock ("4:03 - 3rd"); empty before the app has one. */
-  myScore: string;
-  oppScore: string;
-  clock: string;
-  /** Only the gallery sample sets these: fixed text in place of the live clock, which a sample can't have. */
-  timeText?: string;
-  countdownText?: string;
-};
-
-export const EMPTY_PROPS: NextGameProps = {
-  teamAbbr: 'NBA',
-  teamName: 'Courtside',
-  record: '',
-  bg: '#0D1B2E',
-  bg2: '#16273F',
-  accent: '#F2F4F7',
-  logo: '',
-  oppLogo: '',
-  oppAbbr: '',
-  oppName: '',
-  home: true,
-  iso: '',
-  day: '',
-  live: false,
-  gameId: '',
-  tag: '',
-  myScore: '',
-  oppScore: '',
-  clock: '',
-};
-
-/**
- * What the widget gallery and a freshly installed (never opened) widget show: a plausible fixture instead of an empty card.
- * The app replaces it with the real timeline as soon as it runs.
- */
-export const SAMPLE_PROPS: NextGameProps = {
-  teamAbbr: 'DEN',
-  teamName: 'Denver Nuggets',
-  record: '4-2',
-  bg: '#0D1B2E',
-  bg2: '#1B3A5F',
-  accent: '#FEC524',
-  logo: '',
-  oppLogo: '',
-  oppAbbr: 'TOR',
-  oppName: 'Toronto Raptors',
-  home: true,
-  iso: '2030-01-01T02:00:00Z',
-  day: 'THU, NOV 5',
-  live: false,
-  gameId: '',
-  tag: '',
-  myScore: '',
-  oppScore: '',
-  clock: '',
-  timeText: '7:00 PM',
-  countdownText: 'in 1 day, 6 hr',
-};
+import type { NextGameProps } from '@/lib/widgets';
+import { SAMPLE_PROPS } from './constants';
 
 /**
  * Home-screen widget: the selected team's next fixture.
@@ -105,7 +23,7 @@ export const SAMPLE_PROPS: NextGameProps = {
  * Runs in WidgetKit's own runtime: it must be pure, synchronous, and reference nothing outside this function
  * (no imports at runtime beyond the components above, no module-level constants, no hooks).
  */
-const NextGameWidget = (props: NextGameProps, environment: WidgetEnvironment) => {
+const NextGameLayout = (props: NextGameProps, environment: WidgetEnvironment) => {
   'widget';
   const small = environment.widgetFamily === 'systemSmall';
   const white = '#F2F4F7';
@@ -241,4 +159,6 @@ const NextGameWidget = (props: NextGameProps, environment: WidgetEnvironment) =>
   );
 };
 
-export default createWidget<NextGameProps>('NextGameWidget', NextGameWidget, SAMPLE_PROPS);
+export const NextGameWidget = createWidget<NextGameProps>('NextGameWidget', NextGameLayout, SAMPLE_PROPS);
+
+export default NextGameWidget;

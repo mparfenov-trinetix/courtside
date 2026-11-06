@@ -14,59 +14,14 @@ import {
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
-
-export type FormGameProps = {
-  result: 'W' | 'L';
-  /** Opponent abbreviation. */
-  opp: string;
-  /** "106-93": the team's score first. */
-  score: string;
-  home: boolean;
-};
-
-/** Everything the widget shows, already worked out by the app. */
-export type TeamFormProps = {
-  teamAbbr: string;
-  teamName: string;
-  record: string;
-  /** "4th in Pacific Division"; empty when unknown. */
-  standing: string;
-  /** "W3" / "L2"; empty with no games. */
-  streak: string;
-  bg: string;
-  bg2: string;
-  accent: string;
-  /** Logo file URI inside the shared widget folder; empty when it couldn't be downloaded. */
-  logo: string;
-  /** Last five finished games, oldest first. */
-  games: FormGameProps[];
-};
-
-/** What the widget gallery and a never-opened widget show. */
-export const SAMPLE_FORM: TeamFormProps = {
-  teamAbbr: 'DEN',
-  teamName: 'Denver Nuggets',
-  record: '4-2',
-  standing: '2nd in Northwest Division',
-  streak: 'W3',
-  bg: '#0D1B2E',
-  bg2: '#1B3A5F',
-  accent: '#FEC524',
-  logo: '',
-  games: [
-    { result: 'L', opp: 'LAL', score: '98-104', home: false },
-    { result: 'W', opp: 'PHX', score: '121-110', home: true },
-    { result: 'W', opp: 'MIN', score: '113-99', home: true },
-    { result: 'L', opp: 'OKC', score: '101-109', home: false },
-    { result: 'W', opp: 'UTA', score: '127-105', home: true },
-  ],
-};
+import type { FormGameProps, TeamFormProps } from '@/lib/widgets';
+import { SAMPLE_FORM } from './constants';
 
 /**
  * Home-screen widget: the selected team's last five results with its record, streak and standing.
  * Runs in WidgetKit's own runtime: pure, synchronous, and nothing outside this function but the imports above.
  */
-const TeamFormWidget = (props: TeamFormProps, environment: WidgetEnvironment) => {
+const TeamFormLayout = (props: TeamFormProps, environment: WidgetEnvironment) => {
   'widget';
   const small = environment.widgetFamily === 'systemSmall';
   const white = '#F2F4F7';
@@ -139,4 +94,6 @@ const TeamFormWidget = (props: TeamFormProps, environment: WidgetEnvironment) =>
   );
 };
 
-export default createWidget<TeamFormProps>('TeamFormWidget', TeamFormWidget, SAMPLE_FORM);
+export const TeamFormWidget = createWidget<TeamFormProps>('TeamFormWidget', TeamFormLayout, SAMPLE_FORM);
+
+export default TeamFormWidget;

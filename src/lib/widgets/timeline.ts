@@ -1,8 +1,7 @@
 import type { Game, Team, TeamDetail } from '@/lib/espn';
-import type { NextGameProps } from './next-game-widget';
+import { GAME_LENGTH_MS } from './constants';
+import type { NextGameProps } from './types';
 
-/** The widget switches to the following game this long after tip-off. */
-const GAME_LENGTH_MS = 3 * 60 * 60 * 1000;
 const MAX_GAMES = 5;
 
 export type Entry = { date: Date; props: NextGameProps };

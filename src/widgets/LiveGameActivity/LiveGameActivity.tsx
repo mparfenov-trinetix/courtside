@@ -15,7 +15,7 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity, type LiveActivityEnvironment } from 'expo-widgets';
 
-import type { LiveGameProps } from './live-game';
+import type { LiveGameProps } from '@/lib/widgets';
 
 /**
  * The live score of one game, on the lock screen and in the Dynamic Island. The banner is split in the two teams' own
@@ -23,7 +23,7 @@ import type { LiveGameProps } from './live-game';
  * pill during a timeout. A light gold "B" on a crest means that team is in the bonus.
  * Runs in the activity's own runtime: pure, synchronous, and nothing outside this function but the imports above.
  */
-const LiveGameActivity = (props: LiveGameProps, environment: LiveActivityEnvironment) => {
+const LiveGameLayout = (props: LiveGameProps, environment: LiveActivityEnvironment) => {
   'widget';
   const white = '#F5F7FA';
   const dim = '#F5F7FA8C';
@@ -152,4 +152,6 @@ const LiveGameActivity = (props: LiveGameProps, environment: LiveActivityEnviron
   };
 };
 
-export default createLiveActivity<LiveGameProps>('LiveGameActivity', LiveGameActivity);
+export const LiveGameActivity = createLiveActivity<LiveGameProps>('LiveGameActivity', LiveGameLayout);
+
+export default LiveGameActivity;

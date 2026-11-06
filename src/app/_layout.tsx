@@ -19,7 +19,7 @@ import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { WidgetSync } from '@/widgets/widget-sync';
+import { WidgetSync } from '@/widgets';
 import { NavDepthTracker } from '@/navigation';
 import { DataHealthBanner, ScreenError } from '@/components';
 import { reportIssue } from '@/lib/data-health';
