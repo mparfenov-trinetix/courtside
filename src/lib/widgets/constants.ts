@@ -5,4 +5,7 @@ export const FORM_GAMES = 5;
 /** The games the fixtures widget lists. */
 export const FIXTURES_SHOWN = 5;
 
-export const WATCHLIST_ROWS = 4;
+/** The most players the widget is given: the large one shows six when there are no games. */
+export const WATCHLIST_PLAYERS = 6;
+/** The large widget shows up to six games (two to a row from the fourth on). */
+export const WATCHLIST_GAMES = 6;

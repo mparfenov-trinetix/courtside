@@ -117,6 +117,9 @@ export type WatchlistGameProps = {
   /** Logo file URIs inside the shared widget folder; empty when one couldn't be downloaded (the abbreviation shows instead). */
   awayLogo: string;
   homeLogo: string;
+  /** The two teams' colors for the game-card look (`matchupColors`), '#RRGGBB'; empty when a team isn't known. */
+  awayColor: string;
+  homeColor: string;
   /** Empty before tip-off. */
   awayScore: string;
   homeScore: string;
@@ -131,6 +134,10 @@ export type WatchlistPlayerProps = {
   avatar: string;
   /** "28 pts · 7 reb · 5 ast" from his latest game. */
   line: string;
+  /** The same three numbers on their own, for the layouts that give each a column. */
+  pts: string;
+  reb: string;
+  ast: string;
   /** "W 112-104" for that game. */
   result: string;
 };

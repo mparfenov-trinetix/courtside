@@ -191,10 +191,20 @@ test('watchlist: games in live, upcoming, final order; players with their latest
     { '1': sum(false, true, 'Final', 100, 90), '3': sum(true, false, 'Q4 3:12', 98, 101), '4': sum(false, true, 'Final', 80, 85) },
   );
   assert.deepEqual(p.games.map((x) => x.away), ['A3', 'A2', 'A4', 'A1']);
-  assert.deepEqual(p.games[0], { away: 'A3', home: 'H3', awayLogo: 'a3.png', homeLogo: 'h3.png', awayScore: '98', homeScore: '101', status: 'Q4 3:12', live: true });
+  assert.deepEqual(p.games[0], { away: 'A3', home: 'H3', awayLogo: 'a3.png', homeLogo: 'h3.png', awayColor: '', homeColor: '', awayScore: '98', homeScore: '101', status: 'Q4 3:12', live: true });
   assert.equal(p.games[1].awayScore, ''); // not started: no score
   assert.equal(p.games[1].live, false);
-  assert.deepEqual(p.players, [{ name: 'Luka Doncic', avatar: 'https://a.espncdn.com/i/headshots/nba/players/full/p1.png', line: '41 pts · 10 reb · 8 ast', result: 'W 127-120' }]);
+  assert.deepEqual(p.players, [{ name: 'Luka Doncic', avatar: 'https://a.espncdn.com/i/headshots/nba/players/full/p1.png', line: '41 pts · 10 reb · 8 ast', pts: '41', reb: '10', ast: '8', result: 'W 127-120' }]);
+});
+
+test('watchlist: a game carries its two teams\' colors when they are known', () => {
+  const g = { id: '1', date: '2026-11-06T01:00:00Z', away: { abbr: 'DEN', logo: '' }, home: { abbr: 'LAL', logo: '' } };
+  const colors = (a: string, h: string) => (a === 'DEN' && h === 'LAL' ? { away: '#FEC524', home: '#552583' } : undefined);
+  const known = buildWatchlistProps([], {}, [g], {}, colors);
+  assert.equal(known.games[0].awayColor, '#FEC524');
+  assert.equal(known.games[0].homeColor, '#552583');
+  const unknown = buildWatchlistProps([], {}, [{ ...g, home: { abbr: 'XXX', logo: '' } }], {}, colors);
+  assert.equal(unknown.games[0].awayColor, '');
 });
 
 test('watchlist: nothing starred gives empty lists', () => {
