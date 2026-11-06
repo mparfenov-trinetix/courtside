@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buildFixturesProps, buildFormProps, buildLockProps, buildTimeline, buildWatchlistProps, liveScoreOf, streakOf } from '../src/lib/widgets';
+import { normalizeTeamStar } from '../src/lib/espn';
 
 const team = { abbreviation: 'PHI', name: '76ers', logo: 'light.png', logoDark: 'dark.png' };
 const theme = { background: '#06121F', surface: '#0B2A47', accent: '#2E9BEA' };
@@ -91,6 +92,26 @@ test('form widget: no games yet is an empty list, not an error', () => {
   const f = buildFormProps(team, undefined, [game('1', '2026-11-05T01:00:00Z', 'A', true)], theme);
   assert.deepEqual(f.games, []);
   assert.equal(f.streak, '');
+});
+
+test('team star: the first rated player of a team with his per-game numbers; none rated is null', () => {
+  const json = {
+    categories: [
+      { name: 'pointsPerGame', leaders: [{ displayValue: '25.4', athlete: { $ref: 'http://x/athletes/1' } }] },
+      { name: 'rating', leaders: [{ displayValue: '23.4 PPG, 9.7 RPG, 9.3 APG, 2.1 SPG, 1.1 BPG', athlete: { $ref: 'http://sports.core.api.espn.com/v2/athletes/3112335?lang=en' } }] },
+    ],
+  };
+  assert.deepEqual(normalizeTeamStar(json), { ref: 'https://sports.core.api.espn.com/v2/athletes/3112335?lang=en', ppg: '23.4', rpg: '9.7', apg: '9.3' });
+  assert.equal(normalizeTeamStar({ categories: [] }), null);
+  assert.equal(normalizeTeamStar({ categories: [{ name: 'rating', leaders: [] }] }), null);
+});
+
+test('form widget: the best player rides along, and is empty without one', () => {
+  const star = { athleteId: '3112335', name: 'Nikola Jokic', shortName: 'N. Jokic', headshot: 'https://h/3112335.png', ppg: '23.4', rpg: '9.7', apg: '9.3' };
+  const withStar = buildFormProps(team, undefined, [], theme, star);
+  assert.deepEqual([withStar.starName, withStar.starAvatar, withStar.starPpg, withStar.starRpg, withStar.starApg], ['N. Jokic', 'https://h/3112335.png', '23.4', '9.7', '9.3']);
+  const none = buildFormProps(team, undefined, [], theme, null);
+  assert.deepEqual([none.starName, none.starAvatar, none.starPpg], ['', '', '']);
 });
 
 test('streak counts from the newest result', () => {

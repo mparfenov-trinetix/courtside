@@ -34,6 +34,22 @@ export const LEADER_CATEGORIES = {
 
 export type LeaderCategory = keyof typeof LEADER_CATEGORIES;
 
+/** A team's best player by ESPN's own rating, with his per-game points, rebounds and assists. */
+export type TeamStar = { athleteId: string; name: string; shortName: string; headshot?: string; ppg: string; rpg: string; apg: string };
+
+/**
+ * The first entry of a team's `rating` leaders (ESPN's ranking of its best players): the athlete's record link and the per-game numbers
+ * its display value carries ("23.4 PPG, 9.7 RPG, 9.3 APG, ..."). Null when the team has no rated player yet (the start of a season).
+ */
+export function normalizeTeamStar(json: Json): { ref: string; ppg: string; rpg: string; apg: string } | null {
+  const lead: Json | undefined = ((json.categories ?? []) as Json[]).find((c) => c.name === 'rating')?.leaders?.[0];
+  const ref = String(lead?.athlete?.$ref ?? '').replace(/^http:\/\//, 'https://');
+  if (!lead || !ref) return null;
+  const text = String(lead.displayValue ?? '');
+  const part = (label: string) => new RegExp(`([\\d.]+)\\s*${label}`, 'i').exec(text)?.[1] ?? '';
+  return { ref, ppg: part('PPG'), rpg: part('RPG'), apg: part('APG') };
+}
+
 type AthleteInfo = { athleteId: string; name: string; shortName: string; headshot?: string };
 
 /** Athlete records already read, by ref: the same player leads several categories, and the screen reads them one at a time. */
@@ -60,6 +76,15 @@ function athleteOf(ref: string): Promise<AthleteInfo> {
     athletes.set(ref, known);
   }
   return known;
+}
+
+/** The best player of one team this season, or null before ESPN has rated anyone. */
+export async function fetchTeamStar(teamId: string): Promise<TeamStar | null> {
+  const json = await getJson(`${CORE}/seasons/${currentSeason()}/types/2/teams/${teamId}/leaders?lang=en&region=us`);
+  const star = normalizeTeamStar(json);
+  if (!star) return null;
+  const who = await athleteOf(star.ref);
+  return { ...who, ppg: star.ppg, rpg: star.rpg, apg: star.apg };
 }
 
 /**

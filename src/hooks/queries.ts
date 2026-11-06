@@ -20,6 +20,7 @@ import {
   fetchScoreboardByDate,
   fetchStandings,
   fetchTeamDetail,
+  fetchTeamStar,
   fetchLeagueTeamStats,
   fetchTeams,
   searchPlayers,
@@ -56,6 +57,16 @@ export function useTeamDetail(teamId?: string | null) {
     queryFn: () => fetchTeamDetail(teamId!),
     enabled: !!teamId,
     staleTime: HOUR,
+  });
+}
+
+/** A team's best player by ESPN's rating (the form widget's free corner); null before anyone is rated. */
+export function useTeamStar(teamId?: string | null) {
+  return useQuery({
+    queryKey: ['teamStar', teamId, currentSeason()],
+    queryFn: () => fetchTeamStar(teamId!),
+    enabled: !!teamId,
+    staleTime: 6 * HOUR,
   });
 }
 

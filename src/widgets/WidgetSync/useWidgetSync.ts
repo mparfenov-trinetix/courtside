@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
-import { useStandings, useTeam, useTeamDetail, useTeamSchedule } from '@/hooks';
+import { useStandings, useTeam, useTeamDetail, useTeamSchedule, useTeamStar } from '@/hooks';
 import { fetchGameSummary } from '@/lib/espn';
 import { conferenceStanding } from '@/lib/league';
 import { liveScoreOf } from '@/lib/widgets';
@@ -14,6 +14,7 @@ export function useWidgetSync() {
   const team = useTeam(favoriteTeamId);
   const { data: detail } = useTeamDetail(favoriteTeamId);
   const { data: schedule } = useTeamSchedule(favoriteTeamId);
+  const { data: star } = useTeamStar(favoriteTeamId);
   const { data: standings } = useStandings();
   const standing = conferenceStanding(standings, favoriteTeamId);
 
@@ -32,8 +33,8 @@ export function useWidgetSync() {
   const liveKey = live ? `${live.gameId}|${live.myScore}|${live.oppScore}|${live.clock}` : '';
 
   useEffect(() => {
-    if (team && schedule) syncWidgets(team, detail ? { ...detail, standing: standing ?? detail.standing } : undefined, schedule, live);
+    if (team && schedule) syncWidgets(team, detail ? { ...detail, standing: standing ?? detail.standing } : undefined, schedule, live, star);
     // `live` is read through `liveKey`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [team, detail, schedule, standing, liveKey]);
+  }, [team, detail, schedule, standing, star, liveKey]);
 }

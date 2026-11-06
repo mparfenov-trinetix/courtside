@@ -65,6 +65,12 @@ export type TeamFormProps = {
   logo: string;
   /** Last five finished games, oldest first. */
   games: FormGameProps[];
+  /** The team's best player (ESPN's own rating): "N. Jokic", his headshot file and per-game numbers; all empty when unknown. */
+  starName: string;
+  starAvatar: string;
+  starPpg: string;
+  starRpg: string;
+  starApg: string;
 };
 
 export type FixtureProps = {

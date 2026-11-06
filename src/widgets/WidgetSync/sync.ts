@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-import type { Game, Team, TeamDetail } from '@/lib/espn';
+import type { Game, Team, TeamDetail, TeamStar } from '@/lib/espn';
 import { teamTheme } from '@/lib/theme';
 import { buildFixturesProps, buildFormProps, buildLockProps, buildTimeline, type LiveScore, type WatchlistProps } from '@/lib/widgets';
 import { shareLogos } from './logos';
@@ -9,7 +9,7 @@ import { shareLogos } from './logos';
  * Push the selected team's fixtures, form and upcoming games to the iOS widgets. Safe everywhere: where the native module doesn't exist
  * (Expo Go, web, Android) the require throws and this quietly does nothing.
  */
-export async function syncWidgets(team: Team, detail: TeamDetail | undefined, schedule: Game[], live?: LiveScore) {
+export async function syncWidgets(team: Team, detail: TeamDetail | undefined, schedule: Game[], live?: LiveScore, star?: TeamStar | null) {
   if (Platform.OS !== 'ios') return;
   try {
     // Loaded lazily: importing expo-widgets resolves a native module, which a plain Expo Go build lacks.
@@ -23,11 +23,11 @@ export async function syncWidgets(team: Team, detail: TeamDetail | undefined, sc
 
     // The other two widgets show one picture at a time, so a snapshot is enough.
     const theme = teamTheme(team);
-    const form = buildFormProps(team, detail, schedule, theme);
+    const form = buildFormProps(team, detail, schedule, theme, star);
     const fixtures = buildFixturesProps(team, schedule, theme);
-    const shared = await shareLogos([form.logo, ...fixtures.games.map((g) => g.oppLogo)]);
+    const shared = await shareLogos([form.logo, form.starAvatar, ...fixtures.games.map((g) => g.oppLogo)]);
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    (require('../TeamFormWidget') as typeof import('../TeamFormWidget')).TeamFormWidget.updateSnapshot({ ...form, logo: shared[form.logo] ?? '' });
+    (require('../TeamFormWidget') as typeof import('../TeamFormWidget')).TeamFormWidget.updateSnapshot({ ...form, logo: shared[form.logo] ?? '', starAvatar: shared[form.starAvatar] ?? '' });
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     (require('../FixturesWidget') as typeof import('../FixturesWidget')).FixturesWidget.updateSnapshot({
       ...fixtures,

@@ -1,4 +1,4 @@
-import type { Game, TeamDetail } from '@/lib/espn';
+import type { Game, TeamDetail, TeamStar } from '@/lib/espn';
 import { FORM_GAMES } from './constants';
 import type { FormGameProps, TeamFormProps, TeamLike, WidgetTheme } from './types';
 
@@ -12,7 +12,7 @@ export function streakOf(resultsNewestFirst: ('W' | 'L')[]): string {
 }
 
 /** Pure: the last five finished games, record, streak and standing. */
-export function buildFormProps(team: TeamLike, detail: Pick<TeamDetail, 'record' | 'standing'> | undefined, schedule: Game[], theme: WidgetTheme): TeamFormProps {
+export function buildFormProps(team: TeamLike, detail: Pick<TeamDetail, 'record' | 'standing'> | undefined, schedule: Game[], theme: WidgetTheme, star?: TeamStar | null): TeamFormProps {
   const played = schedule
     .filter((g) => g.completed && g.result && typeof g.teamScore === 'number' && typeof g.opponentScore === 'number')
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -31,5 +31,10 @@ export function buildFormProps(team: TeamLike, detail: Pick<TeamDetail, 'record'
     accent: theme.accent,
     logo: team.logoDark || team.logo || '',
     games,
+    starName: star ? star.shortName || star.name : '',
+    starAvatar: star?.headshot ?? '',
+    starPpg: star?.ppg ?? '',
+    starRpg: star?.rpg ?? '',
+    starApg: star?.apg ?? '',
   };
 }
