@@ -137,6 +137,8 @@ export async function fetchPlayerGameLog(athleteId: string): Promise<GameLogEntr
 export type PlayerSearchResult = {
   id: string;
   name: string;
+  /** The team ESPN lists him with (a retired player's last one), by full name. */
+  teamName?: string;
   teamId?: string;
   teamAbbr?: string;
   headshot: string;
@@ -145,23 +147,32 @@ export type PlayerSearchResult = {
 export const headshotUrl = (athleteId: string) =>
   `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png`;
 
+/**
+ * NBA players from ESPN's `search/v2` feed, in its own order (best known first). That feed searches every sport at once, so the
+ * rows are filtered to the NBA by their uid (`s:40~l:46~a:<id>`) and it is asked for plenty of rows to leave enough of them. It knows
+ * retired players (Garnett, Nowitzki, Gasol), which the older `common/v3/search` feed does not: that one lists only a few hundred
+ * current and recent players, many of them unknown.
+ */
+export function normalizePlayerSearch(json: Json): PlayerSearchResult[] {
+  const groups: Json[] = json.results ?? [];
+  const seen = new Set<string>();
+  return groups
+    .filter((g) => g.type === 'player')
+    .flatMap((g): Json[] => g.contents ?? [])
+    .flatMap((c): PlayerSearchResult[] => {
+      const id = /~l:46~a:(\d+)$/.exec(String(c.uid ?? ''))?.[1];
+      // Only players ESPN has a photo of: the ones without are the unknowns (a few games decades ago, a two-way signing never played).
+      const photo = c.image?.default ? String(c.image.default) : '';
+      if (!id || seen.has(id) || !c.displayName || !photo) return [];
+      seen.add(id);
+      return [{ id, name: String(c.displayName), teamName: c.subtitle ? String(c.subtitle) : undefined, headshot: photo }];
+    });
+}
+
 export async function searchPlayers(query: string): Promise<PlayerSearchResult[]> {
   const q = encodeURIComponent(query.trim());
-  const json = await getJson(
-    `https://site.web.api.espn.com/apis/common/v3/search?query=${q}&limit=12&type=player&sport=basketball&league=nba`,
-  );
-  return ((json.items ?? []) as Json[])
-    .filter((i) => i.league === 'nba')
-    .map((i) => {
-      const core: Json = i.teamRelationships?.[0]?.core ?? {};
-      return {
-        id: String(i.id),
-        name: i.displayName ?? '',
-        teamId: core.id != null ? String(core.id) : undefined,
-        teamAbbr: core.abbreviation,
-        headshot: headshotUrl(String(i.id)),
-      };
-    });
+  const json = await getJson(`https://site.web.api.espn.com/apis/search/v2?query=${q}&type=player&limit=50`);
+  return normalizePlayerSearch(json);
 }
 
 export type CareerRow = {

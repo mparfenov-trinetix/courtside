@@ -14,7 +14,7 @@ export { fetchGameSummary, fetchGameVideos, moneylineToDecimal, normalizeGameSum
 export type { BoxScorePlayer, BoxScoreTeam, FormGame, GameInfo, GameOdds, GameSummary, Injury, Play, Pregame, SideOdds } from './game';
 export { fetchScoreboardByDate, involvesTeam } from './scoreboard';
 export type { ScoreboardGame, ScoreboardTeam } from './scoreboard';
-export { fetchPlayerCareer, fetchPlayerGameLog, fetchPlayerStats, fetchPlayerBio, headshotUrl, searchPlayers } from './players';
+export { fetchPlayerCareer, fetchPlayerGameLog, fetchPlayerStats, fetchPlayerBio, headshotUrl, normalizePlayerSearch, searchPlayers } from './players';
 export type { CareerRow, GameLogEntry, PlayerBio, PlayerCareer, PlayerSearchResult, PlayerSeasonStats } from './players';
 export { allStarGameKey, fetchAllStars } from './all-star';
 export { fetchPlayerProfile } from './player-profile';

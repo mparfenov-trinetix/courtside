@@ -298,11 +298,19 @@ export function usePlayerGameLog(athleteId?: string | null) {
 export function usePlayerSearch(query: string) {
   const q = query.trim();
   return useQuery({
-    queryKey: ['playerSearch', q.toLowerCase()],
+  const { data: teams } = useTeams();
+    // A shape version: the older feed's results (current players only) are not reused.
+    queryKey: ['playerSearch', 2, q.toLowerCase()],
     queryFn: () => searchPlayers(q),
     enabled: q.length >= 2,
     staleTime: HOUR,
   });
+    // The feed names a team but has no id: a team still in the league gets its id and abbreviation (a retired player's old club may not).
+    select: (rows) =>
+      rows.map((p) => {
+        const team = teams?.find((t) => t.displayName === p.teamName);
+        return team ? { ...p, teamId: team.id, teamAbbr: team.abbreviation } : p;
+      }),
 }
 
 export function useLeagueTeamStats() {

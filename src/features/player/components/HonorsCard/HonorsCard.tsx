@@ -93,7 +93,8 @@ export function ContractCard({ contract, draft }: { contract?: Contract; draft?:
 
   return (
     <Animated.View style={styles.wrap}>
-      <Text style={styles.title}>Contract{contract ? ` · ${seasonLabel(contract.season)}` : ''}</Text>
+      {/* Without a contract (retired, between teams) the card is only his draft slot. */}
+      <Text style={styles.title}>{contract ? `Contract · ${seasonLabel(contract.season)}` : 'Draft'}</Text>
       <View style={styles.card}>
         <View style={styles.stats}>
           {contract && (

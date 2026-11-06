@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { normalizeGameSummary } from '../src/lib/espn';
+import { normalizeGameSummary, normalizePlayerSearch } from '../src/lib/espn';
 import { shotsOf, timeoutInProgress, buildFourFactors, deriveFlow, deriveQuarterStats, sumLineups, sumPeriods } from '../src/lib/game';
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/game-final.json', import.meta.url), 'utf8'));
@@ -200,4 +200,37 @@ test('videos: a stream starts on its 720p level, not the 360p one the player wou
   assert.equal(sharpestVariant('#EXTM3U\n', 'https://x/p.m3u8'), null);
   assert.equal(absoluteUrl('https://other/z.m3u8', 'https://x/y/p.m3u8'), 'https://other/z.m3u8');
   assert.equal(absoluteUrl('/root/z.m3u8', 'https://x/y/p.m3u8'), 'https://x/root/z.m3u8');
+});
+
+test('player search: only NBA rows with a photo, retired players included, other sports, repeats and photoless players dropped', () => {
+  const row = (uid: string, displayName: string, subtitle: string | null, photo = true) => ({
+    type: 'player',
+    uid,
+    displayName,
+    subtitle,
+    ...(photo ? { image: { default: `https://a.espncdn.com/i/headshots/nba/players/full/${uid.split('a:')[1]}.png` } } : {}),
+  });
+  const found = normalizePlayerSearch({
+    results: [
+      { type: 'article', contents: [{ uid: 's:40~l:46~a:1', displayName: 'Not a player' }] },
+      {
+        type: 'player',
+        contents: [
+          row('s:40~l:46~a:261', 'Kevin Garnett', 'Minnesota Timberwolves'),
+          row('s:40~l:54~a:4705491', 'Elli Garnett', 'Ohio Bobcats'),
+          row('s:20~l:23~a:5218443', 'Chase Garnett', 'South Florida Bulls'),
+          row('s:1100~a:2283', 'Brice Garnett', null),
+          row('s:40~l:46~a:4986', 'William Garnett', null, false),
+          row('s:40~l:46~a:2562', 'Marlon Garnett', 'Boston Celtics', false),
+          row('s:40~l:46~a:261', 'Kevin Garnett', 'Minnesota Timberwolves'),
+        ],
+      },
+    ],
+  });
+  assert.deepEqual(
+    found.map((p) => [p.id, p.name, p.teamName]),
+    [['261', 'Kevin Garnett', 'Minnesota Timberwolves']],
+  );
+  assert.match(found[0].headshot, /players\/full\/261\.png$/);
+  assert.deepEqual(normalizePlayerSearch({}), []);
 });

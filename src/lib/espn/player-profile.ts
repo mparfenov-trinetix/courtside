@@ -44,8 +44,10 @@ export async function fetchPlayerProfile(athleteId: string): Promise<PlayerProfi
         })
       : [];
 
+  // A contract belongs to someone on a team right now: a retired player has none, and a free agent would otherwise show last season's.
+  const employed = athlete.status === 'fulfilled' && athlete.value.active === true && !!athlete.value.team;
   let parsed: Contract | undefined;
-  if (contract.status === 'fulfilled' && typeof contract.value.salary === 'number' && contract.value.active !== false) {
+  if (employed && contract.status === 'fulfilled' && typeof contract.value.salary === 'number' && contract.value.active !== false) {
     const c = contract.value;
     const m = /seasons\/(\d{4})/.exec(String(c.season?.$ref ?? c.$ref ?? ''));
     parsed = {

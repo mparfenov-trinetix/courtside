@@ -30,6 +30,7 @@ const PROXY_SOURCES: [prefix: string, source: string][] = [
   ['https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba', 'web3'],
   ['https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba', 'core'],
   ['https://site.web.api.espn.com/apis/common/v3/search', 'search'],
+  ['https://site.web.api.espn.com/apis/search/v2', 'search2'],
 ];
 
 export function viaProxy(url: string, proxy: string | undefined): string {
