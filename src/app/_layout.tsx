@@ -151,6 +151,7 @@ export default function RootLayout() {
               <Stack.Screen name="matchup-standings" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="matchup-playoffs" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="matchup-cup" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="matchup-compare" options={{ animation: 'slide_from_right' }} />
             </Stack>
             <NavDepthTracker />
             <WidgetSync />

@@ -19,6 +19,7 @@ import { Segmented, slideIn, ScreenHeader, SearchInput } from '@/components';
 import { usePlayerCareer, usePlayerSearch, usePlayerStats, useTeams } from '@/hooks';
 import { headshotUrl, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
 import { nba2kRating } from '@/lib/league';
+import { goBack } from '@/navigation';
 import { fonts, matchupColors, palette, withAlpha } from '@/lib/theme';
 import { MODES, SCOPES, CEILING } from './constants';
 
@@ -85,7 +86,8 @@ function playerAxes(a: { pts?: number; reb?: number; ast?: number; stl?: number;
   ];
 }
 
-export function CompareScreen() {
+/** `pushed`: opened on top of a player or team page, so the header's button goes back instead of opening the menu. */
+export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string; name?: string; teamId?: string; teamAbbr?: string; mode?: string }>();
   const mode = params.mode === 'teams' ? 'teams' : 'players';
@@ -146,7 +148,7 @@ export function CompareScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
-      <ScreenHeader title="Compare" />
+      <ScreenHeader title="Compare" onBack={pushed ? goBack : undefined} />
       {/* Inside the scroll view, so it scrolls away with the page instead of taking room all the time. */}
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
         <Segmented

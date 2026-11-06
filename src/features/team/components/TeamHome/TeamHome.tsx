@@ -147,8 +147,8 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
                 label={`Compare with ${favoriteTeamId ? 'your team' : 'another team'}`}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  router.navigate({
-                    pathname: '/compare',
+                  pushOnce({
+                    pathname: '/matchup-compare',
                     params: { mode: 'teams', a: favoriteTeamId ?? currentTeamId ?? '', b: team.id },
                   });
                 }}>

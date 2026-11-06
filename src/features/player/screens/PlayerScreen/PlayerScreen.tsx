@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams, type Href } from 'expo-router';
+import { useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
@@ -12,7 +12,7 @@ import { ArrowLeftIcon, CompareIcon, StarIcon } from '@/components';
 import { useAllStars, usePlayerBio, usePlayerCareer, usePlayerGameLog, usePlayerProfile, usePlayerStats, useRefresh, useRoster, useTeam, useTilt } from '@/hooks';
 import { nba2kRating, titleSeasons } from '@/lib/league';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
-import { goBack } from '@/navigation';
+import { goBack, pushOnce } from '@/navigation';
 import { useWatchlist } from '@/state';
 import { CareerSkeleton, CareerTable, ContractCard, FormCard, GameLog, GameLogSkeleton, HonorsCard, InfoSkeleton, PlayerHighlights, PlayerPageSkeleton, PlayerShotChart, RatingCard, SplitsCard, StatsSkeleton } from '../../components';
 
@@ -188,8 +188,8 @@ export function PlayerScreen() {
         </Pressable>
         <Pressable
           onPress={() =>
-            router.navigate(
-              `/compare?${new URLSearchParams({
+            pushOnce(
+              `/matchup-compare?${new URLSearchParams({
                 id: player.id,
                 name: player.name,
                 teamId: teamId ?? '',
