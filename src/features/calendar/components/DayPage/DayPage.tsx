@@ -10,12 +10,27 @@ import { useTeamStore } from '@/state';
 import { GameCard } from '../GameCard';
 import { GameCardSkeleton } from '../GameCardSkeleton';
 
-/** One day of the pager: that day's games, the selected team's first, then the live ones, then the rest. */
 /**
+ * One day of the pager: that day's games, the selected team's first, then the live ones, then the rest.
  * `active`: the pager has come to rest on this day or next to it. Only then does the page read its games and build its cards;
- * a page that is only being scrolled past (a fast swipe through a week) shows still empty cards, so the swipe has nothing to wait for.
+ * a page that is only being scrolled past (a fast swipe through a week) or still waiting for the screen to settle is just still
+ * empty cards, with none of the data hooks of a live page (they cost more to set up than the skeletons they stand in for).
  */
 export const DayPage = memo(function DayPage({ date, today, width, active }: { date: Date; today: Date; width: number; active: boolean }) {
+  return active ? <LivePage date={date} today={today} width={width} /> : <IdlePage width={width} />;
+});
+
+function IdlePage({ width }: { width: number }) {
+  return (
+    <View style={{ width }}>
+      <View style={styles.list}>
+        <GameCardSkeleton count={6} inset={false} still />
+      </View>
+    </View>
+  );
+}
+
+function LivePage({ date, today, width }: { date: Date; today: Date; width: number }) {
   const insets = useSafeAreaInsets();
   const currentTeamId = useTeamStore((s) => s.currentTeamId);
   const team = useTeam(currentTeamId);
@@ -23,7 +38,7 @@ export const DayPage = memo(function DayPage({ date, today, width, active }: { d
   const { data: teams } = useTeams();
   // The games that start on this day of the device's own calendar (a 02:00 tip-off is that morning's), whichever Eastern
   // scoreboards hold them.
-  const { games: onDay, isPending, error, refetch, keys } = useGamesOnDay(date, today, active);
+  const { games: onDay, isPending, error, refetch, keys } = useGamesOnDay(date, today);
   // Games on a past date are final.
   const refreshControl = useRefresh(keys.map((key) => ['scoreboard', key]), date >= today);
 
@@ -34,8 +49,7 @@ export const DayPage = memo(function DayPage({ date, today, width, active }: { d
   }, [onDay, currentTeamId]);
 
   let body;
-  if (!active) body = <GameCardSkeleton count={6} inset={false} still />;
-  else if (isPending) body = <GameCardSkeleton count={5} inset={false} />;
+  if (isPending) body = <GameCardSkeleton count={5} inset={false} />;
   else if (error) body = <ErrorState message={error.message} onRetry={refetch} />;
   else if (!games || games.length === 0) {
     body = (
@@ -60,7 +74,7 @@ export const DayPage = memo(function DayPage({ date, today, width, active }: { d
       </ScrollView>
     </View>
   );
-});
+}
 
 const styles = StyleSheet.create({
   list: { paddingHorizontal: 16, paddingTop: 4, gap: 8 },

@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View, type FlatList, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { Easing, useAnimatedScrollHandler, useSharedValue, withTiming } from 'react-native-reanimated';
 
@@ -15,6 +15,10 @@ const NEAR = 2;
 const JUMP_MS = 340;
 /** After the pager stops, how long before the pages around it are filled in. */
 const STEADY_MS = 120;
+/** After the screen opens, how long before the neighbouring days are built: the slide-in takes about 550 ms. */
+const OPEN_MS = 900;
+/** Days further away are read one at a time, this far apart, after the neighbours are in. */
+const PREFETCH_GAP_MS = 350;
 
 /**
  * The day view as a pager, built like the rosters: one page per day, swipe sideways to move between days, or tap a day in the
@@ -56,23 +60,32 @@ export function DayPager({
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setSettledAt(at), ms);
   }, []);
-  // The screen has opened: fill in the days around the one on screen.
+  // The screen has opened: fill in the days around the one on screen, once its slide-in is over (neighbours built during it
+  // landed in the same frames as the move).
   useEffect(() => {
-    settleSoon(at.current, 350);
+    settleSoon(at.current, OPEN_MS);
     return () => clearTimeout(timer.current);
   }, [settleSoon]);
   // Once at rest, the days a swipe or two away are read into the cache, so the next page opens with its games.
   const client = useQueryClient();
   useEffect(() => {
     if (settledAt == null) return;
-    for (const at of [settledAt - 1, settledAt + 1, settledAt - 2, settledAt + 2]) {
-      if (dates[at]) prefetchGamesOnDay(client, dates[at]);
-    }
+    // One day at a time (each answer is parsed and cached on the JS thread), the nearest first, and not before the pages
+    // around have drawn their own cards.
+    const timers = [settledAt + 1, settledAt - 1, settledAt + 2, settledAt - 2].map((at, i) =>
+      setTimeout(() => {
+        if (dates[at]) prefetchGamesOnDay(client, dates[at]);
+      }, 500 + i * PREFETCH_GAP_MS),
+    );
+    return () => timers.forEach(clearTimeout);
   }, [settledAt, dates, client]);
   // The pager's position as a fractional page (1.5 = halfway from the second day to the third): the strip follows it.
   const page = useSharedValue(index);
   // While a long jump plays the strip is animated here and the pager itself is moved in one step.
   const jumping = useSharedValue(false);
+
+  // A new array on every render made the list rebuild every page each time the pager rendered.
+  const listState = useMemo(() => [index, settledAt], [index, settledAt]);
 
   const onScroll = useAnimatedScrollHandler((e) => {
     if (jumping.get()) return;
@@ -148,7 +161,7 @@ export function DayPager({
         data={dates}
         horizontal
         pagingEnabled
-        extraData={[index, settledAt]}
+        extraData={listState}
         keyExtractor={(d) => d.toISOString()}
         showsHorizontalScrollIndicator={false}
         initialScrollIndex={index}

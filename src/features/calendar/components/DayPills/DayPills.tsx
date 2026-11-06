@@ -2,13 +2,15 @@ import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
-import { useStripFollow } from '@/hooks';
+import { useAfterSettle, useStripFollow } from '@/hooks';
 
 import { toDateKey } from '@/lib/date';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { DOW, MON, PILL, PILL_GAP, PILL_HEIGHT, STRIP_PADDING } from '../../constants';
 
 const STEP = PILL + PILL_GAP;
+/** Before the screen has settled only this many days either side of the selected one are drawn (the strip shows about seven). */
+const FIRST_DRAW = 8;
 
 /**
  * A strip with a pill for every day, driven by the pager exactly as the rosters' team strip is: `page` is the pager's position
@@ -48,6 +50,12 @@ export function DayPills({
     onSelect(index);
   };
 
+  // The first frames draw only the days around the selected one: sixty-odd pressables at once cost more than the screen's
+  // whole slide-in. The rest are added once it has settled, where the pills already shown stay as they are.
+  const complete = useAfterSettle(700);
+  const first = complete ? 0 : Math.max(0, selected - FIRST_DRAW);
+  const last = complete ? dates.length - 1 : Math.min(dates.length - 1, selected + FIRST_DRAW);
+
   // The frame rides under the pills with the pager.
   const frameColor = accent;
   const frameTint = withAlpha(accent, 0.16);
@@ -71,8 +79,10 @@ export function DayPills({
       {/* One layer for the frame and the pills, moved together, so the frame can never drift from them. */}
       <Animated.View style={[styles.layer, { width: contentWidth }, contentStyle]}>
       <Animated.View pointerEvents="none" style={[styles.highlight, highlight]} />
-      <View style={styles.row}>
-        {dates.map((date, index) => (
+      <View style={[styles.row, { left: STRIP_PADDING + first * STEP }]}>
+        {dates.slice(first, last + 1).map((date, offset) => {
+          const index = first + offset;
+          return (
           <Pill
             key={date.getTime()}
             date={date}
@@ -83,7 +93,8 @@ export function DayPills({
             on={index === selected}
             onPress={() => choose(index)}
           />
-        ))}
+          );
+        })}
       </View>
       </Animated.View>
     </Animated.ScrollView>
