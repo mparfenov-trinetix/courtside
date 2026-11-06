@@ -19,11 +19,13 @@ import { scheduleOnRN } from 'react-native-worklets';
 import Svg, { Circle, Defs, Line, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { Basketball, NbaLogo } from '@/components';
-import { useTeam } from '@/hooks';
 import { fetchTeams } from '@/lib/espn';
-import { fonts, palette, teamTheme } from '@/lib/theme';
+import { fonts, palette } from '@/lib/theme';
 import { useTeamStore } from '@/state';
 import { BALL, RING, WORD } from './constants';
+
+/** The light behind the ball: a soft cool white-blue, so it frames the orange ball instead of blending into it. */
+const GLOW = '#A9BEE0';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
@@ -37,9 +39,9 @@ export function IntroScreen() {
   const queryClient = useQueryClient();
   const { hydrated, favoriteTeamId } = useTeamStore();
   const [finished, setFinished] = useState(false);
-  // Returning users see the court drawn in their own team's color (the teams list is prefetched below).
-  const favorite = useTeam(favoriteTeamId);
-  const lineColor = favorite ? teamTheme(favorite).accent : palette.maple;
+  // The same for everyone: the court in the app's own orange, and a cool light behind the ball (a warm or team-colored one melted into the
+  // orange ball).
+  const lineColor = palette.maple;
   const started = useRef(false);
 
   const ballY = useSharedValue(0); // 0 = resting on the floor (screen center)
@@ -157,9 +159,9 @@ export function IntroScreen() {
           <Svg width={width} height={height}>
             <Defs>
               <RadialGradient id="arena-light" gradientUnits="userSpaceOnUse" cx={width / 2} cy={centerY} r={width * 0.95}>
-                <Stop offset={0} stopColor={lineColor} stopOpacity={0.3} />
-                <Stop offset={0.45} stopColor={lineColor} stopOpacity={0.08} />
-                <Stop offset={1} stopColor={lineColor} stopOpacity={0} />
+                <Stop offset={0} stopColor={GLOW} stopOpacity={0.3} />
+                <Stop offset={0.45} stopColor={GLOW} stopOpacity={0.08} />
+                <Stop offset={1} stopColor={GLOW} stopOpacity={0} />
               </RadialGradient>
             </Defs>
             <Rect x={0} y={0} width={width} height={height} fill="url(#arena-light)" />
