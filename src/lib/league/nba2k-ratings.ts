@@ -1,7 +1,7 @@
 /**
  * NBA 2K27's published Top 100 overall ratings, as 2K released them (https://nba.2k.com/2k27/top-100-ratings/, also announced on
  * NBA.com). These are the real numbers and the only ones 2K publishes: there is no public feed for the rest of the league or for
- * the attributes, and 2K updates ratings during the season, so these are the launch ratings. In rank order (ties keep 2K's order).
+ * the attributes, and 2K updates ratings during the season, so these are the launch ratings (checked against 2K's page on 2026-11-06: the same 100 players and numbers). Names are spelled as 2K's page spells them, which is how ESPN does. In rank order (ties keep 2K's order).
  */
 const TOP_100: [name: string, overall: number][] = [
   ['Shai Gilgeous-Alexander', 97],
@@ -77,9 +77,9 @@ const TOP_100: [name: string, overall: number][] = [
   ['Derrick White', 83],
   ['Aaron Gordon', 83],
   ['Julius Randle', 83],
-  ['C.J. McCollum', 83],
+  ['CJ McCollum', 83],
   ['V.J. Edgecombe', 83],
-  ['Alexandre Sarr', 83],
+  ['Alex Sarr', 83],
   ['DeMar DeRozan', 83],
   ['Paul George', 82],
   ['Josh Hart', 82],

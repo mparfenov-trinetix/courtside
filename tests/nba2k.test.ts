@@ -11,6 +11,10 @@ test('2K27 Top 100: the published numbers, matched by name however ESPN spells i
   assert.equal(nba2kRating('VJ Edgecombe')?.overall, 83); // no dots
   assert.equal(nba2kRating('Jaren Jackson Jr.')?.overall, 86);
   assert.equal(nba2kRating('Walker Kessler')?.rank, 100);
+  // Spelled as ESPN does (2K's page uses the same): "Alexandre" and "C.J." used to make these two miss.
+  assert.equal(nba2kRating('Alex Sarr')?.overall, 83);
+  assert.equal(nba2kRating('CJ McCollum')?.overall, 83);
+  assert.equal(nba2kRating('C.J. McCollum')?.overall, 83);
 });
 
 test('a player outside the Top 100, or no name, has no 2K rating', () => {
