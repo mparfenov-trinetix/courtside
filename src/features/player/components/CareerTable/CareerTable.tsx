@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
-import type { CareerRow, PlayerCareer } from '@/lib/espn';
+import { currentSeason, seasonLabel, type CareerRow, type PlayerCareer } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { COLS, COL_W, FIRST_W, ROW_H, HEADER_H, CAREER_H, HIGHLIGHT } from './constants';
 
@@ -15,11 +15,11 @@ const num = (v?: string) => {
   return isNaN(n) ? -Infinity : n;
 };
 
-/** One list in the order it should read: for a traded season, the first team, then the combined line, then the rest. */
+/** One list in the order it should read: the newest season first and history below it; for a traded season, the first team, then the combined line, then the rest. */
 function arrange(rows: CareerRow[]): CareerRow[] {
   const seasons: string[] = [];
   for (const r of rows) if (!seasons.includes(r.season)) seasons.push(r.season);
-  seasons.sort();
+  seasons.sort().reverse();
   return seasons.flatMap((season) => {
     const group = rows.filter((r) => r.season === season);
     const tot = group.find((r) => r.abbr === 'TOT');
@@ -42,6 +42,9 @@ export function CareerTable({ career, accent, background = palette.arena }: { ca
   const edge = useAnimatedStyle(() => ({ opacity: interpolate(scrollX.get(), [0, 14], [0, 1], Extrapolation.CLAMP) }));
 
   const rows = arrange(career.seasons);
+  // This season's rows (a traded player has several) are washed in the accent color and tagged, so "how is he doing now" is the first thing the table says.
+  const now = seasonLabel(currentSeason());
+  const wash = withAlpha(accent, 0.14);
   const careerLine = career.career;
   const cols = COLS.filter((c) => rows.some((r) => r.stats[c] != null && r.stats[c] !== '') || careerLine[c]);
 
@@ -87,7 +90,7 @@ export function CareerTable({ career, accent, background = palette.arena }: { ca
             <Text style={styles.firstHeader}>SEASON</Text>
           </View>
           {sorted.map((row, i) => (
-            <SeasonCell key={`${row.season}-${row.abbr}-${i}`} row={row} teams={teamsOf(row)} shade={i % 2 === 1} />
+            <SeasonCell key={`${row.season}-${row.abbr}-${i}`} row={row} teams={teamsOf(row)} shade={i % 2 === 1} current={row.season === now} accent={accent} wash={wash} />
           ))}
           <View style={[styles.firstCell, styles.careerBorder, { height: CAREER_H }]}>
             <Text style={styles.careerLabel}>CAREER</Text>
@@ -121,7 +124,7 @@ export function CareerTable({ career, accent, background = palette.arena }: { ca
               })}
             </View>
             {sorted.map((row, i) => (
-              <View key={`${row.season}-${row.abbr}-${i}`} style={[styles.statsRow, { height: ROW_H }, i % 2 === 1 && styles.shade]}>
+              <View key={`${row.season}-${row.abbr}-${i}`} style={[styles.statsRow, { height: ROW_H }, i % 2 === 1 && styles.shade, row.season === now && { backgroundColor: wash }]}>
                 {cols.map((col) => {
                   const isBest = HIGHLIGHT.has(col) && num(row.stats[col]) === best[col] && best[col] > -Infinity;
                   return (
@@ -147,10 +150,10 @@ export function CareerTable({ career, accent, background = palette.arena }: { ca
 }
 
 /** The pinned half of a row: logo (or both logos for a traded season's combined line) and the season. */
-function SeasonCell({ row, teams, shade }: { row: CareerRow; teams: CareerRow[]; shade: boolean }) {
+function SeasonCell({ row, teams, shade, current, accent, wash }: { row: CareerRow; teams: CareerRow[]; shade: boolean; current: boolean; accent: string; wash: string }) {
   const isTot = row.abbr === 'TOT';
   return (
-    <View style={[styles.firstCell, { height: ROW_H }, shade && styles.shade]}>
+    <View style={[styles.firstCell, { height: ROW_H }, shade && styles.shade, current && { backgroundColor: wash }]}>
       {isTot && teams.length > 1 ? (
         <View style={styles.pair}>
           {teams.slice(0, 3).map((t, k) => (
@@ -165,7 +168,10 @@ function SeasonCell({ row, teams, shade }: { row: CareerRow; teams: CareerRow[];
         <View style={styles.logo} />
       )}
       <View>
-        <Text style={styles.season}>{row.season}</Text>
+        <Text style={styles.season}>
+          {row.season}
+          {current ? <Text style={[styles.now, { color: accent }]}>{'  NOW'}</Text> : null}
+        </Text>
         <Text style={styles.team}>{isTot ? (teams.length > 1 ? teams.map((t) => t.abbr).join(' · ') : 'Combined') : row.abbr}</Text>
       </View>
     </View>
@@ -193,6 +199,7 @@ const styles = StyleSheet.create({
   pairImg: { width: 15, height: 15 },
   season: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.chalk },
   team: { fontFamily: fonts.body, fontSize: 11, color: palette.muted, marginTop: 1 },
+  now: { fontFamily: fonts.bodyBold, fontSize: 9, letterSpacing: 0.8 },
   cell: { textAlign: 'right', fontFamily: fonts.bodySemi, fontSize: 13, color: withAlpha(palette.chalk, 0.78) },
   careerBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(palette.chalk, 0.12), marginTop: 4 },
   careerLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: palette.muted },
