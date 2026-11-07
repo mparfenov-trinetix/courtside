@@ -68,6 +68,8 @@ export type TeamTheme = {
   surface: string;
   onPrimary: string; // readable text on primary
   accent: string; // the brighter of the two team colors, for highlights on dark bg
+  /** A line that reads on a card of the primary color and on the dark page: the secondary when it is bright and unlike the primary (the Lakers' gold, the Spurs' silver), else `onPrimary`. */
+  edge: string;
 };
 
 export function teamTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null): TeamTheme {
@@ -79,6 +81,7 @@ export function teamTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null):
       surface: palette.arenaRaised,
       onPrimary: palette.chalk,
       accent: palette.maple,
+      edge: palette.chalk,
     };
   }
   const primary = team.color;
@@ -91,13 +94,15 @@ export function teamTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null):
   if (accent === secondary && saturation(secondary) < 0.3 && saturation(primary) > 0.35) {
     accent = luminance(primary) < 0.08 ? mix(primary, '#FFFFFF', 0.3) : primary;
   }
+  const onPrimary = luminance(primary) > 0.45 ? '#0A0A0A' : '#FFFFFF';
   return {
     primary,
     secondary,
     background: mix(primary, '#05080D', luminance(primary) > 0.4 ? 0.86 : 0.74),
     surface: mix(primary, '#05080D', 0.62),
-    onPrimary: luminance(primary) > 0.45 ? '#0A0A0A' : '#FFFFFF',
+    onPrimary,
     accent: luminance(accent) < 0.03 ? mix(accent, '#FFFFFF', 0.6) : accent,
+    edge: luminance(secondary) > 0.3 && distance(secondary, primary) > 100 ? secondary : onPrimary,
   };
 }
 
@@ -124,3 +129,10 @@ export function matchupColors(
 export function logoOn(team: Pick<Team, 'logo' | 'logoDark' | 'logoOnPrimary'>, onColor: string) {
   return onColor === '#FFFFFF' ? team.logoOnPrimary || team.logoDark || team.logo : team.logo;
 }
+
+/** Teams whose logo is the same red as their card (the logo variant for dark backgrounds has a red body), so it needs a white outline. */
+export const OUTLINED_LOGO = new Set(['HOU']);
+/** Outline thickness as a fraction of the logo size. */
+export const OUTLINE = 0.012;
+/** The eight directions a white copy of the logo is nudged in to draw its outline. */
+export const OUTLINE_STEPS: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]];

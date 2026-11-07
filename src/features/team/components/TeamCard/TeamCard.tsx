@@ -4,21 +4,19 @@ import { StyleSheet, Text, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
-  interpolate,
   Keyframe,
   useAnimatedStyle,
   useSharedValue,
-  type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, Line, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Line, Rect } from 'react-native-svg';
 
+import { CardLights } from '@/components';
 import type { Tilt } from '@/hooks';
 import type { Team, TeamDetail } from '@/lib/espn';
-import { fonts, logoOn, mix, teamTheme, withAlpha } from '@/lib/theme';
+import { fonts, logoOn, mix, OUTLINE, OUTLINED_LOGO, OUTLINE_STEPS, teamTheme, withAlpha } from '@/lib/theme';
 import { waveAt, type RefreshAnimation } from '../TeamRefresh';
-import { MAX_ROTATE, RADIUS, GLINT, OUTLINE, OUTLINED_LOGO, REFRESH_REACH, SWEEPS } from './constants';
+import { MAX_ROTATE, RADIUS, GLINT, REFRESH_REACH, SWEEPS } from './constants';
 
-const OUTLINE_STEPS: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]];
 
 /** Card "deals" in with a quarter flip whenever the team changes. */
 const dealIn = new Keyframe({
@@ -210,8 +208,7 @@ export function TeamCard({ team, detail, width, tilt, logoTag, standing, refresh
             />
           </Animated.View>
 
-          <RimLights x={x} y={y} />
-          <CornerGlints x={x} y={y} />
+          <CardLights x={x} y={y} glint={GLINT} />
 
           <View
             pointerEvents="none"
@@ -246,80 +243,6 @@ function CourtLines({ width, height, color }: { width: number; height: number; c
       <Circle cx={cx} cy={height * 0.42} r={width * 0.1} stroke={color} strokeWidth={2} fill="none" />
       <Rect x={cx - keyW / 2} y={-2} width={keyW} height={height * 0.14} stroke={color} strokeWidth={2} fill="none" />
     </Svg>
-  );
-}
-
-/** Thin highlights along each edge that brighten as that edge tips toward the light. */
-function RimLights({ x, y }: { x: SharedValue<number>; y: SharedValue<number> }) {
-  const right = useAnimatedStyle(() => ({ opacity: interpolate(x.value, [0, 1], [0, 0.9], 'clamp') }));
-  const left = useAnimatedStyle(() => ({ opacity: interpolate(x.value, [-1, 0], [0.9, 0], 'clamp') }));
-  const bottom = useAnimatedStyle(() => ({ opacity: interpolate(y.value, [0, 1], [0, 0.9], 'clamp') }));
-  const top = useAnimatedStyle(() => ({ opacity: interpolate(y.value, [-1, 0], [0.9, 0], 'clamp') }));
-  const vertical = ['rgba(255,255,255,0)', 'rgba(255,255,255,0.9)', 'rgba(255,255,255,0)'] as const;
-
-  return (
-    <>
-      <Animated.View pointerEvents="none" style={[styles.rimV, { right: 0 }, right]}>
-        <LinearGradient colors={vertical} style={StyleSheet.absoluteFill} />
-      </Animated.View>
-      <Animated.View pointerEvents="none" style={[styles.rimV, { left: 0 }, left]}>
-        <LinearGradient colors={vertical} style={StyleSheet.absoluteFill} />
-      </Animated.View>
-      <Animated.View pointerEvents="none" style={[styles.rimH, { bottom: 0 }, bottom]}>
-        <LinearGradient colors={vertical} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
-      </Animated.View>
-      <Animated.View pointerEvents="none" style={[styles.rimH, { top: 0 }, top]}>
-        <LinearGradient colors={vertical} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
-      </Animated.View>
-    </>
-  );
-}
-
-/** Soft radial highlights in each corner; the corner you tip toward lights up. */
-function CornerGlints({ x, y }: { x: SharedValue<number>; y: SharedValue<number> }) {
-  return (
-    <>
-      <CornerGlint x={x} y={y} sx={-1} sy={-1} />
-      <CornerGlint x={x} y={y} sx={1} sy={-1} />
-      <CornerGlint x={x} y={y} sx={-1} sy={1} />
-      <CornerGlint x={x} y={y} sx={1} sy={1} />
-    </>
-  );
-}
-
-function CornerGlint({
-  x,
-  y,
-  sx,
-  sy,
-}: {
-  x: SharedValue<number>;
-  y: SharedValue<number>;
-  sx: 1 | -1;
-  sy: 1 | -1;
-}) {
-  const style = useAnimatedStyle(() => {
-    const amount = Math.max(0, x.value * sx) * 0.6 + Math.max(0, y.value * sy) * 0.6;
-    return { opacity: Math.min(1, amount) };
-  });
-  const id = `${sx}${sy}`;
-  const position = {
-    [sy < 0 ? 'top' : 'bottom']: -GLINT / 2,
-    [sx < 0 ? 'left' : 'right']: -GLINT / 2,
-  };
-  return (
-    <Animated.View pointerEvents="none" style={[styles.glint, position, style]}>
-      <Svg width={GLINT} height={GLINT}>
-        <Defs>
-          <RadialGradient id={`glint-${id}`} cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0.7} />
-            <Stop offset="0.35" stopColor="#FFFFFF" stopOpacity={0.18} />
-            <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-        <Circle cx={GLINT / 2} cy={GLINT / 2} r={GLINT / 2} fill={`url(#glint-${id})`} />
-      </Svg>
-    </Animated.View>
   );
 }
 
@@ -379,23 +302,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '-50%',
     left: '5%',
-  },
-  rimV: {
-    position: 'absolute',
-    top: 24,
-    bottom: 24,
-    width: 2,
-  },
-  rimH: {
-    position: 'absolute',
-    left: 24,
-    right: 24,
-    height: 2,
-  },
-  glint: {
-    position: 'absolute',
-    width: GLINT,
-    height: GLINT,
   },
   innerBorder: {
     borderWidth: 1.5,
