@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View, type HostInstance, type StyleProp, t
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, type AnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ArrowLeftIcon, HeatBadge, StarIcon, Tick, RollingNumber } from '@/components';
+import { ArrowLeftIcon, GlassButton, HeatBadge, StarIcon, Tick, RollingNumber } from '@/components';
 import type { BoxScoreTeam } from '@/lib/espn';
 import { gameHeat, periodLabel, TIMEOUTS_PER_GAME } from '@/lib/game';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -261,14 +261,9 @@ export function GameTopBar({
       </Animated.View>
       <View style={styles.topRow}>
         <View style={styles.topSide}>
-          <Pressable
-            onPress={goBack}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            hitSlop={14}
-            style={styles.backBtn}>
+          <GlassButton onPress={goBack} label="Go back" hitSlop={14}>
             <ArrowLeftIcon color={palette.chalk} size={20} />
-          </Pressable>
+          </GlassButton>
         </View>
 
         <View style={styles.topCenter}>
@@ -304,15 +299,15 @@ export function GameTopBar({
         </View>
 
         <View style={[styles.topSide, { alignItems: 'flex-end' }]}>
-          <Pressable
+          <GlassButton
             onPress={onWatch}
-            accessibilityRole="button"
-            accessibilityLabel={watched ? 'Remove game from watchlist' : 'Add game to watchlist'}
-            accessibilityState={{ selected: watched }}
+            label={watched ? 'Remove game from watchlist' : 'Add game to watchlist'}
+            selected={watched}
             hitSlop={14}
-            style={[styles.backBtn, watched && { backgroundColor: withAlpha('#FBBF24', 0.18) }]}>
+            tint={watched ? withAlpha('#FBBF24', 0.35) : undefined}
+            fallbackColor={watched ? withAlpha('#FBBF24', 0.18) : undefined}>
             <StarIcon color={watched ? '#FBBF24' : palette.chalk} size={20} filled={watched} />
-          </Pressable>
+          </GlassButton>
         </View>
       </View>
     </View>
@@ -371,14 +366,6 @@ const styles = StyleSheet.create({
   topSide: { width: 84, justifyContent: 'center' },
   topCenter: { flex: 1, height: 44, alignItems: 'center', justifyContent: 'center' },
   topLayer: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: withAlpha(palette.chalk, 0.08),
-  },
   matchup: { fontFamily: fonts.bodySemi, fontSize: 11, lineHeight: 14, color: palette.muted, letterSpacing: 0.6 },
   kickoffPill: { marginTop: 3, paddingHorizontal: 10, paddingVertical: 2, borderRadius: 10, backgroundColor: withAlpha(palette.chalk, 0.1) },
   kickoffText: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.chalk, letterSpacing: 0.3 },

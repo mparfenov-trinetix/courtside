@@ -1,6 +1,7 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GlassButton } from '../Glass';
 import { ChevronIcon } from '../Icons';
 import { currentSeason, seasonLabel } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -17,17 +18,12 @@ export const availableSeasons = (from: number = FIRST_SEASON): number[] => {
 /** A small "2026-27 ▾" button. */
 export function SeasonButton({ season, onPress }: { season: number; onPress: () => void }) {
   return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={10}
-      accessibilityRole="button"
-      accessibilityLabel={`Season ${seasonLabel(season)}. Change season`}
-      style={({ pressed }) => [styles.button, pressed && { opacity: 0.7 }]}>
+    <GlassButton wide size={40} hitSlop={10} onPress={onPress} label={`Season ${seasonLabel(season)}. Change season`}>
       <Text style={styles.buttonText}>{seasonLabel(season)}</Text>
       <View style={{ transform: [{ rotate: '90deg' }] }}>
         <ChevronIcon color={palette.chalk} size={14} />
       </View>
-    </Pressable>
+    </GlassButton>
   );
 }
 
@@ -84,7 +80,6 @@ export function SeasonSheet({
 }
 
 const styles = StyleSheet.create({
-  button: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingHorizontal: 14, borderRadius: 20, backgroundColor: withAlpha('#FFFFFF', 0.08) },
   buttonText: { fontFamily: fonts.bodySemi, fontSize: 14, color: palette.chalk },
   sheet: { flex: 1, backgroundColor: palette.arena, paddingHorizontal: 16 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 20 },

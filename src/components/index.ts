@@ -4,6 +4,7 @@ export * from './DataHealthBanner';
 export * from './DrawerMenu';
 export * from './Expandable';
 export * from './Form';
+export * from './Glass';
 export * from './HeadToHead';
 export * from './Highlights';
 export * from './HeatBadge';

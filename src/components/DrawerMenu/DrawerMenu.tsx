@@ -12,6 +12,7 @@ import { useTeam } from '@/hooks';
 import { fonts, logoOn, mix, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { pushOnce, returningFromDetail } from '@/navigation';
 import { useTeamStore } from '@/state';
+import { Glass } from '../Glass';
 import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, GridIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon } from '../Icons';
 import { NbaLogo } from '../NbaLogo';
 import { DRAWER_WIDTH, SCENE_RADIUS, type MenuSection } from './constants';
@@ -111,9 +112,11 @@ export function DrawerMenu(props: DrawerContentComponentProps) {
                   }}
                   accessibilityRole="button"
                   accessibilityLabel={`Back to the ${favorite.name}`}
-                  style={({ pressed }) => [styles.pill, pressed && { opacity: 0.7 }]}>
-                  <Image source={favorite.logoDark || favorite.logo} style={styles.pillLogo} contentFit="contain" />
-                  <Text style={styles.pillText}>Mine</Text>
+                  style={({ pressed }) => pressed && { opacity: 0.7 }}>
+                  <Glass interactive style={styles.pill} fallbackStyle={styles.pillPlain}>
+                    <Image source={favorite.logoDark || favorite.logo} style={styles.pillLogo} contentFit="contain" />
+                    <Text style={styles.pillText}>Mine</Text>
+                  </Glass>
                 </Pressable>
               )}
               <Pressable
@@ -123,9 +126,11 @@ export function DrawerMenu(props: DrawerContentComponentProps) {
                 }}
                 accessibilityRole="button"
                 accessibilityLabel="Change favorite team"
-                style={({ pressed }) => [styles.pill, pressed && { opacity: 0.7 }]}>
-                <StarIcon color={dim} size={14} />
-                <Text style={styles.pillText}>Change</Text>
+                style={({ pressed }) => pressed && { opacity: 0.7 }}>
+                <Glass interactive style={styles.pill} fallbackStyle={styles.pillPlain}>
+                  <StarIcon color={dim} size={14} />
+                  <Text style={styles.pillText}>Change</Text>
+                </Glass>
               </Pressable>
             </View>
           </View>
@@ -144,9 +149,11 @@ export function DrawerMenu(props: DrawerContentComponentProps) {
           }}
           accessibilityRole="search"
           accessibilityLabel="Search teams and players"
-          style={({ pressed }) => [styles.search, pressed && { opacity: 0.75 }]}>
-          <SearchIcon color={dim} size={18} />
-          <Text style={styles.searchText}>Search teams and players</Text>
+          style={({ pressed }) => [styles.searchPress, pressed && { opacity: 0.75 }]}>
+          <Glass style={styles.search} fallbackStyle={styles.searchPlain}>
+            <SearchIcon color={dim} size={18} />
+            <Text style={styles.searchText}>Search teams and players</Text>
+          </Glass>
         </Pressable>
       </Reveal>
 
@@ -303,13 +310,16 @@ const styles = StyleSheet.create({
   line: { position: 'absolute', top: SCENE_RADIUS, bottom: SCENE_RADIUS, left: 0, width: 1.5, backgroundColor: 'rgba(255,255,255,0.16)' },
   cornerTop: { position: 'absolute', top: 0, left: 0 },
   cornerBottom: { position: 'absolute', bottom: 0, left: 0 },
-  search: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 42, marginHorizontal: 20, marginTop: 6, marginBottom: 4, paddingHorizontal: 14, borderRadius: 14, backgroundColor: withAlpha('#FFFFFF', 0.1) },
+  searchPress: { marginHorizontal: 20, marginTop: 6, marginBottom: 4 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 42, paddingHorizontal: 14, borderRadius: 14 },
+  searchPlain: { backgroundColor: withAlpha('#FFFFFF', 0.1) },
   searchText: { fontFamily: fonts.body, fontSize: 14, color: withAlpha(palette.chalk, 0.6) },
   hero: { paddingHorizontal: 24, paddingBottom: 10 },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   heroLogo: { width: 48, height: 48 },
   pills: { flexDirection: 'row', gap: 6 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 30, paddingHorizontal: 11, borderRadius: 15, backgroundColor: withAlpha('#FFFFFF', 0.12) },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 30, paddingHorizontal: 11, borderRadius: 15 },
+  pillPlain: { backgroundColor: withAlpha('#FFFFFF', 0.12) },
   pillLogo: { width: 16, height: 16 },
   pillText: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.chalk },
   heroLocation: { fontFamily: fonts.bodySemi, fontSize: 15 },

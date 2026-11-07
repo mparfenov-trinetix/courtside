@@ -11,6 +11,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { Glass } from '../Glass';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
 export type SegmentOption<K extends string> = { key: K; label: string };
@@ -52,7 +53,10 @@ export function Segmented<K extends string>({
 
   return (
     <View style={[styles.track, compact && styles.trackCompact, { width: options.length * segmentWidth + PAD * 2 }, style]}>
-      <Animated.View style={[styles.thumb, { width: segmentWidth }, thumb]} />
+      <Animated.View style={[styles.thumb, { width: segmentWidth }, thumb]}>
+        {/* The moving selection is the glass; the track stays plain. */}
+        <Glass interactive tint={withAlpha(palette.chalk, 0.22)} style={styles.thumbGlass} fallbackStyle={{ backgroundColor: withAlpha(palette.chalk, 0.16) }} />
+      </Animated.View>
       {options.map((o, i) => (
         <Pressable
           key={o.key}
@@ -93,8 +97,8 @@ const styles = StyleSheet.create({
     bottom: PAD,
     left: PAD,
     borderRadius: 11,
-    backgroundColor: withAlpha(palette.chalk, 0.16),
   },
+  thumbGlass: { flex: 1, borderRadius: 11 },
   trackCompact: { alignSelf: 'flex-start', borderRadius: 11 },
   button: { paddingVertical: 8, alignItems: 'center' },
   buttonCompact: { paddingVertical: 4 },

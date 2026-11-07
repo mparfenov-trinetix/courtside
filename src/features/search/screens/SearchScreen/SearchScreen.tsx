@@ -6,7 +6,7 @@ import { ActivityIndicator, Keyboard, Pressable, SectionList, StyleSheet, Text, 
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { SearchIcon, SearchInput } from '@/components';
+import { Glass, SearchIcon, SearchInput } from '@/components';
 import { usePlayerSearch, useTeams } from '@/hooks';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { goBack, openDetail } from '@/navigation';
@@ -85,9 +85,10 @@ export function SearchScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8 }]}>
       <View style={styles.bar}>
-        <View style={styles.field}>
+        <Glass style={styles.field} fallbackStyle={styles.fieldPlain}>
           <SearchIcon color={palette.muted} size={18} />
           <SearchInput
+            bare
             value={text}
             onChangeText={setText}
             placeholder="Search players and teams"
@@ -99,7 +100,7 @@ export function SearchScreen() {
             style={{ flex: 1 }}
           />
           {isFetching && <ActivityIndicator color={palette.muted} size="small" />}
-        </View>
+        </Glass>
         <Pressable onPress={goBack} hitSlop={10}>
           <Text style={styles.cancel}>Cancel</Text>
         </Pressable>
@@ -171,8 +172,8 @@ const styles = StyleSheet.create({
     height: 46,
     paddingHorizontal: 14,
     borderRadius: 23,
-    backgroundColor: withAlpha('#FFFFFF', 0.08),
   },
+  fieldPlain: { backgroundColor: withAlpha('#FFFFFF', 0.08) },
   cancel: { fontFamily: fonts.bodySemi, fontSize: 15, color: palette.muted },
   sectionRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   sectionRowTitle: { flex: 1 },

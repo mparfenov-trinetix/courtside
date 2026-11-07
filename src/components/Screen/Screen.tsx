@@ -4,8 +4,9 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GlassButton } from '../Glass';
 import { ArrowLeftIcon, MenuIcon } from '../Icons';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette } from '@/lib/theme';
 
 export function useOpenDrawer() {
   const navigation = useNavigation<DrawerNavigationProp<Record<string, object | undefined>>>();
@@ -43,14 +44,9 @@ export function ScreenHeader({
   const openDrawer = useOpenDrawer();
   return (
     <View style={[styles.header, { paddingTop: insets.top + HEADER_TOP }]}>
-      <Pressable
-        onPress={onBack ?? openDrawer}
-        hitSlop={12}
-        accessibilityRole="button"
-        accessibilityLabel={onBack ? 'Go back' : 'Open menu'}
-        style={({ pressed }) => [styles.iconButton, { backgroundColor: withAlpha('#FFFFFF', pressed ? 0.16 : 0.08) }]}>
+      <IconButton onPress={onBack ?? openDrawer} label={onBack ? 'Go back' : 'Open menu'}>
         {onBack ? <ArrowLeftIcon color={color} /> : <MenuIcon color={color} />}
-      </Pressable>
+      </IconButton>
       {afterMenu}
       {typeof title === 'string' || title == null ? (
         <Text style={[styles.title, { color }]} numberOfLines={1}>
@@ -82,14 +78,9 @@ export function IconButton({
   children: ReactNode;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={12}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={({ pressed }) => [styles.iconButton, { backgroundColor: withAlpha('#FFFFFF', pressed ? 0.16 : 0.08) }]}>
+    <GlassButton onPress={onPress} label={label} size={42}>
       {children}
-    </Pressable>
+    </GlassButton>
   );
 }
 
@@ -121,13 +112,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: HEADER_BOTTOM,
     gap: 14,
-  },
-  iconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   title: {
     flex: 1,
