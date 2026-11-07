@@ -24,7 +24,7 @@ import { useManualRefresh, useStandings, useTeam, useTeamDetail, useTeamSchedule
 import { conferenceStanding } from '@/lib/league';
 import type { Game } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
-import { useTeamStore } from '@/state';
+import { useScreenTeamStore } from '@/state';
 
 /**
  * The team card page. As the drawer's "Team card" screen it shows the current team and a menu button;
@@ -36,7 +36,7 @@ const REFRESH_MIN_MS = 2400;
 export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string | null; pushed?: boolean; origin?: string }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const { currentTeamId, favoriteTeamId, viewTeam } = useTeamStore();
+  const { currentTeamId, favoriteTeamId, viewTeam } = useScreenTeamStore();
   const [switching, setSwitching] = useState(false);
   const team = useTeam(teamId);
   const { data: detail } = useTeamDetail(teamId);

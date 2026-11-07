@@ -12,7 +12,7 @@ import { useLeagueTeamStats, useTeams } from '@/hooks';
 import type { Team, TeamStatRow } from '@/lib/espn';
 import { TEAM_METRICS, formatMetric, metricByKey, ordinal, rankOf, type TeamMetric } from '@/lib/league';
 import { fonts, matchupColors, palette, withAlpha } from '@/lib/theme';
-import { useTeamStore } from '@/state';
+import { useScreenTeamStore } from '@/state';
 
 function buildRows(rows: TeamStatRow[], a: TeamStatRow, b: TeamStatRow): Row[] {
   const out: Row[] = [];
@@ -47,7 +47,7 @@ function radarAxes(rows: TeamStatRow[], a: TeamStatRow, b: TeamStatRow): RadarAx
 
 /** Head-to-head season comparison for two teams, with league ranks computed from all 30. */
 export function TeamCompare() {
-  const currentTeamId = useTeamStore((s) => s.currentTeamId);
+  const currentTeamId = useScreenTeamStore((s) => s.currentTeamId);
   const { data: teams } = useTeams();
   const { data: table, isPending } = useLeagueTeamStats();
   // The URL holds the two picks so other screens can deep-link a matchup (e.g. a team page's Compare button).

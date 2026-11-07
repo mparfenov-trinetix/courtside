@@ -26,6 +26,9 @@ export function OnboardingScreen() {
   const { data: teams, isPending, error, refetch } = useTeams();
   const { favoriteTeamId, setFavorite } = useTeamStore();
   const [selectedId, setSelectedId] = useState<string | null>(favoriteTeamId);
+  // The button says "Keep" for the team that was yours when the screen opened. Reading the live favorite made the label flip to
+  // "Keep" the instant you confirmed, while the screen was still on its way out.
+  const [favoriteAtOpen] = useState(favoriteTeamId);
 
   const selected = teams?.find((t) => t.id === selectedId) ?? null;
   const theme = teamTheme(selected);
@@ -103,7 +106,7 @@ export function OnboardingScreen() {
             ]}>
             <Image source={logoOn(selected, theme.onPrimary)} style={styles.ctaLogo} contentFit="contain" />
             <Text style={[styles.ctaText, { color: theme.onPrimary }]} numberOfLines={1}>
-              {selected.id === favoriteTeamId ? `Keep the ${selected.name} as my team` : `Make the ${selected.name} my team`}
+              {selected.id === favoriteAtOpen ? `Keep the ${selected.name} as my team` : `Make the ${selected.name} my team`}
             </Text>
           </Pressable>
         </Animated.View>

@@ -1,7 +1,7 @@
 import { TeamHome } from '@/features/team';
-import { useTeamStore } from '@/state';
+import { useScreenTeamStore } from '@/state';
 
 export function HomeScreen() {
-  const currentTeamId = useTeamStore((s) => s.currentTeamId);
+  const currentTeamId = useScreenTeamStore((s) => s.currentTeamId);
   return <TeamHome teamId={currentTeamId} />;
 }

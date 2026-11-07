@@ -10,12 +10,12 @@ import { ChevronIcon, StarIcon, ErrorState, ListSkeleton, ScreenHeader, SearchIn
 import { useTeams } from '@/hooks';
 import type { Team } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
-import { useTeamStore } from '@/state';
+import { useScreenTeamStore } from '@/state';
 
 export function TeamsScreen() {
   const insets = useSafeAreaInsets();
   const { data: teams, isPending, error, refetch } = useTeams();
-  const { currentTeamId, favoriteTeamId, viewTeam } = useTeamStore();
+  const { currentTeamId, favoriteTeamId, viewTeam } = useScreenTeamStore();
   const [query, setQuery] = useState('');
 
   const q = query.trim().toLowerCase();

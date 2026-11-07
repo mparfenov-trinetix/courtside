@@ -16,7 +16,7 @@ import { ListSkeleton, ScreenHeader } from '@/components';
 import { useTeams } from '@/hooks';
 import { fetchRoster, type Team } from '@/lib/espn';
 import { palette, teamTheme } from '@/lib/theme';
-import { useTeamStore } from '@/state';
+import { useScreenTeamStore } from '@/state';
 import { TeamPills, TeamRoster } from '../../components';
 
 /** After the screen opens, and after the pager stops, how long before the rows are built. */
@@ -30,7 +30,7 @@ const ROSTER_STALE_MS = 6 * 60 * 60 * 1000;
 /** Every team's roster, one page per team: swipe sideways, tap a pill, or use the arrows to move between them. */
 export function RosterScreen() {
   const { data: teams } = useTeams();
-  const { currentTeamId, favoriteTeamId } = useTeamStore();
+  const { currentTeamId, favoriteTeamId } = useScreenTeamStore();
 
   if (!teams) {
     return (
