@@ -60,9 +60,14 @@ export function currentSeason(): number {
 
 /**
  * ESPN's logo for a team in the feeds that only carry its default one. For the Celtics that is the shamrock roundel (their
- * secondary logo), so their real primary logo is swapped in; every other team's logo passes through untouched.
+ * secondary logo) and for the Sixers a 6 too dark for the app's background, so the brand logo on black is swapped in; every
+ * other team's logo passes through untouched.
  */
-const PRIMARY_LOGO_GUID: Record<string, string> = { BOS: '2ca761df-5f60-b2e9-22ed-e099c46d889b' };
+const PRIMARY_LOGO_GUID: Record<string, string> = {
+  BOS: '2ca761df-5f60-b2e9-22ed-e099c46d889b',
+  // The Sixers' default logo has a dark blue 6 that sinks into the app's background; the on-black one has a white 6.
+  PHI: 'ca1685ed-b799-53e4-7924-e58ea6eb8f3a',
+};
 
 export function teamLogo(abbr: string | undefined, href: string | undefined): string {
   const guid = abbr ? PRIMARY_LOGO_GUID[abbr] : undefined;

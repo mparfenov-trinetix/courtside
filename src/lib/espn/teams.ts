@@ -58,10 +58,11 @@ function pickLogo(logos: Json[] | undefined, variant: 'default' | 'dark') {
 }
 
 /**
- * Teams whose ESPN "default" logo is really the secondary one. The Celtics' is the shamrock roundel; their primary logo (the
- * leprechaun) only comes with the brand variants, so it is taken from there.
+ * Teams whose logos come from ESPN's brand variants. The Celtics' "default" is really the secondary logo (the shamrock roundel;
+ * the leprechaun only comes with the brand variants). The Sixers' default has a dark blue 6 that disappears on the app's dark
+ * background; the on-black variant has a white 6 and white stars. ESPN has no ball logo for them.
  */
-const PRIMARY_FROM_BRAND = new Set(['BOS']);
+const PRIMARY_FROM_BRAND = new Set(['BOS', 'PHI']);
 
 export function normalizeTeam(t: Json): Team {
   const brand = PRIMARY_FROM_BRAND.has(t.abbreviation);

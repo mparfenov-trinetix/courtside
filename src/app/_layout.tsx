@@ -120,7 +120,7 @@ export default function RootLayout() {
         persistOptions={{
           persister,
           maxAge: WEEK,
-          buster: 'v9',
+          buster: 'v10',
           dehydrateOptions: {
             shouldDehydrateQuery: shouldPersist,
           },
