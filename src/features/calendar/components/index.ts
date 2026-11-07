@@ -5,3 +5,6 @@ export * from './DayPage';
 export * from './DayPager';
 export * from './GameCard';
 export * from './DayPills';
+export * from './ViewSheet';
+export * from './ScopeLabel';
+export * from './TodayPill';

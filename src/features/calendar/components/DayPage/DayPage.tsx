@@ -6,7 +6,8 @@ import { ErrorState } from '@/components';
 import { useGamesOnDay, useRefresh, useTeam, useTeams } from '@/hooks';
 import { involvesTeam, type ScoreboardGame } from '@/lib/espn';
 import { fonts, palette, teamTheme } from '@/lib/theme';
-import { useTeamStore } from '@/state';
+import { useScreenTeamStore } from '@/state';
+import { TODAY_PILL_CLEARANCE } from '../../constants';
 import { GameCard } from '../GameCard';
 import { GameCardSkeleton } from '../GameCardSkeleton';
 
@@ -32,7 +33,7 @@ function IdlePage({ width }: { width: number }) {
 
 function LivePage({ date, today, width }: { date: Date; today: Date; width: number }) {
   const insets = useSafeAreaInsets();
-  const currentTeamId = useTeamStore((s) => s.currentTeamId);
+  const currentTeamId = useScreenTeamStore((s) => s.currentTeamId);
   const team = useTeam(currentTeamId);
   const theme = teamTheme(team);
   const { data: teams } = useTeams();
@@ -68,7 +69,8 @@ function LivePage({ date, today, width }: { date: Date; today: Date; width: numb
     <View style={{ width }}>
       <ScrollView
         refreshControl={refreshControl}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.list, // Room for the floating Today pill, so the last card scrolls up clear of it.
+          { paddingBottom: insets.bottom + TODAY_PILL_CLEARANCE }]}
         showsVerticalScrollIndicator={false}>
         {body}
       </ScrollView>

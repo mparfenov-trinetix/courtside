@@ -3,15 +3,15 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AgendaView, DayPager, MonthView, startOfMonth } from '../../components';
-import { Segmented, SeasonSheet, slideIn, ErrorState, ListSkeleton, ScreenHeader } from '@/components';
+import { AgendaView, DayPager, MonthView, ScopeLabel, TodayPill, ViewSheet, startOfMonth } from '../../components';
+import { IconButton, SeasonSheet, slideIn, ErrorState, ListSkeleton, ScreenHeader } from '@/components';
 import { usePostseason, useRefresh, useSeasonGames, useTeam } from '@/hooks';
 import { currentSeason } from '@/lib/espn';
 import { calendarEvents } from '@/lib/league';
 import { localToday, parseEspnDate, toDateKey } from '@/lib/date';
 import { fonts, palette, teamTheme } from '@/lib/theme';
-import { useTeamStore } from '@/state';
-import { PAST, FUTURE } from '../../constants';
+import { useScreenTeamStore } from '@/state';
+import { CALENDAR_MODES, PAST, FUTURE, type CalendarMode } from '../../constants';
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -44,17 +44,9 @@ function buildDates(extra: Date | null): Date[] {
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-type Mode = 'day' | 'month' | 'agenda';
-
-const MODES: { key: Mode; label: string }[] = [
-  { key: 'day', label: 'Day' },
-  { key: 'month', label: 'Month' },
-  { key: 'agenda', label: 'Agenda' },
-];
-
 export function CalendarScreen() {
   const insets = useSafeAreaInsets();
-  const currentTeamId = useTeamStore((s) => s.currentTeamId);
+  const currentTeamId = useScreenTeamStore((s) => s.currentTeamId);
   const team = useTeam(currentTeamId);
   const theme = teamTheme(team);
 
@@ -62,7 +54,8 @@ export function CalendarScreen() {
   // A month pick far outside the usual range widens the pager's days to include it.
   const [extra, setExtra] = useState<Date | null>(null);
   const dates = useMemo(() => buildDates(extra), [extra]);
-  const [mode, setMode] = useState<Mode>('day');
+  const [mode, setMode] = useState<CalendarMode>('day');
+  const [viewSheet, setViewSheet] = useState(false);
   const [slide, setSlide] = useState<1 | -1>(1);
   const [selected, setSelected] = useState<Date>(today);
   const [cursor, setCursor] = useState(() => startOfMonth(today));
@@ -96,29 +89,33 @@ export function CalendarScreen() {
     setMode('day');
   };
 
-  const headerRight =
-    mode === 'agenda' ? undefined : (
-      <Pressable onPress={goToday} hitSlop={8}>
-        <Text style={styles.todayBtn}>Today</Text>
-      </Pressable>
-    );
+  // The slide direction follows the order of the views, as the switcher's pill used to report it.
+  const pickMode = (next: CalendarMode) => {
+    if (next === mode) return;
+    setSlide(CALENDAR_MODES.findIndex((m) => m.key === next) > CALENDAR_MODES.findIndex((m) => m.key === mode) ? 1 : -1);
+    setMode(next);
+  };
+
+  const current = CALENDAR_MODES.find((m) => m.key === mode) ?? CALENDAR_MODES[0];
+  const headerRight = (
+    <View style={styles.headerRight}>
+      {/* The day view has its floating Today pill, and the agenda opens on what is next. */}
+      {mode !== 'month' ? null : (
+        <Pressable onPress={goToday} hitSlop={8}>
+          <Text style={styles.todayBtn}>Today</Text>
+        </Pressable>
+      )}
+      <IconButton onPress={() => setViewSheet(true)} label={`Calendar view: ${current.label}. Change view`}>
+        <current.Icon color={palette.chalk} size={22} />
+      </IconButton>
+    </View>
+  );
 
   return (
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
-      <ScreenHeader title="Calendar" color={palette.chalk} right={headerRight} />
+      <ScreenHeader title={<ScopeLabel mode={mode} team={team} />} color={palette.chalk} right={headerRight} />
 
-      {/* View switch */}
-      <Segmented
-        style={{ marginBottom: 8 }}
-        options={MODES}
-        value={mode}
-        onChange={(key, direction) => {
-          setSlide(direction);
-          setMode(key);
-        }}
-      />
-
-      {/* Content slides in from the side the switcher moved toward */}
+      {/* Content slides in from the side of the view it replaces */}
       <Animated.View key={mode} entering={slideIn(slide)} style={styles.view}>
       {mode === 'day' && <DayPager dates={dates} today={today} selected={selected} onSelect={setSelected} accent={theme.accent} gameDays={gameDays} />}
 
@@ -164,6 +161,12 @@ export function CalendarScreen() {
       ) : null}
       </Animated.View>
 
+      {mode === 'day' ? (
+        <TodayPill visible={selected.getTime() !== today.getTime()} direction={selected.getTime() > today.getTime() ? -1 : 1} onPress={goToday} />
+      ) : null}
+
+      <ViewSheet visible={viewSheet} mode={mode} onPick={pickMode} onClose={() => setViewSheet(false)} />
+
       <SeasonSheet
         visible={seasonSheet}
         season={agendaSeason}
@@ -181,6 +184,7 @@ export function CalendarScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   todayBtn: {
     fontFamily: fonts.bodySemi,
     fontSize: 14,

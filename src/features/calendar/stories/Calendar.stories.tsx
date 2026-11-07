@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useRefresh } from '@/hooks';
 
-import { AgendaView , MonthView, startOfMonth } from '../components';
+import { AgendaView, MonthView, ViewSheet, startOfMonth } from '../components';
+import type { CalendarMode } from '../constants';
 import { SeasonSeries } from '@/features/team';
+import { fonts, palette } from '@/lib/theme';
 import { away, home, schedule } from '@/storybook/fixtures';
 
 const meta = { title: 'Calendar' } satisfies Meta;
@@ -43,3 +45,20 @@ export const SeasonSeriesCard: Story = {
     />
   ),
 };
+
+function ViewSheetDemo() {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<CalendarMode>('day');
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+      <Text style={{ fontFamily: fonts.display, fontSize: 32, color: palette.chalk }}>{mode}</Text>
+      <Pressable onPress={() => setOpen(true)} accessibilityRole="button">
+        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: palette.chalk }}>Change view</Text>
+      </Pressable>
+      <ViewSheet visible={open} mode={mode} onPick={setMode} onClose={() => setOpen(false)} />
+    </View>
+  );
+}
+
+/** The bottom sheet behind the header's view button: Day, Month or Agenda. */
+export const ViewPicker: Story = { render: () => <ViewSheetDemo /> };

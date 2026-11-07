@@ -211,3 +211,30 @@ export function FlameIcon({ size = 22, color, filled }: IconProps) {
     </Svg>
   );
 }
+
+/** Calendar views: stacked cards (agenda), a day's time lines, and a month grid. */
+export function ViewAgendaIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Rect x={4} y={4} width={16} height={7} rx={2} {...stroke(color)} />
+      <Rect x={4} y={13} width={16} height={7} rx={2} {...stroke(color)} />
+    </Svg>
+  );
+}
+
+export function ViewDayIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M5 5h14M5 9.5h14M5 14h14M5 18.5h14" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+export function ViewMonthIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Rect x={4} y={4} width={16} height={16} rx={3} {...stroke(color)} />
+      <Path d="M4 9.5h16M4 14.8h16M9.4 4v16M14.7 4v16" {...stroke(color)} />
+    </Svg>
+  );
+}
