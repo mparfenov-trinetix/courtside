@@ -2,13 +2,13 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
-import { useStandings, usePlayerGameLogs } from '@/hooks';
+import { usePlayerGameLogs, useStandings } from '@/hooks';
 import type { Game } from '@/lib/espn';
 import { buildCatchUp, type CatchUpItem } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { useLastVisit, useWatchlist } from '@/state';
-import { UP, DOWN } from './constants';
+import { DOWN, UP } from './constants';
 
 const ago = (ms: number) => {
   const h = Math.round(ms / 3_600_000);
@@ -93,7 +93,7 @@ function Row({ item }: { item: CatchUpItem }) {
 const suffix = (n: number) => (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
 
 const styles = StyleSheet.create({
-  card: { marginHorizontal: 16, marginTop: 18, padding: 14, borderRadius: 18, borderWidth: 1, backgroundColor: withAlpha('#FFFFFF', 0.05), gap: 8 },
+  card: { marginHorizontal: 16, marginVertical: 18, padding: 14, borderRadius: 18, borderWidth: 1, backgroundColor: withAlpha('#FFFFFF', 0.05), gap: 8 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: withAlpha(palette.chalk, 0.6) },
   close: { fontFamily: fonts.bodyBold, fontSize: 13, color: palette.muted },
