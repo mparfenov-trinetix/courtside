@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ListSkeleton, Skeleton, SkeletonGroup } from '@/components';
 import { withAlpha } from '@/lib/theme';
+import { CARD_RATIO } from '../PlayerCard';
 
 /** The whole player page while the player is still being looked up: card, tabs and a block of stats. */
 export function PlayerPageSkeleton({ cardWidth }: { cardWidth: number }) {
@@ -11,7 +12,7 @@ export function PlayerPageSkeleton({ cardWidth }: { cardWidth: number }) {
         <Skeleton width={40} height={40} radius={20} />
         <Skeleton width={110} height={40} radius={20} />
       </View>
-      <Skeleton width={cardWidth} height={Math.round(cardWidth * 1.22)} radius={28} style={styles.card} />
+      <Skeleton width={cardWidth} height={Math.round(cardWidth * CARD_RATIO)} radius={28} style={styles.card} />
       <View style={styles.tabs}>
         {[56, 56, 52, 40].map((w, i) => (
           <Skeleton key={i} width={w} height={14} />

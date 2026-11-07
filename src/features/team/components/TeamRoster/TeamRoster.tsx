@@ -31,7 +31,7 @@ export function TeamRoster({ team, width, active, rows }: { team: Team; width: n
 
   return (
     <View style={[styles.page, { width }]}>
-      <View style={[styles.banner, { backgroundColor: theme.primary }]}>
+      <View style={[styles.banner, { backgroundColor: theme.primary, borderColor: withAlpha(theme.onPrimary, 0.22) }]}>
         {/* On a light disc, so a logo that shares the team's color (Houston's red) never disappears into the banner. */}
         <View style={styles.bannerBadge}>
           <Image source={team.logo} style={styles.bannerLogo} contentFit="contain" />
@@ -130,6 +130,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     padding: 14,
     borderRadius: 18,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
