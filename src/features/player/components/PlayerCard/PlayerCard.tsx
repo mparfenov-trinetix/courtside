@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
-import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { CardLights, Skeleton, SkeletonGroup } from '@/components';
 import { useTilt } from '@/hooks';
@@ -45,6 +45,7 @@ export function PlayerCard({
   scrollY,
   stats,
   ranks,
+  statsLabel,
   loading = false,
   honors = [],
   titles = 0,
@@ -57,6 +58,8 @@ export function PlayerCard({
   scrollY: SharedValue<number>;
   stats?: PlayerSeasonStats | null;
   ranks?: CardRanks;
+  /** Named beside the stripe when the numbers are not this season's ("Career", for someone with no current season). */
+  statsLabel?: string;
   /** The season line is still coming: dashes instead of numbers. */
   loading?: boolean;
   honors?: Honor[];
@@ -166,17 +169,24 @@ export function PlayerCard({
           {badges.length > 0 ? (
             <View style={styles.badges}>
               {badges.map((b) => (
-                <View key={b.text} style={[styles.pill, b.gold ? { backgroundColor: withAlpha(CHAMPION_GOLD, 0.22), borderColor: withAlpha(CHAMPION_GOLD, 0.7) } : pill]}>
+                // They come from the profile and the career, which arrive after the card: each fades in instead of popping.
+                <Animated.View
+                  key={b.text}
+                  entering={FadeIn.duration(260)}
+                  style={[styles.pill, b.gold ? { backgroundColor: withAlpha(CHAMPION_GOLD, 0.22), borderColor: withAlpha(CHAMPION_GOLD, 0.7) } : pill]}>
                   <Text style={[styles.pillText, { color: b.gold ? CHAMPION_GOLD : theme.onPrimary }]} numberOfLines={1}>
                     {b.text}
                   </Text>
-                </View>
+                </Animated.View>
               ))}
             </View>
           ) : null}
 
           <View style={[styles.footer, { paddingBottom: FOOTER_PAD }]}>
-            <View style={[styles.stripe, { backgroundColor: theme.secondary }]} />
+            <View style={styles.stripeRow}>
+              <View style={[styles.stripe, { backgroundColor: theme.secondary }]} />
+              {statsLabel ? <Text style={[styles.statsLabel, { color: withAlpha(theme.onPrimary, 0.6) }]}>{statsLabel.toUpperCase()}</Text> : null}
+            </View>
             <Text style={[styles.name, { color: theme.onPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
               {player.name}
             </Text>
@@ -233,7 +243,9 @@ const styles = StyleSheet.create({
   // Wraps before it reaches his number in the corner.
   badges: { position: 'absolute', top: 12, left: 12, right: 64, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   footer: { width: '100%', paddingHorizontal: 16 },
-  stripe: { width: 28, height: 4, borderRadius: 2, marginBottom: 6 },
+  stripeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  stripe: { width: 28, height: 4, borderRadius: 2 },
+  statsLabel: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 1 },
   name: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34 },
   tags: { flexDirection: 'row', gap: 6, marginTop: 4 },
   pill: { height: 24, paddingHorizontal: 10, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },

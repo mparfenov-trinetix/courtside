@@ -28,6 +28,7 @@ import {
   RatingCard,
   SplitsCard,
   StatsSkeleton,
+  careerAverages,
   playerCardSize,
   useLeagueRanks,
 } from '../../components';
@@ -64,17 +65,26 @@ export function PlayerScreen() {
   const activeTab: Tab = picked ?? (onRoster ? 'season' : 'career');
   const { isWatched, toggle } = useWatchlist();
 
-  // The card's honors and titles badges and its league ranks are the page's extras: read once it has settled, not while it opens.
+  // The league ranks and the All-Star list are extras: read once the page has settled. The honors and the career (for the card's badges
+  // and, for a retired player, its numbers) start with the page, so the badges do not arrive late; they are cached and persisted.
   const settled = useAfterSettle(1200);
   const { data: stats, isPending: statsPending } = usePlayerStats(player?.id);
   const rating2k = nba2kRating(player?.name);
   const { data: gameLog, isPending: logPending } = usePlayerGameLog(player?.id);
-  const { data: career, isPending: careerPending } = usePlayerCareer(activeTab === 'career' || activeTab === 'info' || settled ? player?.id : undefined);
-  const { data: allStars } = useAllStars(activeTab === 'info');
-  const { data: profile, isPending: profilePending } = usePlayerProfile(activeTab === 'info' || settled ? player?.id : undefined);
+  const { data: career, isPending: careerPending } = usePlayerCareer(player?.id);
+  // Read ahead once settled, so the Info tab opens with the All-Star count instead of waiting for it.
+  const { data: allStars } = useAllStars(activeTab === 'info' || settled);
+  const { data: profile, isPending: profilePending } = usePlayerProfile(player?.id);
   const ranks = useLeagueRanks(player?.id, settled);
   // A retired player's pages are history; only someone still on a roster has numbers that move.
   const refreshControl = useRefresh([['playerStats', id], ['playerGameLog', id], ['playerCareer', id], ['roster', teamId], ['playerBio', id]], onRoster);
+
+  // The card's numbers: this season's, or for someone with no current season (retired, unsigned) his career averages, named as such.
+  const hasSeason = !!stats && Object.values(stats).some((v) => v != null);
+  const careerStats = career ? careerAverages(career.career) : null;
+  const showingCareer = !hasSeason && !!careerStats;
+  const cardStats = hasSeason ? stats : (careerStats ?? undefined);
+  const cardLoading = statsPending || (!hasSeason && careerPending);
 
   const { width: cardWidth, height: cardHeight } = playerCardSize(width);
   const scrollY = useSharedValue(0);
@@ -136,7 +146,8 @@ export function PlayerScreen() {
         theme={theme}
         name={player.name}
         headshot={player.headshot}
-        stats={stats}
+        stats={cardStats}
+        statsLabel={showingCareer ? 'Career' : undefined}
         progress={compactProgress}
         watched={isWatched(player.id)}
         onBack={goBack}
@@ -169,9 +180,10 @@ export function PlayerScreen() {
           theme={theme}
           width={cardWidth}
           scrollY={scrollY}
-          stats={stats}
-          ranks={ranks}
-          loading={statsPending}
+          stats={cardStats}
+          ranks={showingCareer ? undefined : ranks}
+          statsLabel={showingCareer ? 'Career' : undefined}
+          loading={cardLoading}
           honors={profile?.honors}
           titles={career ? titleSeasons(career.seasons).length : 0}
           status={!onRoster && bio.data ? (bio.data.active ? 'Free agent' : 'Retired') : undefined}

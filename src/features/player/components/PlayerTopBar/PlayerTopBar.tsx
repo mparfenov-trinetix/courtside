@@ -17,6 +17,7 @@ export function PlayerTopBar({
   name,
   headshot,
   stats,
+  statsLabel,
   progress,
   watched,
   onBack,
@@ -27,6 +28,8 @@ export function PlayerTopBar({
   name: string;
   headshot?: string;
   stats?: PlayerSeasonStats | null;
+  /** "Career" when the numbers are not this season's. */
+  statsLabel?: string;
   progress: SharedValue<number>;
   watched: boolean;
   onBack: () => void;
@@ -43,6 +46,7 @@ export function PlayerTopBar({
   const line = [stats?.ppg != null ? `${stats.ppg.toFixed(1)} PPG` : null, stats?.rpg != null ? `${stats.rpg.toFixed(1)} RPG` : null, stats?.apg != null ? `${stats.apg.toFixed(1)} APG` : null]
     .filter(Boolean)
     .join(' · ');
+  const subtitle = line && statsLabel ? `${statsLabel} · ${line}` : line;
 
   return (
     <View style={[styles.bar, { paddingTop: insets.top + 10 }]}>
@@ -58,9 +62,9 @@ export function PlayerTopBar({
           <Text style={styles.name} numberOfLines={1}>
             {name}
           </Text>
-          {line ? (
+          {subtitle ? (
             <Text style={styles.line} numberOfLines={1}>
-              {line}
+              {subtitle}
             </Text>
           ) : null}
         </View>
