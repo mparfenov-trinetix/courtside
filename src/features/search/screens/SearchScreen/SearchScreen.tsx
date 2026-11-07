@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
-import type { Href } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, type Href } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,13 +41,31 @@ export function SearchScreen() {
       .catch(() => {});
   }, []);
 
+  // The new order is saved at once but not shown at once: the list is still on screen while the page you picked slides in, and the
+  // picked row jumping to the top in that moment looked like a glitch. It is applied when the screen is covered.
+  const pending = useRef<Hit[] | null>(null);
   const remember = (hit: Hit) => {
-    const next = [hit, ...recent.filter((r) => !(r.kind === hit.kind && r.id === hit.id))].slice(0, MAX_RECENT);
-    setRecent(next);
+    const base = pending.current ?? recent;
+    const next = [hit, ...base.filter((r) => !(r.kind === hit.kind && r.id === hit.id))].slice(0, MAX_RECENT);
+    pending.current = next;
     AsyncStorage.setItem(RECENT_KEY, JSON.stringify(next)).catch(() => {});
   };
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        // Blur comes as the page starts to slide in: wait for the slide to finish (about 400 ms) before the list changes under it.
+        setTimeout(() => {
+          if (!pending.current) return;
+          setRecent(pending.current);
+          pending.current = null;
+        }, 800);
+      },
+      [],
+    ),
+  );
 
   const clearRecent = () => {
+    pending.current = null;
     setRecent([]);
     AsyncStorage.removeItem(RECENT_KEY).catch(() => {});
   };
