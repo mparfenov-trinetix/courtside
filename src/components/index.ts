@@ -1,4 +1,5 @@
 export * from './Basketball';
+export * from './Chip';
 export * from './Collapsible';
 export * from './DataHealthBanner';
 export * from './DrawerMenu';

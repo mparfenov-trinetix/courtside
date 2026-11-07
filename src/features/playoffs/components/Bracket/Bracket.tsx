@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
 import { MiniSeries, MINI_H, MINI_W, SeriesCard } from '../SeriesCard';
 import { SeriesSheet } from '../SeriesSheet';
-import { Segmented, slideIn, useSpotlight } from '@/components';
+import { Chip, ChipText, Segmented, slideIn, useSpotlight } from '@/components';
 import { layoutTree, type BracketSection, type Round, type Series } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { COL_GAP, CONF_GAP, ROW_GAP, TAG_H } from './constants';
@@ -69,17 +69,12 @@ export function Bracket({
               const on = r.key === active.key;
               const done = r.series.every((s) => s.winnerId);
               return (
-                <Pressable
-                  key={r.key}
-                  onPress={() => pick(r.key)}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: on }}
-                  style={[styles.chip, on && styles.chipOn]}>
-                  <Text style={[styles.chipText, on && { color: palette.chalk }]}>
+                <Chip key={r.key} size="md" active={on} onPress={() => pick(r.key)} style={{ paddingVertical: 7 }}>
+                  <ChipText active={on} size="md">
                     {r.name}
                     <Text style={styles.chipCount}>{done ? '  ✓' : ''}</Text>
-                  </Text>
-                </Pressable>
+                  </ChipText>
+                </Chip>
               );
             })}
           </ScrollView>
@@ -206,9 +201,6 @@ const styles = StyleSheet.create({
   switch: { alignItems: 'flex-start', marginBottom: 12 },
   chipScroll: { marginHorizontal: -16, flexGrow: 0, marginBottom: 12 },
   chips: { gap: 8, paddingHorizontal: 16 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: withAlpha(palette.chalk, 0.06) },
-  chipOn: { backgroundColor: withAlpha(palette.chalk, 0.16) },
-  chipText: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.muted },
   chipCount: { color: '#34D399' },
   confLabel: { fontFamily: fonts.bodySemi, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: withAlpha(palette.chalk, 0.55), paddingTop: 6, paddingBottom: 8, paddingHorizontal: 4 },
   hint: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, marginBottom: 6 },

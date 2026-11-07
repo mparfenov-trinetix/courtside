@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import Svg, { Line, Rect } from 'react-native-svg';
 
+import { Chip } from '@/components';
 import type { GameLogEntry } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
@@ -36,12 +37,7 @@ export function GameLog({ entries, accent }: { entries: GameLogEntry[]; accent: 
         <Text style={styles.sectionLabel}>Last {recent.length} games</Text>
         <View style={styles.chips}>
           {STATS.map((s) => (
-            <Pressable
-              key={s.key}
-              onPress={() => setStat(s.key)}
-              style={[styles.chip, stat === s.key && { backgroundColor: withAlpha(accent, 0.22), borderColor: withAlpha(accent, 0.6) }]}>
-              <Text style={[styles.chipLabel, stat === s.key && { color: palette.chalk }]}>{s.label}</Text>
-            </Pressable>
+            <Chip key={s.key} active={stat === s.key} color={accent} role="button" label={s.label} onPress={() => setStat(s.key)} />
           ))}
         </View>
       </View>
@@ -135,15 +131,6 @@ const styles = StyleSheet.create({
   },
   chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   chips: { flexDirection: 'row', gap: 6 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    backgroundColor: withAlpha(palette.chalk, 0.06),
-  },
-  chipLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
   chart: { height: CHART_H },
   barValue: {
     position: 'absolute',

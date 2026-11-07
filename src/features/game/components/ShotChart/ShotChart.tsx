@@ -6,7 +6,7 @@ import Animated from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, G, Line } from 'react-native-svg';
 
-import { CourtMarkings, HeatLayer, Segmented, binShots, COURT_W, COURT_H, HOOP, HOT, COLD } from '@/components';
+import { Chip, ChipText, CourtMarkings, HeatLayer, Segmented, binShots, COURT_W, COURT_H, HOOP, HOT, COLD } from '@/components';
 import type { BoxScorePlayer, BoxScoreTeam, Play } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
@@ -298,13 +298,17 @@ function PlayerChip({
   count: number;
 }) {
   return (
-    <Pressable
+    <Chip
+      active={active}
       onPress={onPress}
-      style={[styles.chip, active && { backgroundColor: withAlpha(color, 0.25), borderColor: withAlpha(color, 0.7) }]}>
+      color={color}
+      radius={18}
+      role="button"
+      style={{ gap: 6, paddingLeft: 6, paddingRight: 10, paddingVertical: 0, height: 36 }}>
       {headshot ? <Image source={headshot} style={styles.chipImg} contentFit="cover" /> : null}
-      <Text style={[styles.chipLabel, active && { color: palette.chalk }]} numberOfLines={1}>{label}</Text>
+      <ChipText active={active} size="md" numberOfLines={1} style={{ maxWidth: 96 }}>{label}</ChipText>
       <Text style={styles.chipCount}>{count}</Text>
-    </Pressable>
+    </Chip>
   );
 }
 
@@ -338,20 +342,7 @@ const styles = StyleSheet.create({
   // The screen pads its content by 16; cancel that here so the pills scroll to the screen edges.
   playersScroll: { marginHorizontal: -16, flexGrow: 0 },
   players: { gap: 6, paddingBottom: 12, paddingHorizontal: 16 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingLeft: 6,
-    paddingRight: 10,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    backgroundColor: withAlpha(palette.chalk, 0.06),
-  },
   chipImg: { width: 24, height: 24, borderRadius: 12, backgroundColor: withAlpha(palette.chalk, 0.1) },
-  chipLabel: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.muted, maxWidth: 96 },
   chipCount: { fontFamily: fonts.body, fontSize: 11, color: palette.muted },
   summary: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   stat: { flex: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: withAlpha('#FFFFFF', 0.05) },

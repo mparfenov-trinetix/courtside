@@ -10,6 +10,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { Chip } from '@/components';
 import type { PeriodOption } from '@/lib/game';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
@@ -95,18 +96,15 @@ export function GameStickyBar({
             {options.map((o) => {
               const active = o.key === optionKey;
               return (
-                <Pressable
+                <Chip
                   key={o.key}
+                  active={active}
+                  label={o.label}
                   onPress={() => {
                     Haptics.selectionAsync();
                     onOption(o.key);
                   }}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}
-                  hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}
-                  style={[styles.chip, active && styles.chipActive]}>
-                  <Text style={[styles.chipLabel, active && { color: palette.chalk }]}>{o.label}</Text>
-                </Pressable>
+                />
               );
             })}
           </ScrollView>
@@ -126,14 +124,4 @@ const styles = StyleSheet.create({
   periods: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   chipScroll: { flexShrink: 1 },
   chips: { gap: 6, paddingHorizontal: 16 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 14,
-    backgroundColor: withAlpha(palette.chalk, 0.06),
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  chipActive: { backgroundColor: withAlpha(palette.chalk, 0.14), borderColor: withAlpha(palette.chalk, 0.28) },
-  chipLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
 });

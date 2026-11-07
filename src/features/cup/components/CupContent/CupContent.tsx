@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ErrorState, ListSkeleton, Segmented, slideIn, useSpotlight } from '@/components';
+import { Chip, ErrorState, ListSkeleton, Segmented, slideIn, useSpotlight } from '@/components';
 import { Bracket } from '@/features/playoffs';
 import { useCup, useRefresh } from '@/hooks';
 import { currentSeason, seasonLabel } from '@/lib/espn';
@@ -159,14 +159,7 @@ function Games({
             { label: 'All games', value: false },
             { label: 'My team', value: true },
           ].map((f) => (
-            <Pressable
-              key={f.label}
-              onPress={() => setOnlyMine(f.value)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: onlyMine === f.value }}
-              style={[styles.chip, onlyMine === f.value && styles.chipActive]}>
-              <Text style={[styles.chipText, onlyMine === f.value && { color: palette.chalk }]}>{f.label}</Text>
-            </Pressable>
+            <Chip key={f.label} size="md" active={onlyMine === f.value} label={f.label} onPress={() => setOnlyMine(f.value)} />
           ))}
         </View>
       )}
@@ -237,9 +230,6 @@ const styles = StyleSheet.create({
   fieldAbbr: { fontFamily: fonts.bodyBold, fontSize: 12, color: palette.chalk },
   fieldNote: { fontFamily: fonts.body, fontSize: 11, color: palette.muted },
   filters: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: withAlpha(palette.chalk, 0.06) },
-  chipActive: { backgroundColor: withAlpha(palette.chalk, 0.14) },
-  chipText: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.muted },
   info: { padding: 16, borderRadius: 18, backgroundColor: withAlpha('#FFFFFF', 0.05), gap: 6, marginTop: 8 },
   infoTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: palette.chalk },
   infoText: { fontFamily: fonts.body, fontSize: 14, color: palette.muted, lineHeight: 20 },

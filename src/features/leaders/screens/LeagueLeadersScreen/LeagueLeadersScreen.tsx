@@ -4,7 +4,7 @@ import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, V
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ErrorState, ListSkeleton, ScreenHeader } from '@/components';
+import { Chip, ErrorState, ListSkeleton, ScreenHeader } from '@/components';
 import { useLeaderCategory, useTeams, useRefresh } from '@/hooks';
 import type { LeaderCategory, LeaderEntry } from '@/lib/espn';
 import { Efficiency, HotCold } from '../../components';
@@ -71,22 +71,7 @@ export function LeagueLeadersScreen() {
           {TABS.map((tab) => {
             const isActive = tab.key === active;
             return (
-              <Pressable
-                key={tab.key}
-                onPress={() => switchTab(tab.key)}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
-                style={({ pressed }) => [
-                  styles.tab,
-                  {
-                    backgroundColor: isActive ? withAlpha(palette.chalk, 0.12) : withAlpha(palette.chalk, pressed ? 0.06 : 0.04),
-                    borderColor: isActive ? withAlpha(palette.chalk, 0.3) : 'transparent',
-                  },
-                ]}>
-                <Text style={[styles.tabLabel, { color: isActive ? palette.chalk : palette.muted }]}>
-                  {tab.label}
-                </Text>
-              </Pressable>
+              <Chip key={tab.key} size="lg" active={isActive} label={tab.label} onPress={() => switchTab(tab.key)} hitSlop={4} />
             );
           })}
         </ScrollView>
@@ -185,18 +170,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 16,
-  },
-  tab: {
-    height: 40,
-    paddingHorizontal: 18,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabLabel: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 14,
   },
   categoryLabel: {
     fontFamily: fonts.body,

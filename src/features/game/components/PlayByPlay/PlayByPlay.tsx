@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
+import { Chip } from '@/components';
 import type { BoxScoreTeam, Play } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { PAGE, SKIP } from './constants';
@@ -45,9 +46,9 @@ export function PlayByPlay({
   return (
     <View style={styles.wrap}>
       <View style={styles.filters}>
-        <Chip label="All plays" active={!scoringOnly} onPress={() => { setScoringOnly(false); setLimit(PAGE); }} />
-        <Chip label="Scoring" active={scoringOnly} onPress={() => { setScoringOnly(true); setLimit(PAGE); }} />
-        <Chip label={showSubs ? 'Hide subs' : 'Show subs'} active={showSubs} onPress={() => setShowSubs((v) => !v)} />
+        <Chip size="md" role="button" label="All plays" active={!scoringOnly} onPress={() => { setScoringOnly(false); setLimit(PAGE); }} />
+        <Chip size="md" role="button" label="Scoring" active={scoringOnly} onPress={() => { setScoringOnly(true); setLimit(PAGE); }} />
+        <Chip size="md" role="button" label={showSubs ? 'Hide subs' : 'Show subs'} active={showSubs} onPress={() => setShowSubs((v) => !v)} />
       </View>
 
       {filtered.length === 0 ? (
@@ -99,29 +100,9 @@ export function PlayByPlay({
   );
 }
 
-function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.chip, active && styles.chipActive]}>
-      <Text style={[styles.chipLabel, active && { color: palette.chalk }]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, paddingTop: 4 },
   filters: { flexDirection: 'row', gap: 6, marginBottom: 10 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: withAlpha(palette.chalk, 0.06),
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  chipActive: { backgroundColor: withAlpha(palette.chalk, 0.14), borderColor: withAlpha(palette.chalk, 0.28) },
-  chipLabel: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.muted },
   empty: { fontFamily: fonts.body, fontSize: 14, color: palette.muted, textAlign: 'center', paddingVertical: 32 },
   periodHeader: {
     fontFamily: fonts.bodySemi,
