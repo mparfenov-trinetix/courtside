@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { withAlpha } from '@/lib/theme';
+import { withAlpha, surfaces } from '@/lib/theme';
 
 const ROWS = 7;
 
@@ -27,7 +27,7 @@ export function RosterSkeleton() {
 const fill = withAlpha('#FFFFFF', 0.07);
 const styles = StyleSheet.create({
   wrap: { padding: 16, gap: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 72, padding: 10, borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.04) },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 72, padding: 10, borderRadius: 16, backgroundColor: surfaces.faint },
   avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: fill },
   text: { flex: 1, gap: 8 },
   line: { height: 13, borderRadius: 6, backgroundColor: fill },

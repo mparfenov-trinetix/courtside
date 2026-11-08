@@ -7,7 +7,7 @@ import { useGamesOnDay } from '@/hooks';
 import { localToday } from '@/lib/date';
 import { gameHeat } from '@/lib/game';
 import { involvesTeam, type ScoreboardGame, type ScoreboardTeam } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { openDetail, sharedTag } from '@/navigation';
 
 export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highlightTeamId?: string | null }) {
@@ -46,7 +46,7 @@ export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highl
               style={({ pressed }) => [
                 styles.card,
                 mine && { borderColor: withAlpha(accent, 0.6) },
-                g.inProgress && { backgroundColor: withAlpha('#4ADE80', 0.08) },
+                g.inProgress && { backgroundColor: withAlpha(palette.win, 0.08) },
                 pressed && { opacity: 0.75 },
               ]}>
               <FlashOverlay radius={16} signature={`${g.away.score ?? ''}-${g.home.score ?? ''}-${g.status}`} />
@@ -54,7 +54,7 @@ export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highl
               <Side team={g.home} completed={g.completed} gameId={g.id} side="home" />
               {g.inProgress ? <HeatBadge heat={gameHeat(g.away.score, g.home.score, g.status)} compact /> : null}
               <Tick
-                style={[styles.status, g.inProgress && { color: '#4ADE80' }]}
+                style={[styles.status, g.inProgress && { color: palette.win }]}
                 value={
                   !g.completed && !g.inProgress
                     ? new Date(g.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
@@ -87,13 +87,7 @@ function Side({ team, completed, gameId, side }: { team: ScoreboardTeam; complet
 const styles = StyleSheet.create({
   wrap: { marginTop: 22 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, marginBottom: 10 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-  },
+  title: { ...textStyle.sectionLabel },
   live: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -101,10 +95,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    backgroundColor: withAlpha('#4ADE80', 0.14),
+    backgroundColor: withAlpha(palette.win, 0.14),
   },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ADE80' },
-  liveText: { fontFamily: fonts.bodyBold, fontSize: 10, color: '#4ADE80', letterSpacing: 0.5 },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.win },
+  liveText: { fontFamily: fonts.bodyBold, fontSize: 10, color: palette.win, letterSpacing: 0.5 },
   list: { gap: 8, paddingHorizontal: 16 },
   card: {
     width: 138,
@@ -113,7 +107,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'transparent',
-    backgroundColor: withAlpha('#FFFFFF', 0.06),
+    backgroundColor: surfaces.card,
   },
   side: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   logo: { width: 24, height: 24 },

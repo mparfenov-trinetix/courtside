@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ListSkeleton } from '@/components';
 import { usePlayerGameLogs } from '@/hooks';
 import { efficiencyOf } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
 import { useLeaderPool } from '../../utils';
@@ -68,11 +68,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 16,
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
   rank: { width: 22, fontFamily: fonts.bodySemi, fontSize: 15, color: palette.muted, textAlign: 'center' },
   rankTop: { color: palette.chalk, fontFamily: fonts.bodyBold },
-  headshotWrap: { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', backgroundColor: withAlpha('#FFFFFF', 0.08) },
+  headshotWrap: { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', backgroundColor: surfaces.raised },
   headshot: { width: 56, height: 48 },
   name: { fontFamily: fonts.bodyBold, fontSize: 16, color: palette.chalk },
   team: { fontFamily: fonts.body, fontSize: 13, color: palette.muted, marginTop: 1 },

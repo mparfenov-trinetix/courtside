@@ -18,6 +18,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { AppState, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ReduceMotion, ReducedMotionConfig } from 'react-native-reanimated';
 
 import { WidgetSync } from '@/widgets';
 import { NavDepthTracker } from '@/navigation';
@@ -51,7 +52,7 @@ const persister = createAsyncStoragePersister({
 
 // Slow-changing, small payloads are restored on launch. Game summaries are big and live games change,
 // but a *finished* game never does, so the latest few of those are kept too and open instantly, offline.
-const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'playerCareer', 'leagueTeamStats', 'allStars', 'cup', 'headToHead', 'playerProfile', 'playerBio', 'playerGameLog', 'teamSeason', 'playoffSeeds']);
+const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'playerCareer', 'leagueTeamStats', 'allStars', 'allStarWeekend', 'draft', 'draftee', 'cup', 'headToHead', 'playerProfile', 'playerBio', 'playerGameLog', 'teamSeason', 'playoffSeeds']);
 const KEPT_FINISHED_GAMES = 8;
 
 const isFinished = (q: Query) => !!(q.state.data as { completed?: boolean } | undefined)?.completed;
@@ -115,6 +116,8 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.arena }}>
+      {/* Every Reanimated animation follows the system's "Reduce Motion" setting (it is the library's default; stated here so it stays a decision). */}
+      <ReducedMotionConfig mode={ReduceMotion.System} />
       <PersistQueryClientProvider
         client={queryClient}
         persistOptions={{

@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Skeleton, SkeletonGroup } from '@/components';
-import { palette, withAlpha } from '@/lib/theme';
+import { palette, withAlpha, surfaces } from '@/lib/theme';
 
 /** Same measurements as the day view's game row (`GameCard`), so the list does not jump when the games arrive. */
 const LOGO = 40;
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     height: 70,
     borderWidth: 1,
     borderColor: withAlpha(palette.chalk, 0.08),
-    backgroundColor: withAlpha('#FFFFFF', 0.04),
+    backgroundColor: surfaces.faint,
     borderRadius: 16,
     paddingHorizontal: 12,
   },

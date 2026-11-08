@@ -3,7 +3,7 @@ import Animated from 'react-native-reanimated';
 
 import type { BoxScoreTeam, Play } from '@/lib/espn';
 import { periodLabel, type Flow, type Run } from '@/lib/game';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, surfaces, textStyle } from '@/lib/theme';
 
 const when = (play: Play) => `${periodLabel(play.period)} ${play.clockText}`;
 
@@ -92,21 +92,14 @@ export function KeyMoments({
 
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, marginBottom: 14 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
+  title: { ...textStyle.sectionLabel, marginBottom: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tile: { width: '48.6%', flexGrow: 1, padding: 12, borderRadius: 14, backgroundColor: withAlpha('#FFFFFF', 0.05), gap: 1 },
+  tile: { width: '48.6%', flexGrow: 1, padding: 12, borderRadius: 14, backgroundColor: surfaces.card, gap: 1 },
   tileWide: { width: '100%' },
   valueWide: { fontSize: 24 },
   label: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.4, textTransform: 'uppercase' },
   value: { fontFamily: fonts.display, fontSize: 30 },
   sub: { fontFamily: fonts.body, fontSize: 12, color: palette.muted },
-  last: { marginTop: 8, padding: 12, borderRadius: 14, backgroundColor: withAlpha('#FFFFFF', 0.05), gap: 4 },
+  last: { marginTop: 8, padding: 12, borderRadius: 14, backgroundColor: surfaces.card, gap: 4 },
   lastText: { fontFamily: fonts.bodySemi, fontSize: 14, color: palette.chalk },
 });

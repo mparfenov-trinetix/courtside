@@ -4,9 +4,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import Svg, { Line, Rect } from 'react-native-svg';
 
-import { Chip } from '@/components';
+import { Chip, EmptyState } from '@/components';
 import type { GameLogEntry } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { STATS, CHART_H, BAR_GAP, SHOWN } from './constants';
 type StatKey = (typeof STATS)[number]['key'];
@@ -17,10 +17,7 @@ export function GameLog({ entries, accent }: { entries: GameLogEntry[]; accent: 
 
   if (entries.length === 0) {
     return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyTitle}>No games yet</Text>
-        <Text style={styles.emptyText}>The game log fills in once the season is underway.</Text>
-      </View>
+      <EmptyState title="No games yet" text="The game log fills in once the season is underway." />
     );
   }
 
@@ -93,7 +90,7 @@ export function GameLog({ entries, accent }: { entries: GameLogEntry[]; accent: 
                   <Text style={styles.oppText}>{e.home ? 'vs' : '@'} {e.opponent}</Text>
                   {e.playoffs ? <Text style={styles.poTag}>PO</Text> : null}
                 </View>
-                <Text style={[styles.result, { color: e.result === 'W' ? '#34D399' : '#F87171' }]}>
+                <Text style={[styles.result, { color: e.result === 'W' ? palette.win : palette.loss }]}>
                   {e.result ?? ''} {e.teamScore}–{e.opponentScore}
                 </Text>
               </View>
@@ -122,13 +119,7 @@ function Cell({ value, label, strong }: { value: number; label: string; strong?:
 
 const styles = StyleSheet.create({
   wrap: { gap: 0 },
-  sectionLabel: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
+  sectionLabel: { ...textStyle.sectionLabel },
   chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   chips: { flexDirection: 'row', gap: 6 },
   chart: { height: CHART_H },
@@ -140,7 +131,7 @@ const styles = StyleSheet.create({
     color: withAlpha(palette.chalk, 0.85),
   },
   avgNote: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, marginTop: 8 },
-  list: { marginTop: 8, borderRadius: 18, backgroundColor: withAlpha('#FFFFFF', 0.06), overflow: 'hidden' },
+  list: { marginTop: 8, borderRadius: 18, backgroundColor: surfaces.card, overflow: 'hidden' },
   row: { paddingHorizontal: 14, paddingVertical: 12, gap: 8 },
   rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(palette.chalk, 0.1) },
   rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -163,7 +154,4 @@ const styles = StyleSheet.create({
   cell: { flex: 1, alignItems: 'flex-start' },
   cellValue: { fontFamily: fonts.bodyBold, fontSize: 16, color: withAlpha(palette.chalk, 0.85) },
   cellLabel: { fontFamily: fonts.body, fontSize: 10, color: palette.muted, letterSpacing: 0.4 },
-  empty: { alignItems: 'center', paddingTop: 40, gap: 8 },
-  emptyTitle: { fontFamily: fonts.display, fontSize: 28, color: palette.chalk },
-  emptyText: { fontFamily: fonts.body, fontSize: 15, color: palette.muted, textAlign: 'center' },
 });

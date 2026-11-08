@@ -8,6 +8,10 @@ export const palette = {
   chalk: '#F2F4F7', // primary text
   muted: '#8A96A8', // secondary text
   line: 'rgba(242,244,247,0.12)',
+  // Meaning, not hue: the same colors say win / loss / live / best everywhere. (`live` is the win green: a live dot and a win are both "go".)
+  win: '#34D399',
+  loss: '#F87171',
+  gold: '#FBBF24', // titles, the bonus, a starred thing, a best value
 };
 
 export const fonts = {
@@ -61,14 +65,45 @@ function distance(a: string, b: string) {
   return Math.hypot(ca[0] - cb[0], ca[1] - cb[1], ca[2] - cb[2]);
 }
 
+/** WCAG contrast ratio between two colors (1 = identical, 21 = black on white). */
+export function contrast(a: string, b: string) {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/**
+ * `color` itself if it already reads against `against` at `min`:1, else the nearest shade of it that does: lifted toward white on
+ * a dark background, darkened toward black on a light one (white or black if even that is not enough).
+ */
+export function ensureContrast(color: string, against: string, min: number) {
+  if (contrast(color, against) >= min) return color;
+  const toward = luminance(against) > 0.5 ? '#000000' : '#FFFFFF';
+  for (let step = 1; step <= 20; step++) {
+    const shade = mix(color, toward, step / 20);
+    if (contrast(shade, against) >= min) return shade;
+  }
+  return toward;
+}
+
 export type TeamTheme = {
   primary: string;
   secondary: string;
   background: string; // screen background, a dark wash of the primary
   surface: string;
-  onPrimary: string; // readable text on primary
-  accent: string; // the brighter of the two team colors, for highlights on dark bg
-  /** A line that reads on a card of the primary color and on the dark page: the secondary when it is bright and unlike the primary (the Lakers' gold, the Spurs' silver), else `onPrimary`. */
+  onPrimary: string; // text on primary: white, or near-black when that reads clearly better
+  /**
+   * The team's own bright color for fills and graphics (bars, dots, washes). Not safe for small text: on a dark team page it can be
+   * as dim as 2:1. Use `accent` for anything you read.
+   */
+  brand: string;
+  /** `brand` lifted until it reads on the team's page at 4.5:1 or better: for numbers, labels, links, icons, the tab underline. */
+  accent: string;
+  /** The team stripe on a card: the secondary color, or a shade of it that stays visible against the primary. */
+  stripe: string;
+  /**
+   * A line along a team-colored surface that shows against both the card and the page behind it: whichever of the secondary
+   * color, `onPrimary` and white has the best worst case (a black team's card is otherwise lost against its own page).
+   */
   edge: string;
 };
 
@@ -80,7 +115,9 @@ export function teamTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null):
       background: palette.arena,
       surface: palette.arenaRaised,
       onPrimary: palette.chalk,
+      brand: palette.maple,
       accent: palette.maple,
+      stripe: palette.maple,
       edge: palette.chalk,
     };
   }
@@ -88,21 +125,37 @@ export function teamTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null):
   // Some teams list near-identical colors; fall back to a lifted primary.
   const secondary =
     distance(team.alternateColor, primary) < 60 ? mix(primary, '#FFFFFF', 0.45) : team.alternateColor;
-  let accent = luminance(primary) > luminance(secondary) ? primary : secondary;
+  let brand = luminance(primary) > luminance(secondary) ? primary : secondary;
   // The brighter color isn't always the team's color: the Kings' purple loses to a grey alternate. When the
   // brighter one is washed out and the primary is the vivid one, keep the primary (lifted if it's too dark).
-  if (accent === secondary && saturation(secondary) < 0.3 && saturation(primary) > 0.35) {
-    accent = luminance(primary) < 0.08 ? mix(primary, '#FFFFFF', 0.3) : primary;
+  if (brand === secondary && saturation(secondary) < 0.3 && saturation(primary) > 0.35) {
+    brand = luminance(primary) < 0.08 ? mix(primary, '#FFFFFF', 0.3) : primary;
   }
+  if (luminance(brand) < 0.03) brand = mix(brand, '#FFFFFF', 0.6);
+  // Text on the card is white unless the card is light (the existing rule held up: every team reads at 3.9:1 or better).
   const onPrimary = luminance(primary) > 0.45 ? '#0A0A0A' : '#FFFFFF';
+  const background = mix(primary, '#05080D', luminance(primary) > 0.4 ? 0.86 : 0.74);
+
+  // The stripe may differ from the primary by hue rather than lightness (the Thunder's orange on blue has a 1.2:1 ratio and is
+  // plain to see): it is only changed when the two are close in both.
+  const stripe =
+    distance(secondary, primary) >= 110 || contrast(secondary, primary) >= 2.2 ? secondary : ensureContrast(secondary, primary, 2.5);
+
+  // The edge: the secondary when it holds up against both card and page (it keeps the team's look), else the candidate whose
+  // worse side is best.
+  const worst = (c: string) => Math.min(contrast(c, primary), contrast(c, background));
+  const edge = worst(secondary) >= 3 ? secondary : [onPrimary, '#FFFFFF', secondary].reduce((best, c) => (worst(c) > worst(best) ? c : best));
+
   return {
     primary,
     secondary,
-    background: mix(primary, '#05080D', luminance(primary) > 0.4 ? 0.86 : 0.74),
+    background,
     surface: mix(primary, '#05080D', 0.62),
     onPrimary,
-    accent: luminance(accent) < 0.03 ? mix(accent, '#FFFFFF', 0.6) : accent,
-    edge: luminance(secondary) > 0.3 && distance(secondary, primary) > 100 ? secondary : onPrimary,
+    brand,
+    accent: ensureContrast(brand, background, 4.5),
+    stripe,
+    edge,
   };
 }
 

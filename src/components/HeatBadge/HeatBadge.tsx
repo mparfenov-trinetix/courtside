@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { fonts, withAlpha } from '@/lib/theme';
+import { fonts, withAlpha, palette } from '@/lib/theme';
 import type { Heat } from '@/lib/game';
 import { FlameIcon } from '../Icons';
 
-const COLORS = { close: '#FBBF24', clutch: '#F97316' } as const;
+const COLORS = { close: palette.gold, clutch: '#F97316' } as const;
 
 /** A small flame tag for a live game that is tight late on: "Close game", "Clutch time" or "Overtime". */
 export function HeatBadge({ heat, compact = false }: { heat: Heat; compact?: boolean }) {

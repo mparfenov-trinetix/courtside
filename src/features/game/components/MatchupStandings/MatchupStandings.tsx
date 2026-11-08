@@ -7,7 +7,7 @@ import { ChevronIcon, ListSkeleton } from '@/components';
 import { useStandings } from '@/hooks';
 import { currentSeason, seasonOfDate, type StandingEntry } from '@/lib/espn';
 import { visibleSeeds } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { ROW_H } from './constants';
 import { pushOnce } from '@/navigation';
 
@@ -134,16 +134,8 @@ function Place({ side, found }: { side: Side; found: { conf: 'east' | 'west'; ro
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 18 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  card: { borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05), padding: 10 },
+  title: { ...textStyle.sectionLabel, marginBottom: 8, paddingHorizontal: 4 },
+  card: { borderRadius: 16, backgroundColor: surfaces.card, padding: 10 },
   empty: { fontFamily: fonts.body, fontSize: 13, color: palette.muted, textAlign: 'center', padding: 14 },
   skip: { textAlign: 'center', fontFamily: fonts.bodyBold, fontSize: 14, color: palette.muted, letterSpacing: 2, paddingVertical: 2 },
   conf: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, paddingHorizontal: 8, paddingBottom: 6 },
@@ -180,7 +172,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 46,
     borderRadius: 14,
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
   slimText: { fontFamily: fonts.bodySemi, fontSize: 14, color: palette.chalk },
 });

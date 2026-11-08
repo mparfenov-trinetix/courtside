@@ -3,11 +3,11 @@ import { Image } from 'expo-image';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ErrorState } from '@/components';
+import { ErrorState, Card } from '@/components';
 import { RosterSkeleton } from './RosterSkeleton';
 import { useRefresh, useRoster } from '@/hooks';
 import type { Player, Team } from '@/lib/espn';
-import { fonts, palette, teamTheme, withAlpha, type TeamTheme } from '@/lib/theme';
+import { fonts, palette, teamTheme, withAlpha, type TeamTheme, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
 /**
@@ -31,7 +31,7 @@ export function TeamRoster({ team, width, active, rows }: { team: Team; width: n
 
   return (
     <View style={[styles.page, { width }]}>
-      <View style={[styles.banner, { backgroundColor: theme.primary, borderColor: withAlpha(theme.onPrimary, 0.22) }]}>
+      <Card team={theme} padded={false} radius={18} style={styles.banner}>
         {/* On a light disc, so a logo that shares the team's color (Houston's red) never disappears into the banner. */}
         <View style={styles.bannerBadge}>
           <Image source={team.logo} style={styles.bannerLogo} contentFit="contain" />
@@ -42,7 +42,7 @@ export function TeamRoster({ team, width, active, rows }: { team: Team; width: n
             {data ? `${data.players.length} players` : ' '}
           </Text>
         </View>
-      </View>
+      </Card>
 
       {error && rows ? (
         <ErrorState message={error.message} onRetry={refetch} />
@@ -84,7 +84,7 @@ function CoachRow({ coach, theme }: { coach: string; theme: TeamTheme }) {
 
 function PlayerRow({ player, theme, onPress }: { player: Player; theme: TeamTheme; onPress: () => void }) {
   return (
-    <View style={[styles.row, { backgroundColor: withAlpha('#FFFFFF', 0.05) }]}>
+    <View style={[styles.row, { backgroundColor: surfaces.card }]}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
@@ -129,8 +129,6 @@ const styles = StyleSheet.create({
     marginTop: 14,
     marginBottom: 6,
     padding: 14,
-    borderRadius: 18,
-    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,

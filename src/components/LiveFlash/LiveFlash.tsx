@@ -8,14 +8,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { withAlpha } from '@/lib/theme';
+import { withAlpha, palette } from '@/lib/theme';
 
 /**
  * Helpers for showing that live data just changed. Both react only to changes after
  * the first render, so screens don't flash when they open.
  */
 
-const GOLD = '#FBBF24';
+const GOLD = palette.gold;
 
 /** Runs `run` whenever `signature` changes after mount (not on the first render). */
 function useOnChange(signature: string, run: () => void) {

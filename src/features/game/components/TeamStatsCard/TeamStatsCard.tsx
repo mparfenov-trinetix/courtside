@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Expandable } from '@/components';
 import { TeamStatBar } from '../TeamStatBar';
 import type { StatBarConfig } from '@/lib/game';
-import { fonts, palette } from '@/lib/theme';
+import { fonts, palette, textStyle } from '@/lib/theme';
 
 /** The six numbers worth a glance, with everything else (and the four factors) one tap away. */
 export function TeamStatsCard({
@@ -79,14 +79,7 @@ export function TeamStatsCard({
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, marginBottom: 14 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
+  title: { ...textStyle.sectionLabel, marginBottom: 8 },
   factorsTitle: { marginTop: 8 },
   note: { fontFamily: fonts.body, fontSize: 11, color: palette.muted },
   teamKey: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },

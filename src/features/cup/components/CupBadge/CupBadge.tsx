@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { fonts, withAlpha } from '@/lib/theme';
+import { fonts, withAlpha, palette } from '@/lib/theme';
 
-const GOLD = '#FBBF24';
+const GOLD = palette.gold;
 
 /** A small "CUP" tag for NBA Cup games, with the stage when there's room. */
 export function CupBadge({ stage }: { stage?: string }) {

@@ -9,7 +9,7 @@ import { CupBadge } from '@/features/cup';
 import { PlayoffBadge } from '@/features/playoffs';
 import { seasonOfDate, type ScoreboardGame, type Team } from '@/lib/espn';
 import { playoffTag } from '@/lib/league';
-import { fonts, matchupColors, palette, withAlpha } from '@/lib/theme';
+import { fonts, matchupColors, palette, withAlpha, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
 /** The margin between two scores; 0 while either is missing. (A plain function: the React Compiler can't take this as a ternary.) */
@@ -125,7 +125,7 @@ function Score({ value, dim, live }: { value?: number; dim: boolean; live: boole
 
 /** The clock or "Final": animated only while the game is on. */
 function Status({ live, done, text }: { live: boolean; done: boolean; text: string }) {
-  const style = [styles.statusText, live && { color: '#4ADE80' }, done && { color: withAlpha(palette.chalk, 0.5) }];
+  const style = [styles.statusText, live && { color: palette.win }, done && { color: withAlpha(palette.chalk, 0.5) }];
   return live ? <Tick style={style} value={text} /> : <Text style={style}>{text}</Text>;
 }
 
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: withAlpha(palette.chalk, 0.08),
-    backgroundColor: withAlpha('#FFFFFF', 0.04),
+    backgroundColor: surfaces.faint,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -187,5 +187,5 @@ const styles = StyleSheet.create({
   seed: { fontFamily: fonts.bodySemi, fontSize: 12, color: withAlpha(palette.chalk, 0.55) },
   series: { fontFamily: fonts.bodySemi, fontSize: 10, color: withAlpha(palette.chalk, 0.7), marginTop: 1 },
   leadText: { fontFamily: fonts.bodySemi, fontSize: 10, color: withAlpha(palette.chalk, 0.5) },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ADE80' },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.win },
 });

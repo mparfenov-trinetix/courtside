@@ -3,9 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useSpotlight } from '@/components';
 import { ROUND_NAMES, type Series, type SeriesTeam } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 
-const GOLD = '#FBBF24';
+const GOLD = palette.gold;
 
 /** What to show next to each team: games won for a series, the score for a single game. */
 export function sideScores(s: Series): { top?: number; bottom?: number; played: boolean } {
@@ -80,7 +80,7 @@ export function MiniSeries({ series, favoriteTeamId, onPress, style }: { series:
 }
 
 const styles = StyleSheet.create({
-  card: { padding: 14, borderRadius: 18, backgroundColor: withAlpha('#FFFFFF', 0.05), borderWidth: 1, borderColor: 'transparent', marginBottom: 10, gap: 6 },
+  card: { padding: 14, borderRadius: 18, backgroundColor: surfaces.card, borderWidth: 1, borderColor: 'transparent', marginBottom: 10, gap: 6 },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 },
   cardTitle: { fontFamily: fonts.bodySemi, fontSize: 11, letterSpacing: 0.6, textTransform: 'uppercase', color: palette.muted },
   status: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   abbrBig: { fontSize: 17 },
   score: { fontFamily: fonts.display, fontSize: 18, color: withAlpha(palette.chalk, 0.75), minWidth: 22, textAlign: 'right' },
   scoreBig: { fontSize: 30, minWidth: 40 },
-  mini: { width: MINI_W, height: MINI_H, paddingHorizontal: 8, borderRadius: 12, backgroundColor: withAlpha('#FFFFFF', 0.07), borderWidth: 1, borderColor: 'transparent', justifyContent: 'center' },
+  mini: { width: MINI_W, height: MINI_H, paddingHorizontal: 8, borderRadius: 12, backgroundColor: surfaces.raised, borderWidth: 1, borderColor: 'transparent', justifyContent: 'center' },
   spot: { borderColor: withAlpha(palette.chalk, 0.9), backgroundColor: withAlpha('#FFFFFF', 0.14) },
   sep: { height: StyleSheet.hairlineWidth, backgroundColor: withAlpha(palette.chalk, 0.12) },
 });

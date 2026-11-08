@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { BoxScorePlayer, Play } from '@/lib/espn';
 import { CLUTCH_MARGIN, CLUTCH_SECONDS, clutchLines } from '@/lib/game';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
 import { SHOWN } from './constants';
@@ -76,15 +76,8 @@ export function ClutchCard({ plays, away, home }: { plays: Play[]; away: Side; h
 
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, marginBottom: 14 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  card: { borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05), overflow: 'hidden', paddingBottom: 6 },
+  title: { ...textStyle.sectionLabel, marginBottom: 8 },
+  card: { borderRadius: 16, backgroundColor: surfaces.card, overflow: 'hidden', paddingBottom: 6 },
   totals: { flexDirection: 'row', paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: withAlpha(palette.chalk, 0.1) },
   total: { flex: 1, alignItems: 'center' },
   totalValue: { fontFamily: fonts.display, fontSize: 34 },

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 
 export type Row = {
   label: string;
@@ -75,6 +75,6 @@ const styles = StyleSheet.create({
   sub: { fontFamily: fonts.body, fontSize: 10, color: palette.muted, marginTop: -1 },
   rowLabel: { flex: 1, textAlign: 'center', fontFamily: fonts.body, fontSize: 12, color: palette.muted },
   bars: { flexDirection: 'row', gap: 3 },
-  track: { flex: 1, height: 6, backgroundColor: withAlpha(palette.chalk, 0.06), borderRadius: 3, overflow: 'hidden' },
+  track: { flex: 1, height: 6, backgroundColor: surfaces.card, borderRadius: 3, overflow: 'hidden' },
   fill: { height: 6 },
 });

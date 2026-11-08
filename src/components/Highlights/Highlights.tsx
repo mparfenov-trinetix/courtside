@@ -5,7 +5,7 @@ import { createElement, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { clipLength, type GameVideo } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { PlayIcon } from '../Icons';
 import { THUMB_H, THUMB_W } from './constants';
 import { HighlightCardsSkeleton } from './Highlights.skeleton';
@@ -132,18 +132,10 @@ export function Highlights({
 const styles = StyleSheet.create({
   // Room above and below: a row of thumbnails runs into whatever sits next to it without it.
   wrap: { marginTop: 18, marginBottom: 26 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-    paddingHorizontal: 16,
-  },
+  title: { ...textStyle.sectionLabel, marginBottom: 8, paddingHorizontal: 16 },
   row: { paddingHorizontal: 16, gap: 10 },
   card: { width: THUMB_W },
-  thumb: { width: THUMB_W, height: THUMB_H, borderRadius: 12, overflow: 'hidden', backgroundColor: withAlpha('#FFFFFF', 0.08), alignItems: 'center', justifyContent: 'center' },
+  thumb: { width: THUMB_W, height: THUMB_H, borderRadius: 12, overflow: 'hidden', backgroundColor: surfaces.raised, alignItems: 'center', justifyContent: 'center' },
   play: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', paddingLeft: 2 },
   length: {
     position: 'absolute',

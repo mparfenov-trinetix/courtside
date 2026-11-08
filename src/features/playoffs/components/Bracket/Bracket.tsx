@@ -7,7 +7,7 @@ import { MiniSeries, MINI_H, MINI_W, SeriesCard } from '../SeriesCard';
 import { SeriesSheet } from '../SeriesSheet';
 import { Chip, ChipText, Segmented, slideIn, useSpotlight } from '@/components';
 import { layoutTree, type BracketSection, type Round, type Series } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, textStyle } from '@/lib/theme';
 import { COL_GAP, CONF_GAP, ROW_GAP, TAG_H } from './constants';
 
 export type { BracketSection };
@@ -201,11 +201,11 @@ const styles = StyleSheet.create({
   switch: { alignItems: 'flex-start', marginBottom: 12 },
   chipScroll: { marginHorizontal: -16, flexGrow: 0, marginBottom: 12 },
   chips: { gap: 8, paddingHorizontal: 16 },
-  chipCount: { color: '#34D399' },
-  confLabel: { fontFamily: fonts.bodySemi, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: withAlpha(palette.chalk, 0.55), paddingTop: 6, paddingBottom: 8, paddingHorizontal: 4 },
+  chipCount: { color: palette.win },
+  confLabel: { ...textStyle.sectionLabel, paddingTop: 6, paddingBottom: 8, paddingHorizontal: 4 },
   hint: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, marginBottom: 6 },
   section: { marginHorizontal: -16, marginTop: 12 },
-  sectionTitle: { fontFamily: fonts.bodySemi, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: withAlpha(palette.chalk, 0.55), paddingHorizontal: 20, paddingBottom: 8 },
+  sectionTitle: { ...textStyle.sectionLabel, paddingHorizontal: 20, paddingBottom: 8 },
   confTag: { position: 'absolute', left: 0, fontFamily: fonts.bodySemi, fontSize: 11, letterSpacing: 0.6, color: withAlpha(palette.chalk, 0.55) },
   colName: { position: 'absolute', width: MINI_W, fontFamily: fonts.body, fontSize: 10, color: palette.muted, textAlign: 'center' },
 });

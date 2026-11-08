@@ -5,8 +5,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
 import { currentSeason, seasonLabel, type CareerRow, type PlayerCareer } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { COLS, COL_W, FIRST_W, ROW_H, HEADER_H, CAREER_H, HIGHLIGHT } from './constants';
+import { EmptyState } from '@/components';
 
 type SortDir = 'asc' | 'desc';
 
@@ -72,10 +73,7 @@ export function CareerTable({ career, accent, background = palette.arena }: { ca
 
   if (rows.length === 0) {
     return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyTitle}>No career stats</Text>
-        <Text style={styles.emptyText}>This player hasn&apos;t logged NBA minutes yet.</Text>
-      </View>
+      <EmptyState title="No career stats" text="This player hasn't logged NBA minutes yet." />
     );
   }
 
@@ -188,7 +186,7 @@ const styles = StyleSheet.create({
   // Trailing padding lives in the rows, so the zebra shading runs to the screen edge.
   statsRow: { flexDirection: 'row', alignItems: 'center', paddingRight: 16 },
   firstCell: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 6 },
-  shade: { backgroundColor: withAlpha('#FFFFFF', 0.04) },
+  shade: { backgroundColor: surfaces.faint },
   firstHeader: { fontFamily: fonts.bodyBold, fontSize: 11, color: withAlpha(palette.chalk, 0.8), letterSpacing: 0.5 },
   colHeader: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.4 },
   colHeaderActive: { color: palette.chalk, fontFamily: fonts.bodyBold },
@@ -204,7 +202,4 @@ const styles = StyleSheet.create({
   careerBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(palette.chalk, 0.12), marginTop: 4 },
   careerLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: palette.muted },
   careerValue: { fontFamily: fonts.bodyBold, color: palette.chalk },
-  empty: { alignItems: 'center', paddingTop: 40, gap: 8 },
-  emptyTitle: { fontFamily: fonts.display, fontSize: 28, color: palette.chalk },
-  emptyText: { fontFamily: fonts.body, fontSize: 15, color: palette.muted, textAlign: 'center' },
 });

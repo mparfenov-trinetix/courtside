@@ -8,7 +8,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { polylineLength, useDrawIn } from '../../utils';
 import type { BoxScoreTeam, Play } from '@/lib/espn';
 import { periodLabel, type Flow } from '@/lib/game';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { HEIGHT, MAX_POINTS } from './constants';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, marginBottom: 14 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   readout: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
-  chart: { height: HEIGHT, borderRadius: 14, overflow: 'hidden', backgroundColor: withAlpha('#FFFFFF', 0.04) },
+  chart: { height: HEIGHT, borderRadius: 14, overflow: 'hidden', backgroundColor: surfaces.faint },
   cursor: { position: 'absolute', top: 0, bottom: 0, left: 0, width: 1.5, backgroundColor: palette.chalk },
   sideLabel: { position: 'absolute', left: 8, fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 0.4, opacity: 0.85 },
   periodRow: { height: 16, marginTop: 6 },

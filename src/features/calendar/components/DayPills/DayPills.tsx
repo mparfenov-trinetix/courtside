@@ -5,7 +5,7 @@ import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reani
 import { useAfterSettle, useStripFollow } from '@/hooks';
 
 import { toDateKey } from '@/lib/date';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { DOW, MON, PILL, PILL_GAP, PILL_HEIGHT, STRIP_PADDING } from '../../constants';
 
 const STEP = PILL + PILL_GAP;
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
-    backgroundColor: withAlpha(palette.chalk, 0.06),
+    backgroundColor: surfaces.card,
   },
   dow: { fontFamily: fonts.bodyBold, fontSize: 9.5, letterSpacing: 0.8 },
   num: { fontFamily: fonts.display, fontSize: 24, lineHeight: 26, color: palette.chalk },

@@ -8,7 +8,7 @@ import { LineupsCard } from '../LineupsCard';
 import { FlashOverlay } from '@/components';
 import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
 import { COLS, COL_W, parseStatNum, type Col, type SortDir , QuarterStats } from '@/lib/game';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { PLAYER_COL_W, HEADSHOT_SIZE, ROW_H, HEADER_H, TOTALS_H, GOLD } from './constants';
 
@@ -18,7 +18,7 @@ function statStyle(col: Col, value?: string): object[] {
   const pts = col === 'PTS' && num >= 20;
   const to = col === 'TO' && num >= 4;
   const pm = col === '+/-' && !isNaN(num) && num !== 0;
-  const color = pts ? palette.chalk : to ? '#F87171' : pm ? (num > 0 ? '#34D399' : '#F87171') : withAlpha(palette.chalk, 0.75);
+  const color = pts ? palette.chalk : to ? palette.loss : pm ? (num > 0 ? palette.win : palette.loss) : withAlpha(palette.chalk, 0.75);
   return [base, { color, fontFamily: pts || to ? fonts.bodyBold : fonts.bodySemi }];
 }
 
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   starterEdge: { position: 'absolute', left: 0, top: 6, bottom: 6, width: 3, borderTopRightRadius: 2, borderBottomRightRadius: 2, backgroundColor: GOLD },
   // Trailing padding lives in the rows, so the zebra shading runs to the screen edge.
   statsRow: { flexDirection: 'row', alignItems: 'center', paddingRight: 16 },
-  shade: { backgroundColor: withAlpha('#FFFFFF', 0.04) },
+  shade: { backgroundColor: surfaces.faint },
   playerColHeader: { fontFamily: fonts.bodyBold, fontSize: 11, color: withAlpha(palette.chalk, 0.8), letterSpacing: 0.5 },
   colHeader: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.4 },
   colHeaderActive: { color: palette.chalk, fontFamily: fonts.bodyBold },

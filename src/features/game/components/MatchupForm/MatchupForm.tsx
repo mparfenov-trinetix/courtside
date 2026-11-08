@@ -4,7 +4,7 @@ import Animated from 'react-native-reanimated';
 
 import { FormChips } from '@/components';
 import type { FormGame } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 
 type Side = { id: string; abbr: string; logo: string; color: string };
 
@@ -40,16 +40,8 @@ export function MatchupForm({ away, home, form }: { away: Side; home: Side; form
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 18 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  card: { borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05), padding: 14, gap: 14 },
+  title: { ...textStyle.sectionLabel, marginBottom: 8, paddingHorizontal: 4 },
+  card: { borderRadius: 16, backgroundColor: surfaces.card, padding: 14, gap: 14 },
   team: { gap: 10 },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(palette.chalk, 0.12), paddingTop: 14 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 8 },

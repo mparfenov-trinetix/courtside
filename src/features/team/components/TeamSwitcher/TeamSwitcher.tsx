@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ListSkeleton, StarIcon } from '@/components';
 import { useTeams } from '@/hooks';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { useTeamStore } from '@/state';
 
 const COLUMNS = 3;
@@ -69,7 +69,7 @@ export function TeamSwitcher({ visible, onClose }: { visible: boolean; onClose: 
                   </Text>
                   {item.id === favoriteTeamId && (
                     <View style={styles.star}>
-                      <StarIcon color="#FBBF24" size={14} filled />
+                      <StarIcon color={palette.gold} size={14} filled />
                     </View>
                   )}
                 </Pressable>
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'transparent',
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
   logo: { width: 56, height: 56 },
   name: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.chalk, paddingHorizontal: 6 },

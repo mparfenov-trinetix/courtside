@@ -47,9 +47,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#2A2410',
     borderWidth: 1,
-    borderColor: withAlpha('#FBBF24', 0.5),
+    borderColor: withAlpha(palette.gold, 0.5),
   },
-  title: { fontFamily: fonts.bodyBold, fontSize: 14, color: '#FBBF24' },
+  title: { fontFamily: fonts.bodyBold, fontSize: 14, color: palette.gold },
   body: { fontFamily: fonts.body, fontSize: 12, color: withAlpha(palette.chalk, 0.8), marginTop: 2 },
   close: { fontFamily: fonts.bodyBold, fontSize: 16, color: palette.muted },
 });

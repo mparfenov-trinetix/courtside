@@ -5,7 +5,7 @@ import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { Chip } from '@/components';
 import type { BoxScoreTeam, Play } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { PAGE, SKIP } from './constants';
 
 const periodName = (n: number) => (n <= 4 ? `${n}${['st', 'nd', 'rd', 'th'][n - 1]} Quarter` : `Overtime ${n - 4}`);
@@ -104,15 +104,7 @@ const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, paddingTop: 4 },
   filters: { flexDirection: 'row', gap: 6, marginBottom: 10 },
   empty: { fontFamily: fonts.body, fontSize: 14, color: palette.muted, textAlign: 'center', paddingVertical: 32 },
-  periodHeader: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginTop: 14,
-    marginBottom: 6,
-  },
+  periodHeader: { ...textStyle.sectionLabel, marginTop: 14, marginBottom: 6 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -140,7 +132,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: withAlpha(palette.chalk, 0.08),
+    backgroundColor: surfaces.raised,
   },
   moreText: { fontFamily: fonts.bodySemi, fontSize: 14, color: palette.chalk },
 });

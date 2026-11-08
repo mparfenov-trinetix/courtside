@@ -3,7 +3,7 @@ import Animated, { interpolateColor, useAnimatedStyle, type SharedValue } from '
 
 import { Glass } from '@/components';
 import { useStripFollow } from '@/hooks';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { PILL_GAP, PILL_HEIGHT, PILL_WIDTH, STRIP_PADDING } from './constants';
 
 const STEP = PILL_WIDTH + PILL_GAP;
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   strip: { height: PILL_HEIGHT, flexGrow: 0, flexShrink: 0, marginBottom: 4 },
   layer: { position: 'absolute', left: 0, top: 0, height: PILL_HEIGHT },
   row: { position: 'absolute', left: STRIP_PADDING, top: 0, flexDirection: 'row', gap: PILL_GAP },
-  pill: { width: PILL_WIDTH, height: PILL_HEIGHT, borderRadius: PILL_HEIGHT / 2, backgroundColor: withAlpha(palette.chalk, 0.06) },
+  pill: { width: PILL_WIDTH, height: PILL_HEIGHT, borderRadius: PILL_HEIGHT / 2, backgroundColor: surfaces.card },
   pillPress: { width: PILL_WIDTH, height: PILL_HEIGHT, alignItems: 'center', justifyContent: 'center' },
   highlight: { position: 'absolute', left: 0, top: 0, width: PILL_WIDTH, height: PILL_HEIGHT },
   highlightGlass: { width: PILL_WIDTH, height: PILL_HEIGHT, borderRadius: PILL_HEIGHT / 2 },

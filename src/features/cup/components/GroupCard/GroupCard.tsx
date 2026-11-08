@@ -5,7 +5,7 @@ import Animated from 'react-native-reanimated';
 
 import { useSpotlight } from '@/components';
 import type { CupGroup, CupRow } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { GREEN, GOLD } from './constants';
 
@@ -38,7 +38,7 @@ function Row({ row, mine, last }: { row: CupRow; mine: boolean; last: boolean })
       style={({ pressed }) => [
         styles.row,
         !last && styles.rowBorder,
-        mine && { backgroundColor: withAlpha(palette.chalk, 0.07) },
+        mine && { backgroundColor: surfaces.raised },
         spot && { backgroundColor: withAlpha(palette.chalk, 0.16) },
         pressed && { opacity: 0.7 },
       ]}>
@@ -50,7 +50,7 @@ function Row({ row, mine, last }: { row: CupRow; mine: boolean; last: boolean })
         {tint ? <Text style={[styles.tag, { color: tint }]}>{row.position === 'leader' ? 'GROUP LEADER' : 'WILD CARD'}</Text> : null}
       </View>
       <Text style={[styles.val, styles.colW]}>{row.w}-{row.l}</Text>
-      <Text style={[styles.val, styles.colPd, { color: row.diff > 0 ? GREEN : row.diff < 0 ? '#F87171' : palette.muted }]}>
+      <Text style={[styles.val, styles.colPd, { color: row.diff > 0 ? GREEN : row.diff < 0 ? palette.loss : palette.muted }]}>
         {row.diff > 0 ? '+' : ''}{row.diff}
       </Text>
       <Text style={[styles.val, styles.colLeft, { color: palette.muted }]}>{row.left}</Text>
@@ -59,7 +59,7 @@ function Row({ row, mine, last }: { row: CupRow; mine: boolean; last: boolean })
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 18, backgroundColor: withAlpha('#FFFFFF', 0.05), overflow: 'hidden', marginBottom: 12 },
+  card: { borderRadius: 18, backgroundColor: surfaces.card, overflow: 'hidden', marginBottom: 12 },
   // Same gap and right padding as a row, so the column titles sit exactly over their values.
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 14, paddingRight: 14, paddingTop: 12, paddingBottom: 6 },
   title: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 13, color: palette.chalk, letterSpacing: 0.4 },

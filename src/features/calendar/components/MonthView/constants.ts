@@ -1,3 +1,4 @@
+import { palette } from '@/lib/theme';
 export const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export const MONTHS = [
@@ -5,6 +6,6 @@ export const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-export const WIN = '#34D399';
-export const LOSS = '#F87171';
-export const GOLD = '#FBBF24';
+export const WIN = palette.win;
+export const LOSS = palette.loss;
+export const GOLD = palette.gold;

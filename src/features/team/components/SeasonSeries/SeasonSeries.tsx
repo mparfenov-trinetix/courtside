@@ -1,11 +1,15 @@
 import { Image } from 'expo-image';
+
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+
 import Animated from 'react-native-reanimated';
 
 import type { Game, Team } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
+
 import { WIN, LOSS } from './constants';
+
 
 /** How the viewed team has done against yours this season, with the next meeting if there is one. */
 export function SeasonSeries({
@@ -77,16 +81,8 @@ export function SeasonSeries({
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 22, paddingHorizontal: 16 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  card: { borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05), padding: 14, gap: 10 },
+  title: { ...textStyle.sectionLabel, marginBottom: 8, paddingHorizontal: 4 },
+  card: { borderRadius: 16, backgroundColor: surfaces.card, padding: 14, gap: 10 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   logo: { width: 36, height: 36 },
   headline: { fontFamily: fonts.display, fontSize: 26 },

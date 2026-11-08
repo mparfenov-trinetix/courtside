@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronIcon, StarIcon, ErrorState, ListSkeleton, ScreenHeader, SearchInput } from '@/components';
 import { useTeams } from '@/hooks';
 import type { Team } from '@/lib/espn';
-import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
+import { fonts, palette, teamTheme, withAlpha, surfaces } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
 
 export function TeamsScreen() {
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   search: {
     borderRadius: 23,
     paddingHorizontal: 18,
-    backgroundColor: withAlpha('#FFFFFF', 0.07),
+    backgroundColor: surfaces.raised,
   },
   row: {
     flexDirection: 'row',

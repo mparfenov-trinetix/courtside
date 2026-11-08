@@ -1,2 +1,3 @@
-export const GREEN = '#34D399';
-export const GOLD = '#FBBF24';
+import { palette } from '@/lib/theme';
+export const GREEN = palette.win;
+export const GOLD = palette.gold;

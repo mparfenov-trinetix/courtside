@@ -5,7 +5,7 @@ import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { usePlayerGameLogs, useStandings } from '@/hooks';
 import type { Game } from '@/lib/espn';
 import { buildCatchUp, type CatchUpItem } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { useLastVisit, useWatchlist } from '@/state';
 import { DOWN, UP } from './constants';
@@ -93,12 +93,12 @@ function Row({ item }: { item: CatchUpItem }) {
 const suffix = (n: number) => (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
 
 const styles = StyleSheet.create({
-  card: { marginHorizontal: 16, marginVertical: 18, padding: 14, borderRadius: 18, borderWidth: 1, backgroundColor: withAlpha('#FFFFFF', 0.05), gap: 8 },
+  card: { marginHorizontal: 16, marginVertical: 18, padding: 14, borderRadius: 18, borderWidth: 1, backgroundColor: surfaces.card, gap: 8 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: withAlpha(palette.chalk, 0.6) },
   close: { fontFamily: fonts.bodyBold, fontSize: 13, color: palette.muted },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 3 },
-  badge: { width: 18, textAlign: 'center', fontFamily: fonts.bodyBold, fontSize: 14, color: '#FBBF24' },
+  badge: { width: 18, textAlign: 'center', fontFamily: fonts.bodyBold, fontSize: 14, color: palette.gold },
   text: { flex: 1, fontFamily: fonts.bodySemi, fontSize: 14, color: palette.chalk },
   sub: { fontFamily: fonts.body, fontSize: 12, color: palette.muted },
 });

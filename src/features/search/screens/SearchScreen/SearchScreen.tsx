@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Glass, SearchIcon, SearchInput } from '@/components';
 import { usePlayerSearch, useTeams } from '@/hooks';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { goBack, openDetail } from '@/navigation';
 import { RECENT_KEY, MAX_RECENT } from './constants';
 
@@ -156,7 +156,7 @@ export function SearchScreen() {
                 open(item);
               }}
               accessibilityRole="button"
-              style={({ pressed }) => [styles.row, pressed && { backgroundColor: withAlpha('#FFFFFF', 0.06) }]}>
+              style={({ pressed }) => [styles.row, pressed && { backgroundColor: surfaces.card }]}>
               <View style={[styles.avatar, item.kind === 'team' && styles.avatarTeam]}>
                 {item.image ? (
                   <Image
@@ -193,21 +193,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 23,
   },
-  fieldPlain: { backgroundColor: withAlpha('#FFFFFF', 0.08) },
+  fieldPlain: { backgroundColor: surfaces.raised },
   cancel: { fontFamily: fonts.bodySemi, fontSize: 15, color: palette.muted },
   sectionRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   sectionRowTitle: { flex: 1 },
   clear: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.muted, paddingBottom: 6, paddingHorizontal: 4 },
-  section: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-    paddingTop: 16,
-    paddingBottom: 6,
-    paddingHorizontal: 4,
-  },
+  section: { ...textStyle.sectionLabel, paddingTop: 16, paddingBottom: 6, paddingHorizontal: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, paddingHorizontal: 8, borderRadius: 14 },
   avatar: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: withAlpha(palette.chalk, 0.1) },
   avatarTeam: { backgroundColor: 'transparent', borderRadius: 0 },

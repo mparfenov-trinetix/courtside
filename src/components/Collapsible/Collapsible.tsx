@@ -5,7 +5,7 @@ import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 
 import { Expandable } from '../Expandable';
 import { ChevronIcon } from '../Icons';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, surfaces } from '@/lib/theme';
 
 /** A titled section that starts closed. Opening it fades the content in and turns the chevron. */
 export function Collapsible({
@@ -47,7 +47,7 @@ export function Collapsible({
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginHorizontal: 16, marginBottom: 12, borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.04), overflow: 'hidden' },
+  wrap: { marginHorizontal: 16, marginBottom: 12, borderRadius: 16, backgroundColor: surfaces.faint, overflow: 'hidden' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 14 },
   title: {
     flex: 1,

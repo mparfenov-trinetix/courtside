@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { headshotUrl, type BoxScorePlayer, type GameInfo, type Injury } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
 type Side = { teamId: string; abbr: string; color: string; players: BoxScorePlayer[] };
@@ -142,7 +142,7 @@ export function InjuryReport({
             <Text style={[styles.injTeam, { color: g.color }, gi > 0 && styles.injTeamBorder]}>{g.abbr}</Text>
             {g.items.map((i) => {
               const out = /out/i.test(i.status);
-              const status = out ? '#F87171' : '#FBBF24';
+              const status = out ? palette.loss : palette.gold;
               const src = i.headshot || (i.athleteId ? headshotUrl(i.athleteId) : '');
               return (
                 <Pressable
@@ -201,15 +201,8 @@ const styles = StyleSheet.create({
   injStatus: { fontFamily: fonts.bodyBold, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.4 },
   wrap: { paddingHorizontal: 16, marginBottom: 14 },
   nested: { paddingHorizontal: 8, paddingBottom: 8 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  card: { borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05), overflow: 'hidden' },
+  title: { ...textStyle.sectionLabel, marginBottom: 8 },
+  card: { borderRadius: 16, backgroundColor: surfaces.card, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12 },
   rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: withAlpha(palette.chalk, 0.1) },
   mid: { width: 74, alignItems: 'center' },

@@ -15,12 +15,12 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CompareRow, PlayerExtras, type Row, Radar, type RadarAxis, TeamCompare } from '../../components';
-import { Segmented, slideIn, ScreenHeader, SearchInput } from '@/components';
+import { Segmented, slideIn, ScreenHeader, SearchInput, EmptyState } from '@/components';
 import { usePlayerCareer, usePlayerSearch, usePlayerStats, useTeams } from '@/hooks';
 import { headshotUrl, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
 import { nba2kRating } from '@/lib/league';
 import { goBack } from '@/navigation';
-import { fonts, matchupColors, palette, withAlpha } from '@/lib/theme';
+import { fonts, matchupColors, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { MODES, SCOPES, CEILING } from './constants';
 
 type Slot = PlayerSearchResult | null;
@@ -190,15 +190,11 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
             ))}
           </Animated.View>
         ) : (
-          <Animated.View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{slotA && slotB ? 'Loading stats' : 'Pick two players'}</Text>
-            <Text style={styles.emptyText}>
-              {slotA && slotB
-                ? 'Fetching season averages.'
-                : 'Search any NBA player and see their season averages head to head.'}
-            </Text>
-            {slotA && slotB && <ActivityIndicator color={palette.muted} style={{ marginTop: 12 }} />}
-          </Animated.View>
+          <EmptyState
+            title={slotA && slotB ? 'Loading stats' : 'Pick two players'}
+            text={slotA && slotB ? 'Fetching season averages.' : 'Search any NBA player and see their season averages head to head.'}
+            action={slotA && slotB && <ActivityIndicator color={palette.muted} style={{ marginTop: 12 }} />}
+          />
         )}
 
         {slotA && slotB && <PlayerExtras a={slotA} b={slotB} aColor={colors.away} bColor={colors.home} />}
@@ -284,7 +280,7 @@ function PickerModal({
             query.trim().length >= 2 && !isFetching ? <Text style={styles.noResults}>No players found</Text> : undefined
           }
           renderItem={({ item }) => (
-            <Pressable onPress={() => onPick(item)} style={({ pressed }) => [styles.result, pressed && { backgroundColor: withAlpha('#FFFFFF', 0.06) }]}>
+            <Pressable onPress={() => onPick(item)} style={({ pressed }) => [styles.result, pressed && { backgroundColor: surfaces.card }]}>
               <View style={styles.resultAvatar}>
                 <Image source={item.headshot} style={styles.resultImg} contentFit="cover" />
               </View>
@@ -311,27 +307,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 22,
     borderWidth: 1,
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
   avatar: { width: 92, height: 92, borderRadius: 46, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   avatarImg: { width: 106, height: 92 },
   plus: { fontFamily: fonts.display, fontSize: 44, color: palette.chalk },
   slotName: { fontFamily: fonts.displayBold, fontSize: 20, color: palette.chalk, textAlign: 'center', minHeight: 48 },
   slotTeam: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
-  card: { marginHorizontal: 16, borderRadius: 22, padding: 16, backgroundColor: withAlpha('#FFFFFF', 0.05) },
+  card: { marginHorizontal: 16, borderRadius: 22, padding: 16, backgroundColor: surfaces.card },
   tally: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   tallyNum: { fontFamily: fonts.display, fontSize: 44 },
-  tallyLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  empty: { alignItems: 'center', paddingTop: 36, paddingHorizontal: 32, gap: 8 },
-  emptyTitle: { fontFamily: fonts.displayBold, fontSize: 28, color: palette.chalk },
-  emptyText: { fontFamily: fonts.body, fontSize: 15, color: palette.muted, textAlign: 'center' },
+  tallyLabel: { ...textStyle.sectionLabel },
   modal: { flex: 1, backgroundColor: palette.arena, paddingHorizontal: 16 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   input: {
     flex: 1,
     borderRadius: 23,
     paddingHorizontal: 18,
-    backgroundColor: withAlpha('#FFFFFF', 0.08),
+    backgroundColor: surfaces.raised,
   },
   cancel: { fontFamily: fonts.bodySemi, fontSize: 15, color: palette.muted },
   noResults: { textAlign: 'center', marginTop: 32, fontFamily: fonts.body, fontSize: 15, color: palette.muted },

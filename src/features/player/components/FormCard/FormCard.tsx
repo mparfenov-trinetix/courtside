@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import type { GameLogEntry } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { WIN, LOSS, HOT, COLD, BAR_AREA, BAR_BASE } from './constants';
 
 const avg = (games: GameLogEntry[], pick: (g: GameLogEntry) => number) =>
@@ -159,16 +159,10 @@ export function SplitsCard({ log }: { log: GameLogEntry[] }) {
 const styles = StyleSheet.create({
   wrap: { marginTop: 16 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
+  title: { ...textStyle.sectionLabel },
   badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
   badgeText: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.6 },
-  card: { borderRadius: 18, backgroundColor: withAlpha('#FFFFFF', 0.06), padding: 14, gap: 12 },
+  card: { borderRadius: 18, backgroundColor: surfaces.card, padding: 14, gap: 12 },
   chart: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: BAR_AREA + 28 + 16 },
   col: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: 3 },
   barValue: { fontFamily: fonts.bodySemi, fontSize: 10, color: palette.muted },

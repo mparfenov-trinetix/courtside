@@ -7,11 +7,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CompareRow, rowWinner, type Row } from '../CompareRow';
 import { Radar, type RadarAxis } from '../Radar';
-import { HeadToHead } from '@/components';
+import { HeadToHead, EmptyState } from '@/components';
 import { useLeagueTeamStats, useTeams } from '@/hooks';
 import type { Team, TeamStatRow } from '@/lib/espn';
 import { TEAM_METRICS, formatMetric, metricByKey, ordinal, rankOf, type TeamMetric } from '@/lib/league';
-import { fonts, matchupColors, palette, withAlpha } from '@/lib/theme';
+import { fonts, matchupColors, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
 
 function buildRows(rows: TeamStatRow[], a: TeamStatRow, b: TeamStatRow): Row[] {
@@ -89,15 +89,11 @@ export function TeamCompare() {
           ))}
         </Animated.View>
       ) : (
-        <Animated.View style={styles.empty}>
-          <Text style={styles.emptyTitle}>{idA && idB ? 'Loading stats' : 'Pick two teams'}</Text>
-          <Text style={styles.emptyText}>
-            {idA && idB
-              ? 'Fetching league stats.'
-              : 'Compare scoring, shooting and defense, with where each team ranks in the league.'}
-          </Text>
-          {idA && idB && isPending && <ActivityIndicator color={palette.muted} style={{ marginTop: 12 }} />}
-        </Animated.View>
+        <EmptyState
+          title={idA && idB ? 'Loading stats' : 'Pick two teams'}
+          text={idA && idB ? 'Fetching league stats.' : 'Compare scoring, shooting and defense, with where each team ranks in the league.'}
+          action={idA && idB && isPending && <ActivityIndicator color={palette.muted} style={{ marginTop: 12 }} />}
+        />
       )}
 
       {teamA && teamB && (
@@ -175,7 +171,7 @@ function TeamPicker({
                 style={({ pressed }) => [
                   styles.result,
                   disabled && { opacity: 0.35 },
-                  pressed && { backgroundColor: withAlpha('#FFFFFF', 0.06) },
+                  pressed && { backgroundColor: surfaces.card },
                 ]}>
                 <Image source={item.logoDark || item.logo} style={styles.resultLogo} contentFit="contain" />
                 <Text style={styles.resultName}>{item.displayName}</Text>
@@ -200,22 +196,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 22,
     borderWidth: 1,
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
   avatar: { width: 92, height: 92, borderRadius: 46, alignItems: 'center', justifyContent: 'center' },
   logo: { width: 64, height: 64 },
   plus: { fontFamily: fonts.display, fontSize: 44, color: palette.chalk },
   slotName: { fontFamily: fonts.displayBold, fontSize: 20, color: palette.chalk, textAlign: 'center', minHeight: 48 },
   slotSub: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
-  card: { marginHorizontal: 16, borderRadius: 22, padding: 16, backgroundColor: withAlpha('#FFFFFF', 0.05) },
+  card: { marginHorizontal: 16, borderRadius: 22, padding: 16, backgroundColor: surfaces.card },
   h2h: { marginHorizontal: 16, marginBottom: 8 },
   radarNote: { textAlign: 'center', fontFamily: fonts.body, fontSize: 11, color: palette.muted, marginBottom: 14 },
   tally: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   tallyNum: { fontFamily: fonts.display, fontSize: 44 },
-  tallyLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  empty: { alignItems: 'center', paddingTop: 36, paddingHorizontal: 32, gap: 8 },
-  emptyTitle: { fontFamily: fonts.displayBold, fontSize: 28, color: palette.chalk },
-  emptyText: { fontFamily: fonts.body, fontSize: 15, color: palette.muted, textAlign: 'center' },
+  tallyLabel: { ...textStyle.sectionLabel },
   modal: { flex: 1, backgroundColor: palette.arena, paddingHorizontal: 16, paddingTop: 16 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   modalTitle: { fontFamily: fonts.display, fontSize: 28, color: palette.chalk },

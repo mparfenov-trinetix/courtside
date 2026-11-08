@@ -1,4 +1,5 @@
-export const GOLD = '#FBBF24';
+import { palette } from '@/lib/theme';
+export const GOLD = palette.gold;
 
 /** The big ones first, then team selections, then the rest. */
 export const PRIORITY: [RegExp, number][] = [

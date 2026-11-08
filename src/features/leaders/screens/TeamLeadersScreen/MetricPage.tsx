@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRefresh } from '@/hooks';
 import type { Team, TeamStatRow } from '@/lib/espn';
 import { formatMetric, ordinal, type TeamMetric } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, teamTheme } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { FULL } from './constants';
 
@@ -81,7 +81,8 @@ function TeamRow({
   worst: number;
   mine: boolean;
 }) {
-  const color = team?.color ? (team.color.startsWith('#') ? team.color : `#${team.color}`) : palette.muted;
+  // A fill (the bar), so the team's own bright color, lifted when it is nearly black: the Spurs' bar was invisible.
+  const color = team ? teamTheme(team).brand : palette.muted;
   // Bar length: best = full, worst = a stub, so differences read at a glance.
   const span = Math.abs(best - worst) || 1;
   const frac = 0.12 + 0.88 * (Math.abs(row[metric.key] - worst) / span);
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'transparent',
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
   rank: { width: 24, textAlign: 'center', fontFamily: fonts.display, fontSize: 20, color: palette.muted },
   rankTop: { color: palette.chalk },
@@ -134,6 +135,6 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { flex: 1, fontFamily: fonts.bodySemi, fontSize: 15, color: palette.chalk },
   value: { fontFamily: fonts.display, fontSize: 22, color: withAlpha(palette.chalk, 0.8) },
-  track: { height: 4, borderRadius: 2, backgroundColor: withAlpha(palette.chalk, 0.07), overflow: 'hidden' },
+  track: { height: 4, borderRadius: 2, backgroundColor: surfaces.raised, overflow: 'hidden' },
   fill: { height: 4, borderRadius: 2 },
 });

@@ -7,7 +7,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { polylineLength, useDrawIn } from '../../utils';
 import type { BoxScoreTeam, Play } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { HEIGHT, MAX_POINTS } from './constants';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -210,19 +210,13 @@ const completedLabel = (final: number, live: boolean) =>
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, marginBottom: 14 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
+  title: { ...textStyle.sectionLabel },
   readout: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
   chart: {
     height: HEIGHT,
     borderRadius: 14,
     overflow: 'hidden',
-    backgroundColor: withAlpha('#FFFFFF', 0.04),
+    backgroundColor: surfaces.faint,
   },
   cursor: {
     position: 'absolute',

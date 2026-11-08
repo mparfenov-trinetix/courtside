@@ -5,10 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { sideScores } from '../SeriesCard';
 import { ROUND_NAMES, type Series, type SeriesGame } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
-const GOLD = '#FBBF24';
+const GOLD = palette.gold;
 
 const when = (iso: string) => new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
@@ -102,7 +102,7 @@ function GameRow({ game, onPress }: { game: SeriesGame; onPress: () => void }) {
 const styles = StyleSheet.create({
   sheet: { flex: 1, backgroundColor: palette.arena },
   head: { flexDirection: 'row', alignItems: 'flex-start', padding: 20, paddingBottom: 8 },
-  round: { fontFamily: fonts.bodySemi, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: palette.muted },
+  round: { ...textStyle.sectionLabel },
   status: { fontFamily: fonts.display, fontSize: 30, color: palette.chalk, marginTop: 2 },
   close: { fontFamily: fonts.bodySemi, fontSize: 16, color: palette.muted },
   versus: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16 },
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   abbr: { fontFamily: fonts.display, fontSize: 24, color: palette.chalk },
   seed: { fontFamily: fonts.body, fontSize: 11, color: palette.muted },
   big: { fontFamily: fonts.display, fontSize: 48, color: palette.chalk },
-  game: { flexDirection: 'row', alignItems: 'center', padding: 14, marginBottom: 8, borderRadius: 14, backgroundColor: withAlpha('#FFFFFF', 0.05) },
+  game: { flexDirection: 'row', alignItems: 'center', padding: 14, marginBottom: 8, borderRadius: 14, backgroundColor: surfaces.card },
   gameLabel: { fontFamily: fonts.bodyBold, fontSize: 14, color: palette.chalk },
   gameDate: { fontFamily: fonts.body, fontSize: 11, color: palette.muted, marginTop: 1 },
   matchup: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

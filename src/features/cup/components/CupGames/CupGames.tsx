@@ -4,7 +4,7 @@ import Animated from 'react-native-reanimated';
 
 import { CupBadge } from '../CupBadge';
 import type { CupGame } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
 const dayLabel = (iso: string) =>
@@ -63,16 +63,7 @@ function Team({ side, right, dim }: { side: CupGame['home']; right?: boolean; di
 }
 
 const styles = StyleSheet.create({
-  day: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-    paddingTop: 16,
-    paddingBottom: 8,
-    paddingHorizontal: 4,
-  },
+  day: { ...textStyle.sectionLabel, paddingTop: 16, paddingBottom: 8, paddingHorizontal: 4 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -81,9 +72,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'transparent',
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
-  mine: { borderColor: withAlpha(palette.chalk, 0.4), backgroundColor: withAlpha('#FFFFFF', 0.09) },
+  mine: { borderColor: withAlpha(palette.chalk, 0.4), backgroundColor: surfaces.raised },
   team: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   logo: { width: 30, height: 30 },
   abbr: { fontFamily: fonts.bodyBold, fontSize: 16, color: palette.chalk },

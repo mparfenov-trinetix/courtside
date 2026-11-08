@@ -4,7 +4,7 @@ import Animated from 'react-native-reanimated';
 import { useAllStars, usePlayerCareer, usePlayerProfile } from '@/hooks';
 import type { Honor, PlayerProfile } from '@/lib/espn';
 import { titleSeasons } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 
 type Who = { id: string; name: string };
 type Line = { label: string; a: string; b: string; winner?: 'a' | 'b' };
@@ -89,8 +89,8 @@ function Block({ title, lines, aColor, bColor, delay }: { title: string; lines: 
 
 const styles = StyleSheet.create({
   wrap: { marginHorizontal: 16, marginTop: 18 },
-  title: { fontFamily: fonts.bodySemi, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: withAlpha(palette.chalk, 0.55), marginBottom: 8, paddingHorizontal: 4 },
-  card: { borderRadius: 18, backgroundColor: withAlpha('#FFFFFF', 0.05), overflow: 'hidden' },
+  title: { ...textStyle.sectionLabel, marginBottom: 8, paddingHorizontal: 4 },
+  card: { borderRadius: 18, backgroundColor: surfaces.card, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 13, paddingHorizontal: 16 },
   border: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: withAlpha(palette.chalk, 0.1) },
   value: { flex: 1, fontFamily: fonts.display, fontSize: 24, color: palette.chalk },

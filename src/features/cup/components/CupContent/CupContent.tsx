@@ -5,12 +5,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Chip, ErrorState, ListSkeleton, Segmented, slideIn, useSpotlight } from '@/components';
+import { Chip, ErrorState, ListSkeleton, Segmented, slideIn, useSpotlight, EmptyState } from '@/components';
 import { Bracket } from '@/features/playoffs';
 import { useCup, useRefresh } from '@/hooks';
 import { currentSeason, seasonLabel } from '@/lib/espn';
 import { buildCupBracket, projectedField, type Cup } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { useTeamStore } from '@/state';
 import { CupGameList } from '../CupGames';
@@ -23,7 +23,7 @@ const VIEWS = [
   { key: 'knockout', label: 'Knockout' },
 ] as { key: View_; label: string }[];
 
-const GOLD = '#FBBF24';
+const GOLD = palette.gold;
 
 /** The NBA Cup for a season: groups, every game, and the knockout bracket. */
 export function CupContent({ season, initialView = 'groups' }: { season?: number; initialView?: View_ }) {
@@ -42,10 +42,7 @@ export function CupContent({ season, initialView = 'groups' }: { season?: number
       ) : error ? (
         <ErrorState message={error.message} onRetry={refetch} />
       ) : !cup || cup.groups.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>No Cup games{season ? ` in ${seasonLabel(season)}` : ' yet'}</Text>
-          <Text style={styles.emptyText}>The NBA Cup runs in the early part of the season. Check back when group play starts.</Text>
-        </View>
+        <EmptyState title={`No Cup games${season ? ` in $${seasonLabel(season)}` : ' yet'}`} text="The NBA Cup runs in the early part of the season. Check back when group play starts." placement="center" />
       ) : (
         <>
           <Segmented
@@ -207,20 +204,9 @@ function Knockout({
 const styles = StyleSheet.create({
   switcher: { marginBottom: 14 },
   root: { flex: 1 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8 },
-  emptyTitle: { fontFamily: fonts.display, fontSize: 30, color: palette.chalk },
   emptyText: { fontFamily: fonts.body, fontSize: 15, color: palette.muted, textAlign: 'center' },
   progress: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.muted, marginBottom: 12, paddingHorizontal: 4 },
-  section: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-    paddingTop: 12,
-    paddingBottom: 8,
-    paddingHorizontal: 4,
-  },
+  section: { ...textStyle.sectionLabel, paddingTop: 12, paddingBottom: 8, paddingHorizontal: 4 },
   footnote: { fontFamily: fonts.body, fontSize: 11, color: palette.muted, lineHeight: 16, marginTop: 4, paddingHorizontal: 4 },
   field: { padding: 14, borderRadius: 18, backgroundColor: withAlpha(GOLD, 0.08), borderWidth: 1, borderColor: withAlpha(GOLD, 0.3), gap: 10, marginBottom: 6 },
   fieldTitle: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', color: GOLD },
@@ -230,7 +216,7 @@ const styles = StyleSheet.create({
   fieldAbbr: { fontFamily: fonts.bodyBold, fontSize: 12, color: palette.chalk },
   fieldNote: { fontFamily: fonts.body, fontSize: 11, color: palette.muted },
   filters: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  info: { padding: 16, borderRadius: 18, backgroundColor: withAlpha('#FFFFFF', 0.05), gap: 6, marginTop: 8 },
+  info: { padding: 16, borderRadius: 18, backgroundColor: surfaces.card, gap: 6, marginTop: 8 },
   infoTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: palette.chalk },
   infoText: { fontFamily: fonts.body, fontSize: 14, color: palette.muted, lineHeight: 20 },
 });

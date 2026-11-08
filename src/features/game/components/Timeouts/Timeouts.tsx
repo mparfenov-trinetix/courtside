@@ -3,7 +3,7 @@ import Animated, { ZoomIn } from 'react-native-reanimated';
 
 import { FlashOverlay, Tick } from '@/components';
 import type { BoxScoreTeam, Play } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 
 /** NBA teams get seven timeouts per game. */
 const TOTAL = 7;
@@ -126,15 +126,9 @@ function TeamRow({
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, marginBottom: 14 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
+  title: { ...textStyle.sectionLabel },
   sub: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
-  card: { borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05), overflow: 'hidden' },
+  card: { borderRadius: 16, backgroundColor: surfaces.card, overflow: 'hidden' },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: withAlpha(palette.chalk, 0.1) },
   row: { padding: 14, gap: 8 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -151,11 +145,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: 10,
     letterSpacing: 0.6,
-    color: '#FBBF24',
+    color: palette.gold,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: withAlpha('#FBBF24', 0.16),
+    backgroundColor: withAlpha(palette.gold, 0.16),
   },
 });

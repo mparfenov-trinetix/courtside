@@ -1,14 +1,22 @@
 import { Image } from 'expo-image';
+
 import { useMemo } from 'react';
+
 import { SectionList, StyleSheet, Text, View } from 'react-native';
+
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { StarIcon , ScreenHeader } from '@/components';
+
+import { StarIcon, ScreenHeader, EmptyState } from '@/components';
+
 import { WatchGame, WatchRow } from '../../components';
+
 import { useTeams , useRefresh } from '@/hooks';
-import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
+
+import { palette, teamTheme, withAlpha, textStyle } from '@/lib/theme';
 import { useWatchlist, type WatchedPlayer } from '@/state';
+
 
 export function WatchlistScreen() {
   const insets = useSafeAreaInsets();
@@ -29,11 +37,7 @@ export function WatchlistScreen() {
       <ScreenHeader title="Watchlist" color={palette.chalk} />
 
       {players.length === 0 && games.length === 0 ? (
-        <View style={styles.empty}>
-          <StarIcon color={withAlpha(palette.chalk, 0.4)} size={40} />
-          <Text style={styles.emptyTitle}>Nothing starred yet</Text>
-          <Text style={styles.emptyText}>Tap the star on a player&apos;s card or at the top of a game to keep it here.</Text>
-        </View>
+        <EmptyState icon={<StarIcon color={withAlpha(palette.chalk, 0.4)} size={40} />} title="Nothing starred yet" text="Tap the star on a player's card or at the top of a game to keep it here." placement="center" />
       ) : (
         <SectionList
           sections={sections}
@@ -91,16 +95,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 18, paddingBottom: 8, paddingHorizontal: 4 },
   sectionLogo: { width: 22, height: 22 },
-  sectionTitle: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.6),
-  },
+  sectionTitle: { ...textStyle.sectionLabel },
   rowWrap: { marginBottom: 8 },
   gamesList: { gap: 8 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 10 },
-  emptyTitle: { fontFamily: fonts.display, fontSize: 30, color: palette.chalk },
-  emptyText: { fontFamily: fonts.body, fontSize: 15, color: palette.muted, textAlign: 'center' },
 });

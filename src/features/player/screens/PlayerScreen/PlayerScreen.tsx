@@ -1,16 +1,25 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, type Href } from 'expo-router';
+
 import { useState } from 'react';
+
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+
 import Animated, { Easing, useAnimatedScrollHandler, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ArrowLeftIcon, GlassButton } from '@/components';
+
+import { ArrowLeftIcon, Card, EmptyState, GlassButton } from '@/components';
+
 import { useAfterSettle, useAllStars, usePlayerBio, usePlayerCareer, usePlayerGameLog, usePlayerProfile, usePlayerStats, useRefresh, useRoster, useTeam } from '@/hooks';
+
 import { cupSeasons, nba2kRating, titleSeasons } from '@/lib/league';
-import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
+
+import { fonts, palette, teamTheme, withAlpha, textStyle } from '@/lib/theme';
 import { goBack, pushOnce } from '@/navigation';
+
 import { useWatchlist } from '@/state';
+
 import {
   CareerSkeleton,
   CareerTable,
@@ -32,6 +41,7 @@ import {
   playerCardSize,
   useLeagueRanks,
 } from '../../components';
+
 
 /** "2003-05-26" -> "May 26, 2003". Parsed by hand so the time zone can't shift the day. */
 function formatBorn(iso: string) {
@@ -231,7 +241,7 @@ export function PlayerScreen() {
                     <Text style={styles.sectionLabel}>
                       Shooting{stats.gamesPlayed != null ? ` · ${stats.gamesPlayed} games${stats.gamesStarted != null ? `, ${stats.gamesStarted} started` : ''}` : ''}
                     </Text>
-                    <View style={[styles.infoCard, { backgroundColor: withAlpha('#FFFFFF', 0.06) }]}>
+                    <Card padded={false} radius={18}>
                       {([
                         { label: 'Field Goals', val: stats.fgPct },
                         { label: '3-Pointers', val: stats.threePct },
@@ -244,7 +254,7 @@ export function PlayerScreen() {
                             <Text style={styles.infoValue}>{(val! * 100).toFixed(1)}%</Text>
                           </View>
                         ))}
-                    </View>
+                    </Card>
                   </>
                 )}
                 {/* How he is playing right now comes right after the averages; the shooting breakdown follows. */}
@@ -259,14 +269,9 @@ export function PlayerScreen() {
                 {rating2k && <View style={{ marginTop: 18 }}><RatingCard rating={rating2k} scrollY={scrollY} /></View>}
               </Animated.View>
             ) : (
-              <Animated.View style={styles.emptyTab}>
-                <Text style={styles.emptyTitle}>{onRoster ? 'No stats yet' : 'Not on a roster'}</Text>
-                <Text style={styles.emptyText}>
-                  {onRoster
+              <EmptyState title={onRoster ? 'No stats yet' : 'Not on a roster'} text={onRoster
                     ? 'Season stats will appear once the season begins.'
-                    : 'This player isn’t on an NBA roster right now. The Career tab has the full history.'}
-                </Text>
-              </Animated.View>
+                    : 'This player isn’t on an NBA roster right now. The Career tab has the full history.'} />
             )}
           </>
         )}
@@ -303,20 +308,16 @@ export function PlayerScreen() {
             <HonorsCard honors={profile?.honors ?? []} titles={career ? titleSeasons(career.seasons) : []} cups={career ? cupSeasons(career.seasons) : []} allStars={allStars?.[player.id]} />
             <ContractCard contract={profile?.contract} draft={profile?.draft} />
             {infoRows.length > 0 ? (
-              <Animated.View
-                style={[styles.infoCard, { backgroundColor: withAlpha('#FFFFFF', 0.06) }]}>
+              <Card padded={false} radius={18}>
                 {infoRows.map(([label, value], i) => (
                   <View key={label} style={[styles.infoRow, i < infoRows.length - 1 && styles.infoRowBorder]}>
                     <Text style={styles.infoLabel}>{label}</Text>
                     <Text style={styles.infoValue}>{value}</Text>
                   </View>
                 ))}
-              </Animated.View>
+              </Card>
             ) : (
-              <Animated.View style={styles.emptyTab}>
-                <Text style={styles.emptyTitle}>No info</Text>
-                <Text style={styles.emptyText}>Player details not available.</Text>
-              </Animated.View>
+              <EmptyState title="No info" text="Player details not available." />
             )}
           </>
           )
@@ -371,20 +372,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     gap: 12,
   },
-  sectionLabel: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
+  sectionLabel: { ...textStyle.sectionLabel, marginBottom: 8 },
   statsBlock: {
     gap: 0,
-  },
-  infoCard: {
-    borderRadius: 18,
-    overflow: 'hidden',
   },
   infoRow: {
     flexDirection: 'row',
@@ -418,11 +408,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 40,
     gap: 8,
-  },
-  emptyTitle: {
-    fontFamily: fonts.display,
-    fontSize: 28,
-    color: palette.chalk,
   },
   emptyText: {
     fontFamily: fonts.body,

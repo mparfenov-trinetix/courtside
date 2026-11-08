@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Glass } from '../Glass';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 
 export type SegmentOption<K extends string> = { key: K; label: string };
 
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     padding: PAD,
     borderRadius: 14,
-    backgroundColor: withAlpha(palette.chalk, 0.07),
+    backgroundColor: surfaces.raised,
   },
   thumb: {
     position: 'absolute',

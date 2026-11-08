@@ -6,14 +6,14 @@ import { ListSkeleton } from '@/components';
 import { usePlayerGameLogs } from '@/hooks';
 import type { LeaderEntry } from '@/lib/espn';
 import { rankByForm, type FormEntry } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
 import { useLeaderPool } from '../../utils';
 
 import { SHOWN } from './constants';
 
-const HOT = '#4ADE80';
+const HOT = palette.win;
 const COLD = '#60A5FA';
 
 /**
@@ -106,9 +106,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 16,
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
-  headshotWrap: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: withAlpha('#FFFFFF', 0.08) },
+  headshotWrap: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: surfaces.raised },
   headshot: { width: 52, height: 44 },
   name: { fontFamily: fonts.bodyBold, fontSize: 15, color: palette.chalk },
   line: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, marginTop: 1 },

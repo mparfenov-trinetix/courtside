@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import type { Pregame, SideOdds } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { ODDS_NOTE } from './constants';
 
 type Side = { abbr: string; logo: string; color: string };
@@ -84,16 +84,8 @@ function Line({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 4 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  card: { borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05), padding: 14, gap: 10 },
+  title: { ...textStyle.sectionLabel, marginBottom: 8, paddingHorizontal: 4 },
+  card: { borderRadius: 16, backgroundColor: surfaces.card, padding: 14, gap: 10 },
   labels: { flexDirection: 'row', justifyContent: 'space-between' },
   pct: { fontFamily: fonts.display, fontSize: 28 },
   bar: { height: 8, borderRadius: 4, overflow: 'hidden', flexDirection: 'row', gap: 2 },

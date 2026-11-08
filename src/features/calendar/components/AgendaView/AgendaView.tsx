@@ -10,7 +10,7 @@ import { useTeams } from '@/hooks';
 import { CupBadge } from '@/features/cup';
 import { PlayoffBadge } from '@/features/playoffs';
 import { currentSeason, type Game } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { opponentLook, type OpponentLook } from '../../utils';
 import { WIN, LOSS, DOW } from './constants';
@@ -172,15 +172,7 @@ const styles = StyleSheet.create({
   season: { flex: 1, alignItems: 'flex-end' },
   tab: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabLabel: { fontFamily: fonts.bodySemi, fontSize: 14 },
-  month: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: palette.muted,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
+  month: { ...textStyle.sectionLabel, paddingTop: 16, paddingBottom: 8 },
   empty: { textAlign: 'center', fontFamily: fonts.body, fontSize: 15, color: palette.muted, paddingTop: 60 },
   row: {
     flexDirection: 'row',
@@ -191,7 +183,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'transparent',
-    backgroundColor: withAlpha('#FFFFFF', 0.06),
+    backgroundColor: surfaces.card,
     overflow: 'hidden',
   },
   date: { width: 38, alignItems: 'center' },

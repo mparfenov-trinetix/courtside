@@ -1,15 +1,45 @@
 import { memo, useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+
+
+
+import { ScrollView, StyleSheet, View } from 'react-native';
+
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ErrorState } from '@/components';
+
+
+
+import { ErrorState, EmptyState } from '@/components';
+
+
+
 import { useGamesOnDay, useRefresh, useTeam, useTeams } from '@/hooks';
+
+
+
 import { involvesTeam, type ScoreboardGame } from '@/lib/espn';
-import { fonts, palette, teamTheme } from '@/lib/theme';
+
+
+
+import { teamTheme } from '@/lib/theme';
+
 import { useScreenTeamStore } from '@/state';
+
+
+
 import { TODAY_PILL_CLEARANCE } from '../../constants';
+
+
+
 import { GameCard } from '../GameCard';
+
+
+
 import { GameCardSkeleton } from '../GameCardSkeleton';
+
+
+
 
 /**
  * One day of the pager: that day's games, the selected team's first, then the live ones, then the rest.
@@ -54,10 +84,7 @@ function LivePage({ date, today, width }: { date: Date; today: Date; width: numb
   else if (error) body = <ErrorState message={error.message} onRetry={refetch} />;
   else if (!games || games.length === 0) {
     body = (
-      <View style={styles.empty}>
-        <Text style={styles.emptyTitle}>No games</Text>
-        <Text style={styles.emptyText}>{date < today ? 'No games were played on this date.' : 'No games scheduled yet.'}</Text>
-      </View>
+      <EmptyState title="No games" text={date < today ? 'No games were played on this date.' : 'No games scheduled yet.'} placement="center" style={{ minHeight: 320 }} />
     );
   } else {
     body = games.map((game) => (
@@ -80,7 +107,4 @@ function LivePage({ date, today, width }: { date: Date; today: Date; width: numb
 
 const styles = StyleSheet.create({
   list: { paddingHorizontal: 16, paddingTop: 4, gap: 8 },
-  empty: { minHeight: 320, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 8 },
-  emptyTitle: { fontFamily: fonts.display, fontSize: 32, color: palette.chalk },
-  emptyText: { fontFamily: fonts.body, fontSize: 15, color: palette.muted, textAlign: 'center' },
 });

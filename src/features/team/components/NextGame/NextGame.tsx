@@ -136,10 +136,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
-    backgroundColor: withAlpha('#F87171', 0.16),
+    backgroundColor: withAlpha(palette.loss, 0.16),
   },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#F87171' },
-  liveText: { fontFamily: fonts.bodyBold, fontSize: 12, color: '#F87171', letterSpacing: 0.5 },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: palette.loss },
+  liveText: { fontFamily: fonts.bodyBold, fontSize: 12, color: palette.loss, letterSpacing: 0.5 },
   formRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingHorizontal: 4 },
   formLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted, marginRight: 4 },
 });

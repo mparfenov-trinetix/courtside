@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Skeleton, SkeletonGroup } from '../Skeleton';
-import { withAlpha } from '@/lib/theme';
+import { surfaces } from '@/lib/theme';
 
 /** Placeholder rows for any list: an avatar, two lines of text and (optionally) a value on the right. */
 export function ListSkeleton({
@@ -38,6 +38,6 @@ export function ListSkeleton({
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12 },
-  card: { borderRadius: 14, backgroundColor: withAlpha('#FFFFFF', 0.05) },
+  card: { borderRadius: 14, backgroundColor: surfaces.card },
   text: { flex: 1, gap: 8 },
 });

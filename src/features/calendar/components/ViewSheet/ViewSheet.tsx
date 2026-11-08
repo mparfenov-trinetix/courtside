@@ -7,7 +7,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { Glass } from '@/components';
 import { CALENDAR_MODES, type CalendarMode } from '../../constants';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 
 const OPEN_MS = 280;
 const CLOSE_MS = 200;
@@ -104,10 +104,10 @@ const styles = StyleSheet.create({
   },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 6 },
   title: { fontFamily: fonts.displayBold, fontSize: 22, color: palette.chalk },
-  close: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: withAlpha('#FFFFFF', 0.08) },
+  close: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: surfaces.raised },
   closeText: { fontFamily: fonts.bodyBold, fontSize: 14, color: palette.muted },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 15, paddingHorizontal: 14, marginBottom: 6, borderRadius: 16 },
-  rowOn: { backgroundColor: withAlpha('#FFFFFF', 0.08) },
+  rowOn: { backgroundColor: surfaces.raised },
   rowText: { flex: 1, fontFamily: fonts.bodySemi, fontSize: 18, color: palette.muted },
   check: { fontFamily: fonts.bodyBold, fontSize: 16, color: palette.chalk },
 });

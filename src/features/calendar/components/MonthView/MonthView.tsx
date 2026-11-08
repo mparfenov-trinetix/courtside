@@ -12,7 +12,7 @@ import { useTeams } from '@/hooks';
 import { localToday, parseEspnDate, toDateKey } from '@/lib/date';
 import type { Game } from '@/lib/espn';
 import type { CalendarEvent } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { opponentLook } from '../../utils';
 import { DOW, GOLD, MONTHS, WIN, LOSS } from './constants';
 
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: withAlpha(palette.chalk, 0.07),
+    backgroundColor: surfaces.raised,
   },
   monthTitleWrap: { flex: 1, alignItems: 'center' },
   monthTitle: { fontFamily: fonts.display, fontSize: 26, color: palette.chalk },
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'transparent',
-    backgroundColor: withAlpha(palette.chalk, 0.035),
+    backgroundColor: surfaces.faint,
   },
   dayNum: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.muted },
   dayNumToday: { color: palette.chalk, fontFamily: fonts.bodyBold },

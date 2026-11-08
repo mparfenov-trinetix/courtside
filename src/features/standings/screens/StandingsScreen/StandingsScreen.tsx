@@ -10,7 +10,7 @@ import { Segmented, ErrorState, ListSkeleton, ScreenHeader , SeasonButton, Seaso
 import { useRefresh, useStandings, useTeams } from '@/hooks';
 import { currentSeason, type StandingEntry } from '@/lib/espn';
 import { hasPlayIn } from '@/lib/league';
-import { fonts, matchupColors, palette, teamTheme, withAlpha } from '@/lib/theme';
+import { fonts, matchupColors, palette, teamTheme, withAlpha, surfaces } from '@/lib/theme';
 import { useTeamStore } from '@/state';
 import { goBack, openDetail, sharedTag } from '@/navigation';
 
@@ -189,7 +189,7 @@ function ColumnHeader() {
 
 function SectionDivider({ title }: { title: string }) {
   const accent =
-    title === 'Playoff' ? '#34D399' : title === 'Play-In' ? '#FBBF24' : palette.muted;
+    title === 'Playoff' ? palette.win : title === 'Play-In' ? palette.gold : palette.muted;
   return (
     <View style={styles.dividerRow}>
       <View style={[styles.dividerLine, { backgroundColor: withAlpha(accent, 0.25) }]} />
@@ -203,7 +203,7 @@ function TeamRow({ entry, index, cut, highlight }: { entry: StandingEntry; index
   const favoriteTeamId = useTeamStore((s) => s.favoriteTeamId);
   const gbText = entry.gamesBehind === 0 ? '—' : entry.gamesBehind.toFixed(1);
   const pctText = entry.winPct.toFixed(3).replace(/^0/, '');
-  const streakColor = entry.streak.startsWith('W') ? '#34D399' : entry.streak.startsWith('L') ? '#F87171' : palette.muted;
+  const streakColor = entry.streak.startsWith('W') ? palette.win : entry.streak.startsWith('L') ? palette.loss : palette.muted;
   const diff = `${entry.diff > 0 ? '+' : ''}${entry.diff.toFixed(1)}`;
   const details = [entry.lastTen && entry.wins + entry.losses >= 10 ? `Last 10: ${entry.lastTen}` : null, entry.diff !== 0 ? `${diff} pts/g` : null]
     .filter(Boolean)
@@ -230,7 +230,7 @@ function TeamRow({ entry, index, cut, highlight }: { entry: StandingEntry; index
             <Image source={entry.teamLogo} style={StyleSheet.absoluteFill} contentFit="contain" />
           </Animated.View>
         ) : (
-          <View style={[styles.logo, { backgroundColor: withAlpha(palette.chalk, 0.08), borderRadius: 14 }]} />
+          <View style={[styles.logo, { backgroundColor: surfaces.raised, borderRadius: 14 }]} />
         )}
         <View style={{ flex: 1 }}>
           <Text style={styles.teamName} numberOfLines={1}>
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: 'transparent',
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
   seed: {
     width: 22,

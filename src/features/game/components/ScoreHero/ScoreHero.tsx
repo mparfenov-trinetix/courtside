@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeftIcon, GlassButton, HeatBadge, StarIcon, Tick, RollingNumber } from '@/components';
 import type { BoxScoreTeam } from '@/lib/espn';
 import { gameHeat, periodLabel, TIMEOUTS_PER_GAME } from '@/lib/game';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { goBack, openDetail, sharedTag } from '@/navigation';
 import { BAR_LOGO, HERO_LOGO } from '../GameLogos';
 
@@ -287,7 +287,7 @@ export function GameTopBar({
                   <RollingNumber value={home.score} fontSize={24} style={styles.miniNum} />
                 </View>
                 {/* The period and clock only while it is being played; a finished score needs no label. */}
-                {live ? <Text style={[styles.miniStatus, { color: '#F87171' }]} numberOfLines={1}>{status}</Text> : null}
+                {live ? <Text style={[styles.miniStatus, { color: palette.loss }]} numberOfLines={1}>{status}</Text> : null}
               </>
             ) : (
               <>
@@ -304,9 +304,9 @@ export function GameTopBar({
             label={watched ? 'Remove game from watchlist' : 'Add game to watchlist'}
             selected={watched}
             hitSlop={14}
-            tint={watched ? withAlpha('#FBBF24', 0.35) : undefined}
-            fallbackColor={watched ? withAlpha('#FBBF24', 0.18) : undefined}>
-            <StarIcon color={watched ? '#FBBF24' : palette.chalk} size={20} filled={watched} />
+            tint={watched ? withAlpha(palette.gold, 0.35) : undefined}
+            fallbackColor={watched ? withAlpha(palette.gold, 0.18) : undefined}>
+            <StarIcon color={watched ? palette.gold : palette.chalk} size={20} filled={watched} />
           </GlassButton>
         </View>
       </View>
@@ -333,12 +333,12 @@ const styles = StyleSheet.create({
   // Seven short horizontal dashes under the team's name, one per timeout: lit for each one left. As wide as the logo.
   timeouts: { flexDirection: 'row', gap: 2, marginTop: 7 },
   timeoutBar: { width: 6, height: 3, borderRadius: 1.5, backgroundColor: withAlpha(palette.chalk, 0.16) },
-  timeoutLeft: { backgroundColor: '#34D399' },
-  timeoutPill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, backgroundColor: withAlpha('#FBBF24', 0.18) },
-  timeoutPillText: { fontFamily: fonts.bodyBold, fontSize: 11, color: '#FBBF24', letterSpacing: 0.6 },
+  timeoutLeft: { backgroundColor: palette.win },
+  timeoutPill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, backgroundColor: withAlpha(palette.gold, 0.18) },
+  timeoutPillText: { fontFamily: fonts.bodyBold, fontSize: 11, color: palette.gold, letterSpacing: 0.6 },
 
   linescoreWrap: { paddingHorizontal: 16, marginBottom: 12 },
-  linescoreTable: { backgroundColor: withAlpha('#FFFFFF', 0.05), borderRadius: 14, overflow: 'hidden', paddingVertical: 4 },
+  linescoreTable: { backgroundColor: surfaces.card, borderRadius: 14, overflow: 'hidden', paddingVertical: 4 },
   lsRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 },
   lsDataRow: { paddingVertical: 8 },
   lsCell: { width: 36, textAlign: 'center', fontFamily: fonts.bodySemi, fontSize: 13, color: palette.chalk },
@@ -356,10 +356,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: withAlpha('#F87171', 0.16),
+    backgroundColor: withAlpha(palette.loss, 0.16),
   },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#F87171' },
-  liveText: { fontFamily: fonts.bodyBold, fontSize: 11, color: '#F87171', letterSpacing: 0.4 },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: palette.loss },
+  liveText: { fontFamily: fonts.bodyBold, fontSize: 11, color: palette.loss, letterSpacing: 0.4 },
 
   topBar: { paddingHorizontal: 16 },
   topRow: { flexDirection: 'row', alignItems: 'center', height: 44 },

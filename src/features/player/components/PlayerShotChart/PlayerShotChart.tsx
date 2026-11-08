@@ -6,7 +6,7 @@ import Svg, { Circle, G, Line } from 'react-native-svg';
 import { CourtMarkings, HeatLayer, Segmented, binShots, COURT_H, COURT_W } from '@/components';
 import { usePlayerShots } from '@/hooks';
 import type { GameLogEntry } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { SHOT_GAMES } from './constants';
 
 const pct = (m: number, a: number) => (a > 0 ? `${Math.round((m / a) * 100)}%` : '–');
@@ -103,15 +103,15 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 18 },
-  title: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 8 },
-  card: { borderRadius: 18, backgroundColor: withAlpha('#FFFFFF', 0.06), padding: 14, gap: 12 },
+  title: { ...textStyle.sectionLabel, marginBottom: 8 },
+  card: { borderRadius: 18, backgroundColor: surfaces.card, padding: 14, gap: 12 },
   closed: { alignItems: 'center', paddingVertical: 20, gap: 4 },
   show: { fontFamily: fonts.bodyBold, fontSize: 16, color: palette.chalk },
   note: { fontFamily: fonts.body, fontSize: 12, color: palette.muted },
   progress: { height: 3, borderRadius: 2, backgroundColor: withAlpha(palette.chalk, 0.1), overflow: 'hidden' },
   progressFill: { height: 3 },
   summary: { flexDirection: 'row', gap: 8 },
-  stat: { flex: 1, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: withAlpha('#FFFFFF', 0.05) },
+  stat: { flex: 1, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: surfaces.card },
   statLabel: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.5 },
   statValue: { fontFamily: fonts.display, fontSize: 22, color: palette.chalk },
   statSub: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },

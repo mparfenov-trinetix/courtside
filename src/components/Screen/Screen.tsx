@@ -1,12 +1,21 @@
 import { useNavigation } from 'expo-router';
+
 import type { DrawerNavigationProp } from 'expo-router/drawer';
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+
+import { Button } from '../Button';
+
+import { EmptyState } from '../EmptyState';
+
 import { GlassButton } from '../Glass';
+
 import { ArrowLeftIcon, MenuIcon } from '../Icons';
+
 import { fonts, palette } from '@/lib/theme';
+
 
 export function useOpenDrawer() {
   const navigation = useNavigation<DrawerNavigationProp<Record<string, object | undefined>>>();
@@ -95,13 +104,7 @@ export function LoadingState({ label = 'Loading' }: { label?: string }) {
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <View style={styles.center}>
-      <Text style={styles.stateTitle}>Couldn’t reach ESPN</Text>
-      <Text style={styles.stateText}>{message}</Text>
-      <Pressable onPress={onRetry} style={styles.retry} accessibilityRole="button">
-        <Text style={styles.retryText}>Try again</Text>
-      </Pressable>
-    </View>
+    <EmptyState title="Couldn’t reach ESPN" text={message} placement="center" action={<Button label="Try again" onPress={onRetry} style={styles.retry} />} />
   );
 }
 
@@ -131,27 +134,11 @@ const styles = StyleSheet.create({
     padding: 32,
     gap: 10,
   },
-  stateTitle: {
-    fontFamily: fonts.displayBold,
-    fontSize: 26,
-    color: palette.chalk,
-  },
   stateText: {
     fontFamily: fonts.body,
     fontSize: 15,
     color: palette.muted,
     textAlign: 'center',
   },
-  retry: {
-    marginTop: 8,
-    paddingHorizontal: 22,
-    paddingVertical: 12,
-    borderRadius: 24,
-    backgroundColor: palette.chalk,
-  },
-  retryText: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 15,
-    color: palette.arena,
-  },
+  retry: { marginTop: 8 },
 });

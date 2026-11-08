@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type TextProps, type ViewStyle } from 'react-native';
 
 import { Glass, glassSupported } from '../Glass';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 
 const SIZES = {
   sm: { paddingHorizontal: 12, paddingVertical: 5, radius: 14, fontSize: 12 },
@@ -91,6 +91,6 @@ export function ChipText({ active, size = 'sm', style, ...props }: { active: boo
 }
 
 const styles = StyleSheet.create({
-  plain: { backgroundColor: withAlpha(palette.chalk, 0.06), borderWidth: 1, borderColor: 'transparent' },
+  plain: { backgroundColor: surfaces.card, borderWidth: 1, borderColor: 'transparent' },
   text: { fontFamily: fonts.bodySemi, color: palette.muted },
 });

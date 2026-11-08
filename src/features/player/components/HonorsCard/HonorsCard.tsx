@@ -17,7 +17,7 @@ import {
 } from '@/components';
 import { seasonLabel, type Contract, type Draft, type Honor } from '@/lib/espn';
 import { CHAMPIONS } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { GOLD, PRIORITY } from './constants';
 const rank = (name: string) => PRIORITY.find(([re]) => re.test(name))?.[1] ?? 20;
 
@@ -152,8 +152,8 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 16 },
-  title: { fontFamily: fonts.bodySemi, fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase', color: palette.muted, marginBottom: 8 },
-  card: { borderRadius: 18, backgroundColor: withAlpha('#FFFFFF', 0.06), overflow: 'hidden' },
+  title: { ...textStyle.sectionLabel, marginBottom: 8 },
+  card: { borderRadius: 18, backgroundColor: surfaces.card, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
   border: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: withAlpha(palette.chalk, 0.1) },
   badge: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: withAlpha(palette.chalk, 0.1) },

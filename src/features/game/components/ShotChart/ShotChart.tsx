@@ -8,7 +8,7 @@ import Svg, { Circle, G, Line } from 'react-native-svg';
 
 import { Chip, ChipText, CourtMarkings, HeatLayer, Segmented, binShots, COURT_W, COURT_H, HOOP, HOT, COLD } from '@/components';
 import type { BoxScorePlayer, BoxScoreTeam, Play } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 
 type Shot = { play: Play; x: number; y: number; made: boolean; three: boolean; shooterId: string };
 type Zone = 'At rim' | 'Paint' | 'Mid-range' | '3-point';
@@ -211,7 +211,7 @@ export function ShotChart({
             <Text style={styles.calloutName} numberOfLines={1}>
               {shooterName(selected.shooterId)}
             </Text>
-            <Text style={[styles.calloutResult, { color: selected.made ? '#34D399' : '#F87171' }]}>
+            <Text style={[styles.calloutResult, { color: selected.made ? palette.win : palette.loss }]}>
               {selected.made ? 'Made' : 'Missed'} {selected.three ? '3-pointer' : zoneOf(selected) === 'At rim' ? 'layup' : 'jumper'} · {periodLabel(selected.play.period)} {selected.play.clockText}
             </Text>
             <Text style={styles.calloutText} numberOfLines={2}>
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'transparent',
-    backgroundColor: withAlpha(palette.chalk, 0.04),
+    backgroundColor: surfaces.faint,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -345,11 +345,11 @@ const styles = StyleSheet.create({
   chipImg: { width: 24, height: 24, borderRadius: 12, backgroundColor: withAlpha(palette.chalk, 0.1) },
   chipCount: { fontFamily: fonts.body, fontSize: 11, color: palette.muted },
   summary: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  stat: { flex: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: withAlpha('#FFFFFF', 0.05) },
+  stat: { flex: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: surfaces.card },
   statLabel: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.5 },
   statValue: { fontFamily: fonts.display, fontSize: 26, color: palette.chalk },
   statSub: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
-  court: { borderRadius: 14, overflow: 'hidden', minHeight: 120, backgroundColor: withAlpha('#FFFFFF', 0.03) },
+  court: { borderRadius: 14, overflow: 'hidden', minHeight: 120, backgroundColor: surfaces.faint },
   callout: {
     position: 'absolute',
     width: 190,
@@ -378,20 +378,12 @@ const styles = StyleSheet.create({
   legendDot: { width: 11, height: 11, borderRadius: 6, borderWidth: 1, borderColor: palette.chalk },
   legendX: { fontFamily: fonts.bodyBold, fontSize: 12, color: withAlpha(palette.chalk, 0.8) },
   legendText: { fontFamily: fonts.body, fontSize: 12, color: palette.muted },
-  sectionTitle: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    color: palette.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginTop: 18,
-    marginBottom: 8,
-  },
-  zoneCard: { borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05), overflow: 'hidden' },
+  sectionTitle: { ...textStyle.sectionLabel, marginTop: 18, marginBottom: 8 },
+  zoneCard: { borderRadius: 16, backgroundColor: surfaces.card, overflow: 'hidden' },
   zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14 },
   zoneBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: withAlpha(palette.chalk, 0.1) },
   zoneName: { width: 78, fontFamily: fonts.bodySemi, fontSize: 13, color: palette.chalk },
-  zoneTrack: { flex: 1, height: 6, borderRadius: 3, backgroundColor: withAlpha(palette.chalk, 0.08), overflow: 'hidden' },
+  zoneTrack: { flex: 1, height: 6, borderRadius: 3, backgroundColor: surfaces.raised, overflow: 'hidden' },
   zoneFill: { height: 6, borderRadius: 3 },
   zoneValue: { width: 42, textAlign: 'right', fontFamily: fonts.body, fontSize: 12, color: palette.muted },
   zonePct: { width: 38, textAlign: 'right', fontFamily: fonts.bodyBold, fontSize: 13, color: palette.chalk },

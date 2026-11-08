@@ -7,7 +7,7 @@ import { Expandable } from '../Expandable';
 import { useHeadToHead } from '@/hooks';
 import type { HeadToHeadGame } from '@/lib/espn';
 import { summarizeHeadToHead } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { COLLAPSED } from './constants';
 
@@ -117,16 +117,8 @@ function MeetingRow({ g, a, b }: { g: HeadToHeadGame; a: H2HTeam; b: H2HTeam }) 
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 18 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  card: { borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05), padding: 14, gap: 8 },
+  title: { ...textStyle.sectionLabel, marginBottom: 8, paddingHorizontal: 4 },
+  card: { borderRadius: 16, backgroundColor: surfaces.card, padding: 14, gap: 8 },
   center: { alignItems: 'center', justifyContent: 'center', minHeight: 72 },
   empty: { fontFamily: fonts.body, fontSize: 13, color: palette.muted },
   sub: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted, textAlign: 'center' },

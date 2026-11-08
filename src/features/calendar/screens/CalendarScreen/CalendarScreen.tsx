@@ -4,7 +4,7 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AgendaView, DayPager, MonthView, ScopeLabel, TodayPill, ViewSheet, startOfMonth } from '../../components';
-import { IconButton, SeasonSheet, slideIn, ErrorState, ListSkeleton, ScreenHeader } from '@/components';
+import { IconButton, SeasonSheet, slideIn, ErrorState, ListSkeleton, ScreenHeader, EmptyState } from '@/components';
 import { usePostseason, useRefresh, useSeasonGames, useTeam } from '@/hooks';
 import { currentSeason } from '@/lib/espn';
 import { calendarEvents } from '@/lib/league';
@@ -120,10 +120,7 @@ export function CalendarScreen() {
       {mode === 'day' && <DayPager dates={dates} today={today} selected={selected} onSelect={setSelected} accent={theme.accent} gameDays={gameDays} />}
 
       {mode !== 'day' && !team ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>Pick a team</Text>
-          <Text style={styles.emptyText}>Month and agenda views show one team&apos;s season.</Text>
-        </View>
+        <EmptyState title="Pick a team" text="Month and agenda views show one team's season." placement="center" />
       ) : mode === 'month' ? (
         <ScrollView
           refreshControl={scheduleRefresh}
@@ -192,22 +189,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   view: { flex: 1 },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontFamily: fonts.display,
-    fontSize: 32,
-    color: palette.chalk,
-  },
-  emptyText: {
-    fontFamily: fonts.body,
-    fontSize: 15,
-    color: palette.muted,
-    textAlign: 'center',
-  },
 });

@@ -13,7 +13,7 @@ import { fonts, palette, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
 import { openDetail } from '@/navigation';
 
-const GOLD = '#FBBF24';
+const GOLD = palette.gold;
 
 /** The playoff bracket for a season, with the champion on top once the Finals are decided. */
 export function PlayoffsView({ season }: { season: number }) {

@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette } from '@/lib/theme';
+import { Button } from '../Button';
 
 /**
  * What a screen shows when it throws while rendering, instead of taking the whole app down: a message, a way to try again, and a way
@@ -14,18 +15,15 @@ export function ScreenError({ error, retry }: { error: Error; retry: () => void 
       <Text style={styles.message} numberOfLines={5}>
         {__DEV__ ? error.message : 'This screen could not be shown. Try again, or go back to the Team card.'}
       </Text>
-      <Pressable onPress={retry} accessibilityRole="button" style={styles.primary}>
-        <Text style={styles.primaryText}>Try again</Text>
-      </Pressable>
-      <Pressable
+      <Button label="Try again" tone="secondary" onPress={retry} style={styles.retry} />
+      <Button
+        label="Go to the Team card"
+        tone="quiet"
         onPress={() => {
           router.replace('/home');
           retry();
         }}
-        accessibilityRole="button"
-        hitSlop={10}>
-        <Text style={styles.secondary}>Go to the Team card</Text>
-      </Pressable>
+      />
     </View>
   );
 }
@@ -34,7 +32,5 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: palette.arena, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
   title: { fontFamily: fonts.displayBold, fontSize: 30, color: palette.chalk },
   message: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: palette.muted, textAlign: 'center' },
-  primary: { marginTop: 6, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24, backgroundColor: withAlpha(palette.chalk, 0.12) },
-  primaryText: { fontFamily: fonts.bodyBold, fontSize: 15, color: palette.chalk },
-  secondary: { fontFamily: fonts.bodySemi, fontSize: 14, color: palette.muted },
+  retry: { marginTop: 6 },
 });

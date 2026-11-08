@@ -172,6 +172,27 @@ export function PodiumIcon({ size = 22, color }: IconProps) {
   );
 }
 
+/** A draft board: numbered picks down the left, a name beside each. */
+export function DraftIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx={5.5} cy={6} r={1.6} {...stroke(color)} />
+      <Circle cx={5.5} cy={12} r={1.6} {...stroke(color)} />
+      <Circle cx={5.5} cy={18} r={1.6} {...stroke(color)} />
+      <Path d="M10.5 6H20M10.5 12H20M10.5 18H16" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+/** A pulse line: the league's wire (injuries and moves). */
+export function WireIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M3 12h4l2.5-6 4 12 2.5-6H21" {...stroke(color)} />
+    </Svg>
+  );
+}
+
 export function BracketIcon({ size = 22, color }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">

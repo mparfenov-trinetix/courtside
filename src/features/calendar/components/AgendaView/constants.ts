@@ -1,3 +1,4 @@
-export const WIN = '#34D399';
-export const LOSS = '#F87171';
+import { palette } from '@/lib/theme';
+export const WIN = palette.win;
+export const LOSS = palette.loss;
 export const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];

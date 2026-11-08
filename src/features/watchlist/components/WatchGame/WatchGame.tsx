@@ -4,11 +4,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { StarIcon } from '@/components';
 import { useGameSummary } from '@/hooks';
 import { kickoffLabel } from '@/lib/date';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import type { WatchedGame } from '@/state';
 
-const GOLD = '#FBBF24';
+const GOLD = palette.gold;
 
 /**
  * A starred game: the two teams and, once there is something to say, the score and where it stands (live, final), or
@@ -32,7 +32,7 @@ export function WatchGame({ game, onRemove }: { game: WatchedGame; onRemove: () 
         <Side side={game.home} score={started ? home : undefined} win={started && data!.completed && (home ?? 0) > (away ?? 0)} />
       </View>
       <View style={styles.info}>
-        <Text style={[styles.status, data?.live && { color: '#F87171' }]} numberOfLines={1}>
+        <Text style={[styles.status, data?.live && { color: palette.loss }]} numberOfLines={1}>
           {started ? data!.status : date ? kickoffLabel(date) : ''}
         </Text>
         {started && date ? <Text style={styles.date}>{new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text> : null}
@@ -60,7 +60,7 @@ function Side({ side, score, win }: { side: WatchedGame['away']; score?: number;
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05) },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, backgroundColor: surfaces.card },
   teams: { flex: 1, gap: 6 },
   side: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logo: { width: 24, height: 24 },

@@ -3,10 +3,10 @@ import Animated from 'react-native-reanimated';
 
 import { useLeagueTeamStats } from '@/hooks';
 import { formatMetric, metricByKey, ordinal, rankOf } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { TILES, RATES } from './constants';
 
-const rankColor = (rank: number) => (rank <= 10 ? '#34D399' : rank > 20 ? '#F87171' : palette.muted);
+const rankColor = (rank: number) => (rank <= 10 ? palette.win : rank > 20 ? palette.loss : palette.muted);
 
 export function TeamSeasonStats({ teamId, accent }: { teamId: string; accent: string }) {
   const { data: rows } = useLeagueTeamStats();
@@ -50,15 +50,7 @@ export function TeamSeasonStats({ teamId, accent }: { teamId: string; accent: st
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 8, paddingHorizontal: 16 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
+  title: { ...textStyle.sectionLabel, marginBottom: 8, paddingHorizontal: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   tile: {
     width: '31.5%',
@@ -66,12 +58,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderRadius: 14,
-    backgroundColor: withAlpha('#FFFFFF', 0.06),
+    backgroundColor: surfaces.card,
   },
   tileValue: { fontFamily: fonts.display, fontSize: 26 },
   tileLabel: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, letterSpacing: 0.5 },
   tileRank: { fontFamily: fonts.bodyBold, fontSize: 11, marginTop: 2 },
-  card: { borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05), overflow: 'hidden' },
+  card: { borderRadius: 16, backgroundColor: surfaces.card, overflow: 'hidden' },
   rateRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14 },
   rateBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: withAlpha(palette.chalk, 0.1) },
   rateLabel: { flex: 1, fontFamily: fonts.body, fontSize: 14, color: palette.muted },

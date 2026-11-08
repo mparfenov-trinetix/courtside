@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassButton } from '../Glass';
 import { ChevronIcon } from '../Icons';
 import { currentSeason, seasonLabel } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 
 /** The 2000-01 season: as far back as ESPN's standings are reliable. */
 export const FIRST_SEASON = 2001;
@@ -85,9 +85,9 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 20 },
   title: { fontFamily: fonts.display, fontSize: 30, color: palette.chalk },
   done: { fontFamily: fonts.bodySemi, fontSize: 16, color: palette.muted },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, marginBottom: 8, borderRadius: 14, backgroundColor: withAlpha('#FFFFFF', 0.05) },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, marginBottom: 8, borderRadius: 14, backgroundColor: surfaces.card },
   rowOn: { backgroundColor: withAlpha('#FFFFFF', 0.12) },
   rowText: { flex: 1, fontFamily: fonts.bodySemi, fontSize: 18, color: palette.muted },
-  tag: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 0.6, color: '#34D399' },
+  tag: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 0.6, color: palette.win },
   check: { fontFamily: fonts.bodyBold, fontSize: 16, color: palette.chalk },
 });
