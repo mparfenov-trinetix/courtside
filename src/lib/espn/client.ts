@@ -48,3 +48,13 @@ export async function getJson(url: string): Promise<Json> {
 }
 
 export const CORE = 'https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba';
+
+/** Follows one of the core API's `$ref` links (http in the data, https here); a missing or failing one is undefined, never a throw. */
+export const fetchRef = async (ref: unknown): Promise<Json | undefined> => {
+  if (typeof ref !== 'string') return undefined;
+  try {
+    return await getJson(ref.replace('http://', 'https://'));
+  } catch {
+    return undefined;
+  }
+};
