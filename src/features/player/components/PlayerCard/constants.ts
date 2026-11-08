@@ -24,6 +24,15 @@ export const CARD_STATS = [
   { key: 'bpg', label: 'BPG', category: 'bpg' },
 ] as const;
 
+/**
+ * Teams whose logo is red on their red card, with only a few white parts (the Hawks, the Bulls): at the watermark's faint opacity it
+ * is barely there. They get the same white outline as the `OUTLINED_LOGO` teams, a little stronger, on the player card only (the team
+ * card's big logo reads fine).
+ */
+export const OUTLINED_WATERMARK = new Set(['ATL', 'CHI']);
+/** The outlined watermark's opacity (the plain one is 0.12). */
+export const OUTLINED_OPACITY = 0.34;
+
 /** The champion badge's gold. */
 export const CHAMPION_GOLD = '#FBBF24';
 

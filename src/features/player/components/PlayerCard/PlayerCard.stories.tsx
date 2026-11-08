@@ -30,7 +30,14 @@ function Demo({ color, alternate, abbr }: { color?: string; alternate?: string; 
         scrollY={scrollY}
         stats={STATS}
         titles={2}
-        honors={[{ id: 'mvp', name: 'MVP', count: 2, seasons: [2024, 2025] }]}
+        cups={1}
+        honors={[
+          { id: 'mvp', name: 'MVP', count: 2, seasons: [2024, 2025] },
+          { id: 'fmvp', name: 'Finals MVP', count: 1, seasons: [2025] },
+          { id: 'ecf', name: 'NBA Eastern Conference Finals MVP', count: 1, seasons: [2025] },
+          { id: 'dpoy', name: 'Defensive Player of the Year', count: 1, seasons: [2024] },
+          { id: 'roy', name: 'Rookie of the Year', count: 1, seasons: [2020] },
+        ]}
       />
     </View>
   );

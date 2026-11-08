@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { titleSeasons } from '../src/lib/league';
+import { cupSeasons, titleSeasons } from '../src/lib/league';
 
 test('titles: seasons spent on the champion, newest first, ignoring combined lines', () => {
   const rows = [
@@ -19,4 +19,17 @@ test('titles: a traded season counts if any of his teams won it, and never twice
 
 test('titles: none for a player who never won one', () => {
   assert.deepEqual(titleSeasons([{ year: 2021, abbr: 'CHA' }, { year: 2022, abbr: 'CHA' }]), []);
+});
+
+test('cupSeasons: the NBA Cup winner of each season, once, newest first', () => {
+  const rows = [
+    { year: 2024, abbr: 'LAL' },
+    { year: 2025, abbr: 'MIL' },
+    { year: 2025, abbr: 'TOT' },
+    { year: 2026, abbr: 'NY' },
+    { year: 2026, abbr: 'NY' },
+    { year: 2023, abbr: 'LAL' }, // before the Cup existed
+    { year: 2026, abbr: 'SA' }, // lost the final
+  ];
+  assert.deepEqual(cupSeasons(rows), [2026, 2025, 2024]);
 });

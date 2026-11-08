@@ -11,6 +11,19 @@ export const CHAMPIONS: Record<number, string> = {
 };
 
 /**
+ * NBA Cup winners by season (the year the season ends), as ESPN's abbreviations; the Cup began in 2023-24 as the In-Season
+ * Tournament. Checked against the final's result on ESPN's scoreboard (2023-12-09, 2024-12-17, 2025-12-16).
+ */
+export const CUP_CHAMPIONS: Record<number, string> = { 2024: 'LAL', 2025: 'MIL', 2026: 'NY' };
+
+/** Seasons in which the player was on the roster of the NBA Cup winner (the same rule as `titleSeasons`), newest first. */
+export function cupSeasons(rows: Pick<CareerRow, 'year' | 'abbr'>[]): number[] {
+  const years = new Set<number>();
+  for (const r of rows) if (r.abbr !== 'TOT' && CUP_CHAMPIONS[r.year] === r.abbr) years.add(r.year);
+  return [...years].sort((a, b) => b - a);
+}
+
+/**
  * Seasons in which the player was on the roster of the eventual champion, newest first. This counts anyone who
  * logged regular-season games for that team, so a player traded away before the playoffs still shows it.
  */

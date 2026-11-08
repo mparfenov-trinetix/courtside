@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, GlassButton } from '@/components';
 import { useAfterSettle, useAllStars, usePlayerBio, usePlayerCareer, usePlayerGameLog, usePlayerProfile, usePlayerStats, useRefresh, useRoster, useTeam } from '@/hooks';
-import { nba2kRating, titleSeasons } from '@/lib/league';
+import { cupSeasons, nba2kRating, titleSeasons } from '@/lib/league';
 import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { goBack, pushOnce } from '@/navigation';
 import { useWatchlist } from '@/state';
@@ -186,6 +186,7 @@ export function PlayerScreen() {
           loading={cardLoading}
           honors={profile?.honors}
           titles={career ? titleSeasons(career.seasons).length : 0}
+          cups={career ? cupSeasons(career.seasons).length : 0}
           status={!onRoster && bio.data ? (bio.data.active ? 'Free agent' : 'Retired') : undefined}
         />
       </View>
@@ -299,7 +300,7 @@ export function PlayerScreen() {
             <InfoSkeleton />
           ) : (
           <>
-            <HonorsCard honors={profile?.honors ?? []} titles={career ? titleSeasons(career.seasons) : []} allStars={allStars?.[player.id]} />
+            <HonorsCard honors={profile?.honors ?? []} titles={career ? titleSeasons(career.seasons) : []} cups={career ? cupSeasons(career.seasons) : []} allStars={allStars?.[player.id]} />
             <ContractCard contract={profile?.contract} draft={profile?.draft} />
             {infoRows.length > 0 ? (
               <Animated.View

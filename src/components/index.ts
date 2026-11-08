@@ -22,5 +22,6 @@ export * from './Segmented';
 export * from './ShotMap';
 export * from './Skeleton';
 export * from './TeamMark';
+export * from './Trophies';
 export * from './ScreenError';
 export * from './Spotlight';

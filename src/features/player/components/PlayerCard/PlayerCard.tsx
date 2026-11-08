@@ -1,31 +1,74 @@
 import { Image } from 'expo-image';
+import type { ComponentType } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
-import { CardLights, Skeleton, SkeletonGroup } from '@/components';
+import {
+  CardLights,
+  ConferenceMvpTrophyIcon,
+  CupIcon,
+  DpoyTrophyIcon,
+  FinalsMvpTrophyIcon,
+  LarryOBrienIcon,
+  MvpTrophyIcon,
+  RoyTrophyIcon,
+  Skeleton,
+  SkeletonGroup,
+} from '@/components';
 import { useTilt } from '@/hooks';
 import type { Honor, Player, PlayerSeasonStats, Team } from '@/lib/espn';
 import { fonts, logoOn, OUTLINE, OUTLINED_LOGO, OUTLINE_STEPS, withAlpha, type TeamTheme } from '@/lib/theme';
 import { EdgeFade } from './EdgeFade';
-import { CARD_RATIO, CARD_STATS, CHAMPION_GOLD, FOOTER_PAD, MAX_ROTATE, PHOTO_BOTTOM, RADIUS, STATS_HEIGHT } from './constants';
+import {
+  CARD_RATIO,
+  CARD_STATS,
+  CHAMPION_GOLD,
+  FOOTER_PAD,
+  MAX_ROTATE,
+  OUTLINED_OPACITY,
+  OUTLINED_WATERMARK,
+  PHOTO_BOTTOM,
+  RADIUS,
+  STATS_HEIGHT,
+} from './constants';
 import type { CardRanks } from './useLeagueRanks';
 
-/** The honors worth a badge on the card, the biggest first. */
-const BADGES: [RegExp, string][] = [
-  [/^MVP$/i, 'MVP'],
-  [/finals mvp/i, 'Finals MVP'],
-  [/defensive player/i, 'DPOY'],
-  [/rookie of the year/i, 'ROY'],
+type TrophyIcon = ComponentType<{ color: string; size?: number }>;
+
+/** The awards that get a trophy on the card, the biggest first. ESPN lists the Eastern and Western conference finals MVPs apart; one trophy counts both. */
+const AWARDS: { re: RegExp; Icon: TrophyIcon; label: string; short: (names: string[]) => string }[] = [
+  { re: /^MVP$/i, Icon: MvpTrophyIcon, label: 'MVP', short: () => 'MVP' },
+  // "Finals MVP" alone: "NBA Eastern Conference Finals MVP" contains the same words and is its own award.
+  { re: /(^|nba )finals mvp$/i, Icon: FinalsMvpTrophyIcon, label: 'Finals MVP', short: () => 'Finals MVP' },
+  {
+    re: /conference finals mvp/i,
+    Icon: ConferenceMvpTrophyIcon,
+    label: 'Conference finals MVP',
+    // ECF or WCF when it was one conference, both when he won it in each.
+    short: (names) => {
+      const east = names.some((n) => /eastern/i.test(n));
+      const west = names.some((n) => /western/i.test(n));
+      return east && west ? 'Conf. Finals MVP' : west ? 'WCF MVP' : 'ECF MVP';
+    },
+  },
+  { re: /defensive player/i, Icon: DpoyTrophyIcon, label: 'Defensive Player of the Year', short: () => 'DPOY' },
+  { re: /rookie of the year/i, Icon: RoyTrophyIcon, label: 'Rookie of the Year', short: () => 'ROY' },
 ];
 
-function badgesOf(honors: Honor[]): string[] {
-  const out: string[] = [];
-  for (const [re, label] of BADGES) {
-    const honor = honors.find((h) => re.test(h.name));
-    if (honor) out.push(honor.count > 1 ? `${label} ×${honor.count}` : label);
+/** `short` is the words on the pill: a drawn trophy alone does not say which award it is. */
+type Trophy = { key: string; Icon: TrophyIcon; label: string; short: string; count: number };
+
+function trophiesOf(honors: Honor[], titles: number, cups: number): Trophy[] {
+  const out: Trophy[] = [];
+  if (titles > 0) out.push({ key: 'champion', Icon: LarryOBrienIcon, label: 'NBA champion', short: 'Champion', count: titles });
+  if (cups > 0) out.push({ key: 'cup', Icon: CupIcon, label: 'NBA Cup champion', short: 'NBA Cup', count: cups });
+  for (const a of AWARDS) {
+    const won = honors.filter((h) => a.re.test(h.name));
+    const count = won.reduce((n, h) => n + Math.max(1, h.count), 0);
+    if (count > 0) out.push({ key: a.label, Icon: a.Icon, label: a.label, short: a.short(won.map((h) => h.name)), count });
   }
-  return out.slice(0, 2);
+  return out;
 }
 
 /**
@@ -49,6 +92,7 @@ export function PlayerCard({
   loading = false,
   honors = [],
   titles = 0,
+  cups = 0,
   status,
 }: {
   player: Pick<Player, 'name' | 'jersey' | 'position' | 'height' | 'age' | 'headshot'>;
@@ -65,6 +109,8 @@ export function PlayerCard({
   honors?: Honor[];
   /** How many NBA championships he won (worked out from the teams he won with), for the gold badge. */
   titles?: number;
+  /** How many NBA Cups he won (the teams he played for that won it). */
+  cups?: number;
   /** Why he has no team ("Retired", "Free agent"). */
   status?: string;
 }) {
@@ -86,6 +132,7 @@ export function PlayerCard({
   const headshotParallax = useAnimatedStyle(() => ({ transform: [{ translateX: tiltX.get() * 8 }, { translateY: tiltY.get() * 5 }] }));
 
   const logo = team ? logoOn(team, theme.onPrimary) : undefined;
+  const outlined = OUTLINED_LOGO.has(team?.abbreviation ?? '') || OUTLINED_WATERMARK.has(team?.abbreviation ?? '');
   const hasStats = stats != null || loading;
   // Until the averages arrive the numbers are skeleton blocks (breathing together), not dashes.
   const pending = loading && stats == null;
@@ -93,22 +140,17 @@ export function PlayerCard({
   const tags = [player.position, player.height?.replace(/\s/g, ''), player.age != null ? `${player.age} yrs` : undefined].filter(
     (t): t is string => !!t,
   );
-  // Upper left, the biggest first: titles (gold), his biggest honors, or why he has no team.
-  const badges: { text: string; gold?: boolean }[] = [
-    ...(titles > 0 ? [{ text: titles > 1 ? `NBA Champion ×${titles}` : 'NBA Champion', gold: true }] : []),
-    ...badgesOf(honors).map((text) => ({ text })),
-    ...(status ? [{ text: status }] : []),
-  ];
+  // Upper left: his trophies (titles, Cups, MVPs...) as little trophies, the biggest first, then why he has no team.
+  const trophies = trophiesOf(honors, titles, cups);
   const initials = player.name.split(' ').map((n) => n[0]).slice(0, 2).join('');
   const pill = { backgroundColor: withAlpha(theme.onPrimary, 0.14), borderColor: withAlpha(theme.onPrimary, 0.3) };
-
   return (
     <GestureDetector gesture={tilt.gesture}>
       <Animated.View style={[{ width, height }, wrapStyle]}>
         <Animated.View style={[styles.card, { width, height, backgroundColor: theme.primary }, tiltStyle]}>
-          {/* Team logo watermark; a logo the color of the card (Houston's red) gets the team card's white outline, a little stronger. */}
-          {logo && OUTLINED_LOGO.has(team?.abbreviation ?? '') ? (
-            <View style={[styles.watermark, { width: width * 0.75, height: width * 0.75, opacity: 0.3 }]}>
+          {/* Team logo watermark; a logo the color of the card (Houston's red, and the mostly red Hawks and Bulls) gets the team card's white outline, stronger. */}
+          {logo && outlined ? (
+            <View style={[styles.watermark, { width: width * 0.75, height: width * 0.75, opacity: OUTLINED_OPACITY }]}>
               {OUTLINE_STEPS.map(([dx, dy]) => (
                 <Image
                   key={`${dx}${dy}`}
@@ -165,20 +207,30 @@ export function PlayerCard({
             </Animated.Text>
           ) : null}
 
-          {/* Upper left: his titles, his biggest honors, or why he has no team. */}
-          {badges.length > 0 ? (
+          {/* Upper left: his trophies (a gold trophy on a dark pill reads on every team color, yellow ones included), or why he has no team. */}
+          {trophies.length > 0 || status ? (
             <View style={styles.badges}>
-              {badges.map((b) => (
-                // They come from the profile and the career, which arrive after the card: each fades in instead of popping.
+              {trophies.map((t) => (
                 <Animated.View
-                  key={b.text}
+                  key={t.key}
                   entering={FadeIn.duration(260)}
-                  style={[styles.pill, b.gold ? { backgroundColor: withAlpha(CHAMPION_GOLD, 0.22), borderColor: withAlpha(CHAMPION_GOLD, 0.7) } : pill]}>
-                  <Text style={[styles.pillText, { color: b.gold ? CHAMPION_GOLD : theme.onPrimary }]} numberOfLines={1}>
-                    {b.text}
+                  accessible
+                  accessibilityLabel={t.count > 1 ? `${t.label}, ${t.count} times` : t.label}
+                  style={[styles.pill, styles.trophyPill]}>
+                  <t.Icon color={CHAMPION_GOLD} size={17} />
+                  <Text style={[styles.pillText, { color: CHAMPION_GOLD }]} numberOfLines={1}>
+                    {t.short}
+                    {t.count > 1 ? ` ×${t.count}` : ''}
                   </Text>
                 </Animated.View>
               ))}
+              {status ? (
+                <Animated.View entering={FadeIn.duration(260)} style={[styles.pill, pill]}>
+                  <Text style={[styles.pillText, { color: theme.onPrimary }]} numberOfLines={1}>
+                    {status}
+                  </Text>
+                </Animated.View>
+              ) : null}
             </View>
           ) : null}
 
@@ -240,15 +292,16 @@ const styles = StyleSheet.create({
   initials: { alignItems: 'center', justifyContent: 'center' },
   initialsText: { fontFamily: fonts.display },
   jersey: { position: 'absolute', fontFamily: fonts.display },
-  // Wraps before it reaches his number in the corner.
-  badges: { position: 'absolute', top: 12, left: 12, right: 64, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  // Wraps before it reaches his number in the corner (a little more room now that the pills carry words).
+  badges: { position: 'absolute', top: 12, left: 12, right: 24, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   footer: { width: '100%', paddingHorizontal: 16 },
   stripeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   stripe: { width: 28, height: 4, borderRadius: 2 },
   statsLabel: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 1 },
   name: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34 },
   tags: { flexDirection: 'row', gap: 6, marginTop: 4 },
-  pill: { height: 24, paddingHorizontal: 10, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  pill: { height: 24, paddingHorizontal: 10, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 4, alignItems: 'center', justifyContent: 'center' },
+  trophyPill: { paddingLeft: 7, paddingRight: 9, backgroundColor: 'rgba(10,10,10,0.6)', borderColor: 'rgba(251,191,36,0.55)' },
   pillText: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.3 },
   stats: { flexDirection: 'row', alignItems: 'center', height: STATS_HEIGHT, marginTop: 8 },
   stat: { flex: 1, alignItems: 'center', justifyContent: 'center' },

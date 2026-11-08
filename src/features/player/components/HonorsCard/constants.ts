@@ -3,7 +3,8 @@ export const GOLD = '#FBBF24';
 /** The big ones first, then team selections, then the rest. */
 export const PRIORITY: [RegExp, number][] = [
   [/^MVP$/i, 0],
-  [/finals mvp/i, 1],
+  [/(^|nba )finals mvp$/i, 1],
+  [/conference finals mvp/i, 1.5],
   [/defensive player/i, 2],
   [/rookie of the year/i, 3],
   [/all-star mvp/i, 4],

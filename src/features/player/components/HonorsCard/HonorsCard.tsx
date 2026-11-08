@@ -2,7 +2,19 @@ import type { ComponentType } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { BasketballIcon, CupIcon, PeopleIcon, StarIcon, TrophyIcon } from '@/components';
+import {
+  BasketballIcon,
+  ConferenceMvpTrophyIcon,
+  CupIcon,
+  DpoyTrophyIcon,
+  FinalsMvpTrophyIcon,
+  LarryOBrienIcon,
+  MvpTrophyIcon,
+  PeopleIcon,
+  RoyTrophyIcon,
+  StarIcon,
+  TrophyIcon,
+} from '@/components';
 import { seasonLabel, type Contract, type Draft, type Honor } from '@/lib/espn';
 import { CHAMPIONS } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
@@ -16,6 +28,12 @@ const years = (seasons: number[]) => {
 
 /** Which small icon stands for an award: trophies for the individual prizes, a star for selections, and so on. */
 function iconFor(name: string): ComponentType<{ color: string; size?: number }> {
+  // The big individual awards have their own trophy (the ones the player card shows).
+  if (/^MVP$/i.test(name)) return MvpTrophyIcon;
+  if (/(^|nba )finals mvp$/i.test(name)) return FinalsMvpTrophyIcon;
+  if (/conference finals mvp/i.test(name)) return ConferenceMvpTrophyIcon;
+  if (/defensive player/i.test(name)) return DpoyTrophyIcon;
+  if (/rookie of the year/i.test(name)) return RoyTrophyIcon;
   if (/all-star$/i.test(name)) return StarIcon;
   if (/mvp|player of the year|champion|scoring|leader/i.test(name)) return TrophyIcon;
   if (/all-nba|all-defensive|all-rookie|all-tournament/i.test(name)) return PeopleIcon;
@@ -36,11 +54,11 @@ function titleNote(titles: number[]) {
 }
 
 /** Titles (worked out from the teams he won with) and everything ESPN lists as an award. */
-export function HonorsCard({ honors, titles, allStars = [] }: { honors: Honor[]; titles: number[]; allStars?: number[] }) {
+export function HonorsCard({ honors, titles, cups = [], allStars = [] }: { honors: Honor[]; titles: number[]; cups?: number[]; allStars?: number[] }) {
   // ESPN lists only the All-Star MVP; selections come from who played in each All-Star Game (since 2003).
   const withSelections: Honor[] = allStars.length > 0 ? [...honors, { id: 'all-star', name: 'NBA All-Star', count: allStars.length, seasons: allStars }] : honors;
   const sorted = [...withSelections].sort((a, b) => rank(a.name) - rank(b.name) || b.count - a.count);
-  if (sorted.length === 0 && titles.length === 0) return null;
+  if (sorted.length === 0 && titles.length === 0 && cups.length === 0) return null;
   const note = titles.length > 0 ? titleNote(titles) : null;
 
   return (
@@ -50,13 +68,25 @@ export function HonorsCard({ honors, titles, allStars = [] }: { honors: Honor[];
         {note && (
           <View style={[styles.row, sorted.length > 0 && styles.border]}>
             <View style={[styles.badge, { backgroundColor: withAlpha(GOLD, 0.16) }]}>
-              <CupIcon color={GOLD} size={20} />
+              <LarryOBrienIcon color={GOLD} size={20} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{note.name}</Text>
               <Text style={styles.sub}>{note.sub}</Text>
             </View>
             {titles.length > 1 && <Text style={[styles.count, { color: GOLD }]}>×{titles.length}</Text>}
+          </View>
+        )}
+        {cups.length > 0 && (
+          <View style={[styles.row, (note || sorted.length > 0) && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: withAlpha(palette.chalk, 0.1) }]}>
+            <View style={[styles.badge, { backgroundColor: withAlpha(GOLD, 0.16) }]}>
+              <CupIcon color={GOLD} size={20} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>NBA Cup champion</Text>
+              <Text style={styles.sub}>{years(cups)}</Text>
+            </View>
+            {cups.length > 1 && <Text style={[styles.count, { color: GOLD }]}>×{cups.length}</Text>}
           </View>
         )}
         {sorted.map((h, i) => {
