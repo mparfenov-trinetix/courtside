@@ -1,3 +1,4 @@
+import { palette } from '@/lib/theme';
 export const MAX_ROTATE = 10;
 export const RADIUS = 28;
 
@@ -25,16 +26,22 @@ export const CARD_STATS = [
 ] as const;
 
 /**
- * Teams whose logo is red on their red card, with only a few white parts (the Hawks, the Bulls): at the watermark's faint opacity it
+ * Teams whose logo is the color of their card with only a few light parts (the Hawks and Bulls on red): at the watermark's faint opacity it
  * is barely there. They get the same white outline as the `OUTLINED_LOGO` teams, a little stronger, on the player card only (the team
  * card's big logo reads fine).
  */
 export const OUTLINED_WATERMARK = new Set(['ATL', 'CHI']);
+
+/**
+ * Teams whose logo is detailed (the Raptors' claw, the Wizards' and Cavaliers' marks) and a little too close to the card's color: an
+ * outline copy smears their fine edges, so they stay crisp and are just drawn stronger than the usual 0.12.
+ */
+export const STRONG_WATERMARK: Record<string, number> = { TOR: 0.3, WSH: 0.3, CLE: 0.3 };
 /** The outlined watermark's opacity (the plain one is 0.12). */
 export const OUTLINED_OPACITY = 0.34;
 
 /** The champion badge's gold. */
-export const CHAMPION_GOLD = '#FBBF24';
+export const CHAMPION_GOLD = palette.gold;
 
 /** How many places down a rank is still worth showing (the leaders feed is cut at 50). */
 export const RANK_SHOWN = 50;

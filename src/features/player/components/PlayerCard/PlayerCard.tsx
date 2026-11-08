@@ -1,11 +1,15 @@
 import { Image } from 'expo-image';
+
 import type { ComponentType } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+
 import { GestureDetector } from 'react-native-gesture-handler';
+
 import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import {
   CardLights,
+  Pill,
   ConferenceMvpTrophyIcon,
   CupIcon,
   DpoyTrophyIcon,
@@ -16,22 +20,15 @@ import {
   Skeleton,
   SkeletonGroup,
 } from '@/components';
+
 import { useTilt } from '@/hooks';
+
 import type { Honor, Player, PlayerSeasonStats, Team } from '@/lib/espn';
-import { fonts, logoOn, OUTLINE, OUTLINED_LOGO, OUTLINE_STEPS, withAlpha, type TeamTheme } from '@/lib/theme';
+import { fonts, logoOn, OUTLINE, OUTLINED_LOGO, OUTLINE_STEPS, palette, withAlpha, type TeamTheme } from '@/lib/theme';
+
 import { EdgeFade } from './EdgeFade';
-import {
-  CARD_RATIO,
-  CARD_STATS,
-  CHAMPION_GOLD,
-  FOOTER_PAD,
-  MAX_ROTATE,
-  OUTLINED_OPACITY,
-  OUTLINED_WATERMARK,
-  PHOTO_BOTTOM,
-  RADIUS,
-  STATS_HEIGHT,
-} from './constants';
+
+import { CARD_RATIO, CARD_STATS, FOOTER_PAD, MAX_ROTATE, OUTLINED_OPACITY, OUTLINED_WATERMARK, PHOTO_BOTTOM, RADIUS, STATS_HEIGHT, STRONG_WATERMARK } from './constants';
 import type { CardRanks } from './useLeagueRanks';
 
 type TrophyIcon = ComponentType<{ color: string; size?: number }>;
@@ -143,7 +140,6 @@ export function PlayerCard({
   // Upper left: his trophies (titles, Cups, MVPs...) as little trophies, the biggest first, then why he has no team.
   const trophies = trophiesOf(honors, titles, cups);
   const initials = player.name.split(' ').map((n) => n[0]).slice(0, 2).join('');
-  const pill = { backgroundColor: withAlpha(theme.onPrimary, 0.14), borderColor: withAlpha(theme.onPrimary, 0.3) };
   return (
     <GestureDetector gesture={tilt.gesture}>
       <Animated.View style={[{ width, height }, wrapStyle]}>
@@ -165,7 +161,7 @@ export function PlayerCard({
           ) : logo ? (
             <Image
               source={logo}
-              style={[styles.watermark, { width: width * 0.75, height: width * 0.75 }]}
+              style={[styles.watermark, { width: width * 0.75, height: width * 0.75, opacity: STRONG_WATERMARK[team?.abbreviation ?? ''] ?? 0.12 }]}
               contentFit="contain"
               allowDownscaling={false}
               priority="high"
@@ -211,24 +207,16 @@ export function PlayerCard({
           {trophies.length > 0 || status ? (
             <View style={styles.badges}>
               {trophies.map((t) => (
-                <Animated.View
-                  key={t.key}
-                  entering={FadeIn.duration(260)}
-                  accessible
-                  accessibilityLabel={t.count > 1 ? `${t.label}, ${t.count} times` : t.label}
-                  style={[styles.pill, styles.trophyPill]}>
-                  <t.Icon color={CHAMPION_GOLD} size={17} />
-                  <Text style={[styles.pillText, { color: CHAMPION_GOLD }]} numberOfLines={1}>
+                <Animated.View key={t.key} entering={FadeIn.duration(260)} accessible accessibilityLabel={t.count > 1 ? `${t.label}, ${t.count} times` : t.label}>
+                  <Pill tone="gold" icon={<t.Icon color={palette.gold} size={17} />}>
                     {t.short}
                     {t.count > 1 ? ` ×${t.count}` : ''}
-                  </Text>
+                  </Pill>
                 </Animated.View>
               ))}
               {status ? (
-                <Animated.View entering={FadeIn.duration(260)} style={[styles.pill, pill]}>
-                  <Text style={[styles.pillText, { color: theme.onPrimary }]} numberOfLines={1}>
-                    {status}
-                  </Text>
+                <Animated.View entering={FadeIn.duration(260)}>
+                  <Pill on={theme.onPrimary}>{status}</Pill>
                 </Animated.View>
               ) : null}
             </View>
@@ -245,11 +233,9 @@ export function PlayerCard({
             {tags.length > 0 ? (
               <View style={styles.tags}>
                 {tags.map((t) => (
-                  <View key={t} style={[styles.pill, pill]}>
-                    <Text style={[styles.pillText, { color: theme.onPrimary }]} numberOfLines={1}>
-                      {t}
-                    </Text>
-                  </View>
+                  <Pill key={t} on={theme.onPrimary}>
+                    {t}
+                  </Pill>
                 ))}
               </View>
             ) : null}
@@ -300,9 +286,6 @@ const styles = StyleSheet.create({
   statsLabel: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 1 },
   name: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34 },
   tags: { flexDirection: 'row', gap: 6, marginTop: 4 },
-  pill: { height: 24, paddingHorizontal: 10, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 4, alignItems: 'center', justifyContent: 'center' },
-  trophyPill: { paddingLeft: 7, paddingRight: 9, backgroundColor: 'rgba(10,10,10,0.6)', borderColor: 'rgba(251,191,36,0.55)' },
-  pillText: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.3 },
   stats: { flexDirection: 'row', alignItems: 'center', height: STATS_HEIGHT, marginTop: 8 },
   stat: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   statValue: { fontFamily: fonts.display, fontSize: 24, lineHeight: 26 },
