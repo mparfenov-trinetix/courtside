@@ -7,6 +7,14 @@ import {
   fetchGameVideos,
   fetchHeadToHead,
   fetchAllStars,
+  fetchAllStarWeekend,
+  fetchDraft,
+  fetchFutures,
+  fetchPowerIndex,
+  fetchInjuries,
+  fetchTransactions,
+  findPlayerByName,
+  type NbaDraftPlayer,
   fetchCupGames,
   fetchLeaderCategory,
   fetchPostseason,
@@ -32,7 +40,7 @@ import {
   type ScoreboardGame,
 } from '@/lib/espn';
 import { scoreboardKeysFor, startsOnDay, toDateKey } from '@/lib/date';
-import { playoffSeeds, seedMap } from '@/lib/league';
+import { NOTED_FROM, conferenceMap, inferPlayoffNotes, playoffSeeds, seedMap } from '@/lib/league';
 import { awaitsTipOff, boardPhase, gamePhase, shotsOf } from '@/lib/game';
 
 const HOUR = 60 * 60 * 1000;
@@ -363,7 +371,11 @@ export function usePostseason(season: number, enabled = true) {
   return useQuery({
     queryKey: ['postseason', season],
     enabled,
-    queryFn: () => fetchPostseason(season),
+    queryFn: () =>
+      fetchPostseason(season).then((p) =>
+        // Before 2009-10 ESPN's notes do not name the rounds: they are worked out from the series.
+        season < NOTED_FROM ? { ...p, playoffs: inferPlayoffNotes(p.playoffs, conferenceMap(p.standings)) } : p,
+      ),
     staleTime: season === current ? 5 * 60 * 1000 : Infinity,
     // Games in progress move the series score.
     refetchInterval: (query) =>
@@ -427,6 +439,66 @@ export function usePlayerBio(athleteId?: string | null) {
 }
 
 /** Every All-Star Game roster since 2003, read once (it never changes) and kept. */
+/** One season's All-Star Game day: its games, who played, the MVP. A finished one never changes (kept for good, and on disk). */
+/** ESPN's Basketball Power Index for every team: the rating and its projection of the season. It is rerun daily. */
+export function usePowerIndex() {
+  return useQuery({ queryKey: ['powerIndex', currentSeason()], queryFn: () => fetchPowerIndex(currentSeason()), staleTime: 60 * 60 * 1000 });
+}
+
+/** Every team's injury report. It changes through the day, so it is read again after ten minutes. */
+export function useInjuries() {
+  return useQuery({ queryKey: ['injuries'], queryFn: fetchInjuries, staleTime: 10 * 60 * 1000 });
+}
+
+/** The newest `limit` moves of the season. `placeholderData` keeps the page on screen while a longer one is read. */
+export function useTransactions(limit: number) {
+  return useQuery({ queryKey: ['transactions', limit], queryFn: () => fetchTransactions(limit), staleTime: 10 * 60 * 1000, placeholderData: (previous) => previous });
+}
+
+/** The sportsbook odds for the season's title, conferences and awards (`withAthletes`: the award candidates' names and photos, about forty more requests). They move, so they are read again after half an hour. */
+export function useFutures(withAthletes = true) {
+  return useQuery({
+    queryKey: ['futures', currentSeason(), withAthletes],
+    queryFn: () => fetchFutures(currentSeason(), withAthletes),
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
+/** One year's draft: every pick with its player. A finished one never changes (kept for good, and on disk). */
+export function useDraft(season: number) {
+  return useQuery({
+    queryKey: ['draft', season],
+    queryFn: () => fetchDraft(season),
+    staleTime: season >= currentSeason() ? HOUR : Infinity,
+    gcTime: Infinity,
+  });
+}
+
+/**
+ * Who a draft pick is in ESPN's NBA pages: his id and photo. From 2019 the draft record already says (`nbaId`); before that, and for
+ * players who came from abroad, he is found by his name, only for the rows on screen. Kept for good (a name does not change owners).
+ */
+export function useDrafteeIdentity(player?: NbaDraftPlayer): { id?: string; headshot?: string } {
+  const { data } = useQuery({
+    queryKey: ['draftee', player?.id],
+    enabled: !!player && !player.nbaId,
+    queryFn: () => findPlayerByName(player!.name),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
+  if (player?.nbaId) return { id: player.nbaId, headshot: player.headshot };
+  return { id: data?.id, headshot: data?.headshot };
+}
+
+export function useAllStarWeekend(season: number) {
+  return useQuery({
+    queryKey: ['allStarWeekend', season],
+    queryFn: () => fetchAllStarWeekend(season),
+    staleTime: season === currentSeason() ? HOUR : Infinity,
+    gcTime: Infinity,
+  });
+}
+
 export function useAllStars(enabled = true) {
   return useQuery({
     queryKey: ['allStars'],

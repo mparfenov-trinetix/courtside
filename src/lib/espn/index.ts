@@ -15,9 +15,52 @@ export { fetchGameSummary, fetchGameVideos, moneylineToDecimal, normalizeGameSum
 export type { BoxScorePlayer, BoxScoreTeam, FormGame, GameInfo, GameOdds, GameSummary, Injury, Play, Pregame, SideOdds } from './game';
 export { fetchScoreboardByDate, involvesTeam } from './scoreboard';
 export type { ScoreboardGame, ScoreboardTeam } from './scoreboard';
-export { fetchPlayerCareer, fetchPlayerGameLog, fetchPlayerStats, fetchPlayerBio, headshotUrl, normalizePlayerSearch, searchPlayers } from './players';
+export { fetchPlayerCareer, fetchPlayerGameLog, fetchPlayerStats, fetchPlayerBio, findPlayerByName, normalizePlayerSearch, searchPlayers } from './players';
+export { headshotUrl, legendPhoto } from './legend-photos';
 export type { CareerRow, GameLogEntry, PlayerBio, PlayerCareer, PlayerSearchResult, PlayerSeasonStats } from './players';
-export { allStarGameKey, fetchAllStars } from './all-star';
+export {
+  allStarGameKey,
+  allStarSeasons,
+  fetchAllStars,
+  fetchAllStarWeekend,
+  normalizeAllStarWeekend,
+  parseAllStarNote,
+  type AllStarGame,
+  type AllStarMvp,
+  type AllStarPlayer,
+  type AllStarTeam,
+  type AllStarWeekend,
+} from './all-star';
+export {
+  DRAFT_FROM,
+  draftSeasons,
+  fetchDraft,
+  normalizeDraft,
+  scoutingText,
+  type NbaDraft,
+  type NbaDraftPick,
+  type NbaDraftPlayer,
+} from './draft';
+export {
+  fetchFutures,
+  impliedChance,
+  marketLabel,
+  normalizeFutures,
+  parseMoneyline,
+  type FuturesEntry,
+  type FuturesMarket,
+  type MarketKey,
+} from './futures';
+export {
+  fetchInjuries,
+  fetchTransactions,
+  normalizeInjuries,
+  normalizeTransactions,
+  type InjuredPlayer,
+  type TeamInjuries,
+  type Transaction,
+} from './wire';
+export { fetchPowerIndex, normalizePowerIndex, type PowerRow } from './power-index';
 export { fetchPlayerProfile } from './player-profile';
 export type { Contract, Draft, Honor, PlayerProfile } from './player-profile';
 export { fetchLeagueTeamStats, normalizeLeagueTeamStats } from './team-stats';

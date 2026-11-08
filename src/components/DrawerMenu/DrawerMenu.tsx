@@ -9,18 +9,18 @@ import Animated, { Easing, Extrapolation, interpolate, useAnimatedStyle, useShar
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTeam } from '@/hooks';
-import { fonts, logoOn, mix, palette, teamTheme, withAlpha } from '@/lib/theme';
+import { fonts, logoOn, mix, palette, teamTheme, withAlpha, surfaces } from '@/lib/theme';
 import { pushOnce, returningFromDetail } from '@/navigation';
 import { useTeamStore } from '@/state';
 import { Glass } from '../Glass';
-import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, GridIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon } from '../Icons';
+import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, DraftIcon, GridIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon, WireIcon } from '../Icons';
 import { NbaLogo } from '../NbaLogo';
 import { DRAWER_WIDTH, SCENE_RADIUS, type MenuSection } from './constants';
 
 // Only when Metro was started with `npm run storybook`.
 const STORYBOOK = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === 'true';
 
-/** The menu: what is yours, the league, and the two tournaments. */
+/** The menu: what is yours, the league, and the tournaments and events (playoffs, the Cup, All-Star Weekend, the Draft). */
 export const SECTIONS: MenuSection[] = [
   {
     // What is yours, no heading of its own: your team, its calendar, what you starred (players and games alike).
@@ -41,6 +41,7 @@ export const SECTIONS: MenuSection[] = [
       { route: 'roster', href: '/roster', label: 'Rosters', Icon: PeopleIcon },
       { route: 'teams', href: '/teams', label: 'Teams', Icon: GridIcon },
       { route: 'compare', href: '/compare' as Href, label: 'Compare', Icon: CompareIcon },
+      { route: 'wire', href: '/wire' as Href, label: 'League wire', Icon: WireIcon },
     ],
   },
   {
@@ -48,6 +49,8 @@ export const SECTIONS: MenuSection[] = [
     items: [
       { route: 'playoffs', href: '/playoffs' as Href, label: 'Playoffs', Icon: BracketIcon },
       { route: 'cup', href: '/cup' as Href, label: 'NBA Cup', Icon: CupIcon },
+      { route: 'all-star', href: '/all-star' as Href, label: 'All-Star Weekend', Icon: StarIcon },
+      { route: 'draft', href: '/draft' as Href, label: 'NBA Draft', Icon: DraftIcon },
     ],
   },
 ];
@@ -93,7 +96,7 @@ export function DrawerMenu(props: DrawerContentComponentProps) {
   };
 
   const dim = withAlpha(palette.chalk, 0.72);
-  const press = ({ pressed }: { pressed: boolean }) => [styles.item, pressed && { backgroundColor: withAlpha('#FFFFFF', 0.07) }];
+  const press = ({ pressed }: { pressed: boolean }) => [styles.item, pressed && { backgroundColor: surfaces.raised }];
 
   return (
     <View style={{ flex: 1, width: DRAWER_WIDTH, backgroundColor: base }}>
