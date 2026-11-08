@@ -50,7 +50,17 @@ export function useLiveActivity() {
     refetchInterval: (q) => (q.state.data?.completed ? false : GAME_MS),
   });
 
+  // Both boards have answered (and at least one with data): "no game to follow" is then true, and any activity left from before can be
+  // cleared. Before that (loading, or offline with nothing cached) it is not known, and the activity is left alone.
+  const answered = (q: { isSuccess: boolean; isError: boolean }) => q.isSuccess || q.isError;
+  const boardsKnown = answered(board) && answered(lastNight) && (board.isSuccess || lastNight.isSuccess);
+
   useEffect(() => {
-    syncLiveActivity(id ? (game.data ?? null) : null);
-  }, [id, game.data]);
+    if (id) {
+      // The game's own answer is awaited: while it loads there is nothing to say, and saying "null" would clear the activity.
+      if (game.data) syncLiveActivity(game.data);
+    } else if (boardsKnown) {
+      syncLiveActivity(null);
+    }
+  }, [id, game.data, boardsKnown]);
 }

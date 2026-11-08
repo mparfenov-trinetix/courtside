@@ -252,3 +252,22 @@ test('liveScoreOf: the selected team first, only while the game is on', () => {
   assert.equal(liveScoreOf(g(true, false), '9'), undefined);
   assert.equal(liveScoreOf(undefined, '1'), undefined);
 });
+
+test('live activity plan: an activity left by an earlier run still gets its final score', async () => {
+  const { planActivity } = await import('../src/lib/widgets');
+  const live = { id: '1', live: true, completed: false };
+  const done = { id: '1', live: false, completed: true };
+  const soon = { id: '1', live: false, completed: false };
+  const adopted = { gameId: null }; // found after a relaunch: which game it shows is not known
+  assert.equal(planActivity(live, null), 'start');
+  assert.equal(planActivity(live, adopted), 'update'); // reuse it, do not start a second one
+  assert.equal(planActivity(live, { gameId: '1' }), 'update');
+  assert.equal(planActivity(live, { gameId: '9' }), 'replace');
+  assert.equal(planActivity(done, adopted), 'finish'); // the case that used to leave the activity frozen mid-game
+  assert.equal(planActivity(done, { gameId: '1' }), 'finish');
+  assert.equal(planActivity(done, { gameId: '9' }), 'end'); // it shows another game, which is over: just clear it
+  assert.equal(planActivity(done, null), 'none'); // nothing was up, and a finished game does not start one
+  assert.equal(planActivity(soon, { gameId: '1' }), 'none'); // postponed or not on yet: leave it
+  assert.equal(planActivity(null, adopted), 'end'); // nothing to follow any more
+  assert.equal(planActivity(null, null), 'none');
+});

@@ -113,3 +113,25 @@ export function liveScoreOf(game: Pick<GameSummary, 'id' | 'live' | 'completed' 
   const other = mine === game.away ? game.home : game.away;
   return { gameId: game.id, myScore: String(mine.score), oppScore: String(other.score), clock: game.status };
 }
+
+/** What to do with the Live Activity for a game, given the activity that is up (if any) and which game it shows (null: not known). */
+export type ActivityPlan =
+  | 'none' // nothing to do
+  | 'start' // put one up
+  | 'update' // move the one that is up to this game's score
+  | 'replace' // it shows another game: take it down, put this one up
+  | 'finish' // the game is over: put the final score on it and let it linger, then clear
+  | 'end'; // it should not be up: take it down
+
+/**
+ * Pure: the activity's next step. `activity.gameId` is null for one found after a relaunch (or a reload in development): the system
+ * keeps it on screen but it cannot say which game it shows, so it is taken to be this game's, updated, or finished, not ended
+ * and started over. The point of the last: an activity left by an earlier run must still get its final score.
+ */
+export function planActivity(game: Pick<GameSummary, 'id' | 'live' | 'completed'> | null, activity: { gameId: string | null } | null): ActivityPlan {
+  if (!game) return activity ? 'end' : 'none';
+  const other = !!activity?.gameId && activity.gameId !== game.id;
+  if (isTrackable(game)) return !activity ? 'start' : other ? 'replace' : 'update';
+  if (game.completed) return !activity ? 'none' : other ? 'end' : 'finish';
+  return other ? 'end' : 'none';
+}
