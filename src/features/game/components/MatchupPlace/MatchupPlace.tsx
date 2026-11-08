@@ -1,13 +1,19 @@
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+
 import Animated from 'react-native-reanimated';
 
 import { ChevronIcon } from '@/components';
+
 import { currentSeason, seasonOfDate, type GameKind } from '@/lib/espn';
+
 import { PLAYOFFS_FROM } from '@/lib/league';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+
+import { fonts, palette, surfaces, textStyle } from '@/lib/theme';
 import { pushOnce } from '@/navigation';
+
 import { MatchupStandings, StandingsLink } from '../MatchupStandings';
+
 
 type Side = { id: string; abbr: string; color: string };
 
@@ -25,7 +31,7 @@ function placeOf(kind: GameKind, season: number): Place | null {
     case 'regular':
       return { to: 'standings' };
     case 'playoffs':
-      // Before 2009-10 ESPN's notes do not name the round: the bracket cannot be rebuilt.
+      // Before 2002-03 ESPN's playoff schedules have gaps: the bracket cannot be rebuilt (from 2002-03 the rounds are worked out, see `inferPlayoffNotes`).
       return season >= PLAYOFFS_FROM ? { to: 'playoffs', pane: 'playoffs', title: 'Playoffs', line: 'in the playoff bracket' } : null;
     case 'playin':
       return { to: 'playoffs', pane: 'playin', title: 'Play-In', line: 'in the play-in bracket' };
@@ -114,16 +120,8 @@ export function MatchupPlace({
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 18 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 16, backgroundColor: withAlpha('#FFFFFF', 0.05), paddingHorizontal: 16, paddingVertical: 14 },
+  title: { ...textStyle.sectionLabel, marginBottom: 8, paddingHorizontal: 4 },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 16, backgroundColor: surfaces.card, paddingHorizontal: 16, paddingVertical: 14 },
   cardText: { flex: 1, gap: 2 },
   stage: { fontFamily: fonts.bodyBold, fontSize: 15, color: palette.chalk },
   sub: { fontFamily: fonts.body, fontSize: 13, color: palette.muted },
@@ -136,7 +134,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 46,
     borderRadius: 14,
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
   slimText: { fontFamily: fonts.bodySemi, fontSize: 14, color: palette.chalk },
 });

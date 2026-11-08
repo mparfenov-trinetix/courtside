@@ -64,7 +64,8 @@ export async function fetchPostseason(season: number): Promise<Postseason> {
   const contenders = new Set([...standings.east, ...standings.west].filter((e) => e.seed <= 10).map((e) => e.teamId));
   const pool = contenders.size >= 16 ? teams.filter((t) => contenders.has(t.id)) : teams;
   const [playoffs, playIn] = await Promise.all([
-    fetchTaggedGames(pool, { season, seasonType: 3 }, (g) => g.note),
+    // Before 2003-04 a playoff game has no note at all: it is a playoff game by the schedule it came from, and the round is worked out later.
+    fetchTaggedGames(pool, { season, seasonType: 3 }, (g) => g.note ?? 'Playoffs'),
     fetchTaggedGames(pool, { season, seasonType: 5 }, (g) => g.note),
   ]);
   return { playoffs, playIn, standings };

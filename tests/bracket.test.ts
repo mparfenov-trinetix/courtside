@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { calendarEvents, hasPlayIn, playoffSeeds, playoffTag, buildCupBracket, buildPlayIn, buildPlayoffs, layoutTree, parsePlayInNote, parsePlayoffNote } from '../src/lib/league';
+import { calendarEvents, hasPlayIn, playoffSeeds, playoffTag, buildCupBracket, buildPlayIn, buildPlayoffs, inferPlayoffNotes, layoutTree, parsePlayInNote, parsePlayoffNote } from '../src/lib/league';
 import type { CupGame } from '../src/lib/espn';
 
 const side = (id: number, score?: number) => ({ teamId: String(id), abbr: `T${id}`, logo: '', score });
@@ -205,4 +205,40 @@ test('playoff seeds: the 7 and 8 seeds come from the first round, the others fro
   assert.equal(seeds.B, 8);
   assert.equal(seeds.C, 3);
   assert.equal(seeds.D, 6);
+});
+
+// Before 2009-10 ESPN's playoff games have no round in their notes: the rounds come from who played whom.
+test('inferPlayoffNotes: rounds from each team\'s series order, conferences from the standings', () => {
+  // East teams 1-8 (their ids are their seeds), West 9-16 (seed + 8). Each series is a pair and the number of games it went.
+  const conferenceOf: Record<string, 'east' | 'west'> = {};
+  for (let id = 1; id <= 16; id++) conferenceOf[String(id)] = id <= 8 ? 'east' : 'west';
+  const series: [number, number, number][] = [
+    // first round
+    [1, 8, 4], [4, 5, 6], [3, 6, 5], [2, 7, 7], [9, 16, 4], [12, 13, 7], [11, 14, 5], [10, 15, 6],
+    // semifinals: 1 beat 8, 5 beat 4, 3 beat 6, 2 beat 7 ...
+    [1, 5, 5], [3, 2, 6], [9, 12, 7], [11, 10, 5],
+    // conference finals and the Finals
+    [1, 3, 6], [9, 11, 4], [1, 9, 6],
+  ];
+  const games: CupGame[] = [];
+  let day = 0;
+  let k = 0;
+  for (const [a, b, count] of series) {
+    for (let g = 0; g < count; g++) {
+      games.push({ id: `g${k++}`, date: new Date(Date.UTC(2005, 3, 20 + day++)).toISOString(), stage: 'Playoffs', completed: true, home: side(g % 2 ? b : a), away: side(g % 2 ? a : b) });
+    }
+  }
+  const inferred = inferPlayoffNotes(games, conferenceOf);
+  const stageOf = (id: string) => inferred.find((g) => g.id === id)!.stage;
+  assert.equal(stageOf('g0'), 'East 1st Round - Game 1');
+  assert.equal(stageOf('g3'), 'East 1st Round - Game 4');
+  assert.equal(stageOf('g22'), 'West 1st Round - Game 1');
+  assert.equal(inferred.filter((g) => g.stage.startsWith('West 1st Round')).length, 4 + 7 + 5 + 6);
+  assert.equal(inferred.filter((g) => g.stage.startsWith('East Semifinals')).length, 5 + 6);
+  assert.equal(inferred.filter((g) => g.stage.startsWith('West Finals')).length, 4);
+  assert.deepEqual(inferred.filter((g) => g.stage.startsWith('NBA Finals')).map((g) => g.stage), Array.from({ length: 6 }, (_, i) => `NBA Finals - Game ${i + 1}`));
+  // A team's own earlier series decide the round: the 8th seed's only series is its first round, however late its games are.
+  assert.ok(inferred.every((g) => parsePlayoffNote(g.stage)));
+  const po = buildPlayoffs(inferred, Object.fromEntries(Array.from({ length: 16 }, (_, i) => [String(i + 1), i < 8 ? i + 1 : i - 7])));
+  assert.deepEqual(po.rounds.map((r) => r.series.length), [8, 4, 2, 1]);
 });

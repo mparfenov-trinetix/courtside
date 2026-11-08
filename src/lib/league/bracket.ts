@@ -58,8 +58,13 @@ export const ROUND_NAMES: Record<RoundKey, string> = {
 
 /** The play-in tournament began in 2020-21 (season 2021). The 2019-20 bubble had one play-in game, which isn't a tournament. */
 export const PLAY_IN_FROM = 2021;
-/** Playoff games only carry their round in ESPN's notes from the 2009-10 season on (named 2010); before that the bracket can't be rebuilt. */
-export const PLAYOFFS_FROM = 2010;
+/** ESPN's notes name each playoff game's round from the 2009-10 season on (named 2010); before that the rounds are worked out (`inferPlayoffNotes`). */
+export const NOTED_FROM = 2010;
+/**
+ * The first season the bracket is rebuilt: 2002-03 (named 2003). ESPN's playoff schedules of 2000-01 and 2001-02 are missing games (the
+ * Finals of 2001, seven games of 2002), which would show wrong series; 2003 on rebuilds to the right champion every year.
+ */
+export const PLAYOFFS_FROM = 2003;
 export const hasPlayIn = (season: number) => season >= PLAY_IN_FROM;
 
 /** "West 1st Round - Game 3" -> { round: 'r1', conference: 'west', game: 3 }. */
@@ -71,6 +76,44 @@ export function parsePlayoffNote(note: string): { round: RoundKey; conference?: 
   const word = m[2].toLowerCase();
   const round: RoundKey = word === '1st round' ? 'r1' : word === 'semifinals' ? 'r2' : word === 'nba finals' || !conference ? 'finals' : 'r3';
   return { round, conference, game: m[3] ? Number(m[3]) : undefined };
+}
+
+/** Team id to conference, from a season's standings. */
+export function conferenceMap(standings: ConferenceStandings): Record<string, Conf> {
+  const out: Record<string, Conf> = {};
+  for (const e of standings.east) out[e.teamId] = 'east';
+  for (const e of standings.west) out[e.teamId] = 'west';
+  return out;
+}
+
+/**
+ * Before 2009-10 ESPN's playoff notes say "PLAYOFFS" or nothing, not the round. The round is still in who played whom: a team meets
+ * another once per postseason, and its k-th series is round k (the Finals is the fourth). So the games are grouped into series by their
+ * pair of teams, each team's series are ordered by their first game, and every game gets the note ESPN writes from 2010 on
+ * ("West 1st Round - Game 3", "East Finals - Game 7", "NBA Finals - Game 2"), which the rest of the app already reads. A conference
+ * comes from the season's standings. A game that cannot be placed keeps its own note.
+ */
+export function inferPlayoffNotes(games: CupGame[], conferenceOf: Record<string, Conf>): CupGame[] {
+  const sorted = [...games].sort((a, b) => a.date.localeCompare(b.date));
+  const series = new Map<string, CupGame[]>();
+  for (const g of sorted) {
+    const pair = [g.home.teamId, g.away.teamId].sort().join('-');
+    series.set(pair, [...(series.get(pair) ?? []), g]);
+  }
+  // Each team's series in the order they began (the map keeps first-game order).
+  const bySeriesOfTeam = new Map<string, string[]>();
+  for (const [pair] of series) for (const id of pair.split('-')) bySeriesOfTeam.set(id, [...(bySeriesOfTeam.get(id) ?? []), pair]);
+  const note = new Map<string, string>();
+  for (const [pair, list] of series) {
+    const [a, b] = pair.split('-');
+    const round = Math.min(4, Math.max((bySeriesOfTeam.get(a) ?? []).indexOf(pair), (bySeriesOfTeam.get(b) ?? []).indexOf(pair)) + 1);
+    const conf = conferenceOf[a] ?? conferenceOf[b];
+    if (round < 4 && !conf) continue;
+    const name = ['1st Round', 'Semifinals', 'Finals', 'NBA Finals'][round - 1];
+    const prefix = round < 4 ? `${conf === 'east' ? 'East' : 'West'} ` : '';
+    list.forEach((g, i) => note.set(g.id, `${prefix}${name} - Game ${i + 1}`));
+  }
+  return games.map((g) => (note.has(g.id) ? { ...g, stage: note.get(g.id)! } : g));
 }
 
 /** "NBA Play-In - East - 9th Place vs 10th Place" -> { conference: 'east', title: '9th Place vs 10th Place' }. */
