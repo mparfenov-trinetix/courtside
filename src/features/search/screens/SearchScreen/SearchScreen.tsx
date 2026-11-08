@@ -163,6 +163,8 @@ export function SearchScreen() {
                     source={item.image}
                     style={item.kind === 'team' ? styles.logo : styles.headshot}
                     contentFit={item.kind === 'team' ? 'contain' : 'cover'}
+                    // The photo is wider than tall: crop its sides evenly and keep the top, where the face is.
+                    contentPosition="top"
                   />
                 ) : null}
               </View>
@@ -209,7 +211,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, paddingHorizontal: 8, borderRadius: 14 },
   avatar: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: withAlpha(palette.chalk, 0.1) },
   avatarTeam: { backgroundColor: 'transparent', borderRadius: 0 },
-  headshot: { width: 52, height: 44 },
+  headshot: { width: 44, height: 44 },
   logo: { width: 44, height: 44 },
   title: { fontFamily: fonts.bodySemi, fontSize: 16, color: palette.chalk },
   sub: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, marginTop: 1 },
