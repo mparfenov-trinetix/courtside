@@ -1,0 +1,322 @@
+{
+ "json": {
+  "items": [
+   {
+    "id": 2564,
+    "name": "NBA - Winner",
+    "futures": [
+     {
+      "provider": {
+       "id": "100",
+       "name": "DraftKings",
+       "active": 1,
+       "priority": 1
+      },
+      "books": [
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/24?lang=en&region=us"
+        },
+        "value": "+295"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/25?lang=en&region=us"
+        },
+        "value": "+475"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/20?lang=en&region=us"
+        },
+        "value": "+800"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/18?lang=en&region=us"
+        },
+        "value": "+1000"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/2?lang=en&region=us"
+        },
+        "value": "+1100"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/10?lang=en&region=us"
+        },
+        "value": "+1400"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/28?lang=en&region=us"
+        },
+        "value": "+1700"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/16?lang=en&region=us"
+        },
+        "value": "+1800"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": 2566,
+    "name": "NBA - Eastern Conference - Winner",
+    "futures": [
+     {
+      "provider": {
+       "id": "100",
+       "name": "DraftKings",
+       "active": 1,
+       "priority": 1
+      },
+      "books": [
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/20?lang=en&region=us"
+        },
+        "value": "+350"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/2?lang=en&region=us"
+        },
+        "value": "+390"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/18?lang=en&region=us"
+        },
+        "value": "+425"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/28?lang=en&region=us"
+        },
+        "value": "+700"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/8?lang=en&region=us"
+        },
+        "value": "+800"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/5?lang=en&region=us"
+        },
+        "value": "+1000"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/14?lang=en&region=us"
+        },
+        "value": "+1700"
+       },
+       {
+        "team": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/11?lang=en&region=us"
+        },
+        "value": "+1800"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": 2581,
+    "name": "NBA - Regular Season MVP",
+    "futures": [
+     {
+      "provider": {
+       "id": "100",
+       "name": "DraftKings",
+       "active": 1,
+       "priority": 1
+      },
+      "books": [
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/3945274?lang=en&region=us"
+        },
+        "value": "+170"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/5104157?lang=en&region=us"
+        },
+        "value": "+190"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/4278073?lang=en&region=us"
+        },
+        "value": "+500"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/4065648?lang=en&region=us"
+        },
+        "value": "+1000"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/3112335?lang=en&region=us"
+        },
+        "value": "+1100"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/3032977?lang=en&region=us"
+        },
+        "value": "+3000"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/4431678?lang=en&region=us"
+        },
+        "value": "+4500"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/4432166?lang=en&region=us"
+        },
+        "value": "+5000"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": 2586,
+    "name": "NBA - Coach of the Year",
+    "futures": [
+     {
+      "provider": {
+       "id": "100",
+       "name": "DraftKings",
+       "active": 1,
+       "priority": 1
+      },
+      "books": [
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/5277133?lang=en&region=us"
+        },
+        "value": "+650"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/866?lang=en&region=us"
+        },
+        "value": "+750"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/3024?lang=en&region=us"
+        },
+        "value": "+1200"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/2613478?lang=en&region=us"
+        },
+        "value": "+1300"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/3116516?lang=en&region=us"
+        },
+        "value": "+1400"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/425?lang=en&region=us"
+        },
+        "value": "+3000"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/4661?lang=en&region=us"
+        },
+        "value": "+3500"
+       },
+       {
+        "athlete": {
+         "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/athletes/6809?lang=en&region=us"
+        },
+        "value": "+4000"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "athletes": {
+  "3945274": {
+   "id": "3945274",
+   "displayName": "Luka Doncic",
+   "headshot": {
+    "href": "https://a.espncdn.com/i/headshots/nba/players/full/3945274.png",
+    "alt": "Luka Doncic"
+   },
+   "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/13?lang=en&region=us"
+   }
+  },
+  "5104157": {
+   "id": "5104157",
+   "displayName": "Victor Wembanyama",
+   "headshot": {
+    "href": "https://a.espncdn.com/i/headshots/nba/players/full/5104157.png",
+    "alt": "Victor Wembanyama"
+   },
+   "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/24?lang=en&region=us"
+   }
+  },
+  "4278073": {
+   "id": "4278073",
+   "displayName": "Shai Gilgeous-Alexander",
+   "headshot": {
+    "href": "https://a.espncdn.com/i/headshots/nba/players/full/4278073.png",
+    "alt": "Shai Gilgeous-Alexander"
+   },
+   "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/25?lang=en&region=us"
+   }
+  },
+  "5277133": {
+   "id": "5277133",
+   "displayName": "Tuomas Iisalo",
+   "headshot": null,
+   "team": null
+  },
+  "866": {
+   "id": "866",
+   "displayName": "Ime Udoka",
+   "headshot": null,
+   "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/17?lang=en&region=us"
+   }
+  },
+  "3024": {
+   "id": "3024",
+   "displayName": "JJ Redick",
+   "headshot": {
+    "href": "https://a.espncdn.com/i/headshots/nba/players/full/3024.png",
+    "alt": "JJ Redick"
+   },
+   "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/6?lang=en&region=us"
+   }
+  }
+ }
+}

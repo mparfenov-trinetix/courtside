@@ -6,7 +6,7 @@ import Animated from 'react-native-reanimated';
 import { StarIcon } from '@/components';
 import { usePlayerGameLog, usePlayerStats } from '@/hooks';
 import { headshotUrl } from '@/lib/espn';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { useWatchlist, type WatchedPlayer } from '@/state';
 import { openDetail } from '@/navigation';
 
@@ -14,28 +14,22 @@ import { openDetail } from '@/navigation';
 export function Watchlist({ accent, teamId, teamAbbr }: { accent: string; teamId: string; teamAbbr?: string }) {
   const { players } = useWatchlist();
   const mine = players.filter((p) => p.teamId === teamId);
-  const others = players.length - mine.length;
-  if (players.length === 0) return null;
+  // Nothing to show when none of the starred players is on this team: the empty line was noise, and the full list is in the menu.
+  if (mine.length === 0) return null;
 
   return (
     <Animated.View style={styles.wrap}>
       <View style={styles.titleRow}>
-        <Text style={styles.title}>Watchlist{teamAbbr && mine.length > 0 ? ` · ${teamAbbr}` : ''}</Text>
+        <Text style={styles.title}>Watchlist{teamAbbr ? ` · ${teamAbbr}` : ''}</Text>
         <Pressable onPress={() => router.navigate('/watchlist' as Href)} hitSlop={8}>
           <Text style={[styles.viewAll, { color: accent }]}>All watched · {players.length}</Text>
         </Pressable>
       </View>
-      {mine.length > 0 ? (
-        <View style={styles.list}>
-          {mine.map((p) => (
-            <WatchRow key={p.id} player={p} accent={accent} />
-          ))}
-        </View>
-      ) : (
-        <Text style={styles.none}>
-          None of your {others} watched player{others === 1 ? '' : 's'} play for this team.
-        </Text>
-      )}
+      <View style={styles.list}>
+        {mine.map((p) => (
+          <WatchRow key={p.id} player={p} accent={accent} />
+        ))}
+      </View>
     </Animated.View>
   );
 }
@@ -108,15 +102,8 @@ function Stat({ value, label, strong, accent }: { value: number; label: string; 
 const styles = StyleSheet.create({
   wrap: { marginTop: 22, paddingHorizontal: 16 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 4 },
-  title: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: withAlpha(palette.chalk, 0.55),
-  },
+  title: { ...textStyle.sectionLabel },
   viewAll: { fontFamily: fonts.bodySemi, fontSize: 12 },
-  none: { fontFamily: fonts.body, fontSize: 13, color: palette.muted, paddingHorizontal: 4 },
   remove: { paddingLeft: 4 },
   list: { gap: 8 },
   row: {
@@ -125,7 +112,7 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 10,
     borderRadius: 16,
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
   avatar: { width: 46, height: 46, borderRadius: 23, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   img: { width: 54, height: 46 },

@@ -4,13 +4,22 @@ import Animated from 'react-native-reanimated';
 
 import { CupIcon } from '@/components';
 import { useCup } from '@/hooks';
+import type { Game } from '@/lib/espn';
+import { cupIsOn } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
-const GOLD = '#FBBF24';
+const GOLD = palette.gold;
 const ordinal = (n: number) => ['1st', '2nd', '3rd', '4th', '5th'][n - 1] ?? `${n}th`;
 
-/** Where a team stands in its NBA Cup group; nothing at all for teams not in the Cup or off-season. */
-export function MyCupCard({ teamId }: { teamId: string }) {
+/**
+ * Where a team stands in its NBA Cup group; nothing at all for teams not in the Cup or off-season. The Cup is only read while the team's own
+ * schedule says it is on (`cupIsOn`): reading it costs all thirty team schedules.
+ */
+export function MyCupCard({ teamId, schedule }: { teamId: string; schedule: Game[] | undefined }) {
+  return cupIsOn(schedule) ? <CupStanding teamId={teamId} /> : null;
+}
+
+function CupStanding({ teamId }: { teamId: string }) {
   const { cup } = useCup();
   const group = cup?.groups.find((g) => g.rows.some((r) => r.teamId === teamId));
   const row = group?.rows.find((r) => r.teamId === teamId);

@@ -104,6 +104,16 @@ function rankRows(accs: Acc[], games: CupGame[]): Acc[] {
   return out;
 }
 
+/**
+ * Whether the NBA Cup is worth reading for a team: one of its own games is a Cup game still to come, or finished within the last two weeks
+ * (the group tables and the knockout are in play, and just after). Reading the Cup means reading all thirty team schedules, so the team page
+ * asks its own schedule first: for most of the year there is no reason to.
+ */
+export function cupIsOn(schedule: { cup?: string; completed: boolean; date: string }[] | undefined, now: number = Date.now()): boolean {
+  const TWO_WEEKS = 14 * 24 * 3600_000;
+  return (schedule ?? []).some((g) => !!g.cup && (!g.completed || now - Date.parse(g.date) < TWO_WEEKS));
+}
+
 export function buildCup(games: CupGame[], conferenceOf: Record<string, Conference | undefined>): Cup {
   const groupGames = games.filter(isGroup);
   const knockout = games.filter((g) => !isGroup(g));

@@ -19,11 +19,13 @@ import { cardHeight, TeamCard } from '../TeamCard';
 import { motionOf, PULL_TO_REFRESH, useRefreshAnimation } from '../TeamRefresh';
 import { TeamHighlights } from '../TeamHighlights';
 import { TeamSeasonStats } from '../TeamSeasonStats';
+import { TeamStarCard } from '../TeamStarCard';
+import { TitleOdds } from '../TitleOdds';
 import { Watchlist } from '@/features/watchlist';
 import { useManualRefresh, useStandings, useTeam, useTeamDetail, useTeamSchedule, useTilt } from '@/hooks';
 import { conferenceStanding } from '@/lib/league';
 import type { Game } from '@/lib/espn';
-import { fonts, palette, teamTheme, withAlpha } from '@/lib/theme';
+import { fonts, palette, teamTheme, withAlpha, surfaces } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
 
 /**
@@ -92,7 +94,8 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
     return schedule
       .filter((g) => g.completed)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 8);
+      // Five: the form row above already says so, and a longer list pushed the season numbers and the rest far down the page.
+      .slice(0, 5);
   }, [schedule]);
 
   const isFavorite = !!team && team.id === favoriteTeamId;
@@ -210,14 +213,20 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
           <Split label="Arena" value={detail?.venue} wide />
         </Animated.View>
 
-        {/* What is coming first, then what is on today, then how the team has been doing; the season numbers come after. */}
+        {/* The page reads top down in two zones. What is on now: what is coming (and, on a rival's page, how it has gone against you), today's
+            scores, the Cup while it is on. Then the team itself: how good it is (the season numbers with league ranks), who carries it, how it has been doing,
+            the clips, the odds, your own lists. */}
         {schedule && schedule.length > 0 && <NextGame schedule={schedule} theme={theme} />}
+
+        {pushed && rival && schedule && <SeasonSeries schedule={schedule} team={team} rival={rival} accent={theme.accent} />}
 
         <ScoresStrip accent={theme.accent} highlightTeamId={team.id} />
 
-        <MyCupCard teamId={team.id} />
+        <MyCupCard teamId={team.id} schedule={schedule} />
 
-        {pushed && rival && schedule && <SeasonSeries schedule={schedule} team={team} rival={rival} accent={theme.accent} />}
+        <TeamSeasonStats teamId={team.id} accent={theme.accent} />
+
+        <TeamStarCard teamId={team.id} theme={theme} />
 
         {/* Recent games */}
         {completedGames.length > 0 && (
@@ -228,12 +237,22 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
             {completedGames.map((game, i) => (
               <GameRow key={game.id} game={game} index={i} />
             ))}
+            <Pressable
+              onPress={() => {
+                // The calendar follows the "current" team, so make this one current first (as the roster button does).
+                if (team.id !== currentTeamId) viewTeam(team.id);
+                router.navigate('/calendar' as never);
+              }}
+              accessibilityRole="button"
+              hitSlop={8}>
+              <Text style={[styles.fullSchedule, { color: theme.accent }]}>Full schedule ›</Text>
+            </Pressable>
           </Animated.View>
         )}
 
         <TeamHighlights games={completedGames} accent={theme.accent} />
 
-        <TeamSeasonStats teamId={team.id} accent={theme.accent} />
+        <TitleOdds teamId={team.id} accent={theme.accent} />
 
         <Watchlist accent={theme.accent} teamId={team.id} teamAbbr={team.abbreviation} />
 
@@ -291,9 +310,9 @@ function GameRow({ game, index }: { game: Game; index: number }) {
         <View
           style={[
             styles.resultBadge,
-            { backgroundColor: isWin ? withAlpha('#34D399', 0.15) : withAlpha('#F87171', 0.15) },
+            { backgroundColor: isWin ? withAlpha(palette.win, 0.15) : withAlpha(palette.loss, 0.15) },
           ]}>
-          <Text style={[styles.resultLetter, { color: isWin ? '#34D399' : '#F87171' }]}>
+          <Text style={[styles.resultLetter, { color: isWin ? palette.win : palette.loss }]}>
             {game.result}
           </Text>
           <Text style={[styles.resultScore, { color: palette.chalk }]}>
@@ -322,6 +341,7 @@ function GameRow({ game, index }: { game: Game; index: number }) {
 }
 
 const styles = StyleSheet.create({
+  fullSchedule: { fontFamily: fonts.bodySemi, fontSize: 14, textAlign: 'right', paddingTop: 4 },
   root: {
     flex: 1,
     overflow: 'hidden',
@@ -398,7 +418,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 16,
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
     gap: 12,
   },
   resultBadge: {

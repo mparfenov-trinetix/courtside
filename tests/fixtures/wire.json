@@ -1,0 +1,394 @@
+{
+ "injuries": {
+  "injuries": [
+   {
+    "id": "1",
+    "displayName": "Atlanta Hawks",
+    "injuries": [
+     {
+      "id": "537995",
+      "status": "Out",
+      "date": "2026-11-07T18:17Z",
+      "shortComment": "Gilbert (knee) is out for Saturday's game against Brooklyn.",
+      "details": {
+       "fantasyStatus": {
+        "description": "OUT",
+        "abbreviation": "OUT"
+       },
+       "type": "Knee",
+       "location": "Leg",
+       "detail": "Inflammation",
+       "side": "Left",
+       "returnDate": "2026-11-09"
+      },
+      "athlete": {
+       "displayName": "Keshon Gilbert",
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/4585618.png",
+        "alt": "Keshon Gilbert"
+       },
+       "position": {
+        "abbreviation": "G"
+       },
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nba/player/_/id/4585618/keshon-gilbert",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        }
+       ]
+      }
+     },
+     {
+      "id": "537994",
+      "status": "Out",
+      "date": "2026-11-07T18:16Z",
+      "shortComment": "Newell (toe)  is out for Saturday's game against the Nets.",
+      "details": {
+       "fantasyStatus": {
+        "description": "OUT",
+        "abbreviation": "OUT"
+       },
+       "type": "Toe",
+       "location": "Leg",
+       "side": "Left",
+       "returnDate": "2026-11-09"
+      },
+      "athlete": {
+       "displayName": "Asa Newell",
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/4873201.png",
+        "alt": "Asa Newell"
+       },
+       "position": {
+        "abbreviation": "F"
+       },
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nba/player/_/id/4873201/asa-newell",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        }
+       ]
+      }
+     },
+     {
+      "id": "537992",
+      "status": "Out",
+      "date": "2026-11-07T18:14Z",
+      "shortComment": "Landale (hip) has been ruled out for Saturday's game against the Nets.",
+      "details": {
+       "fantasyStatus": {
+        "description": "OUT",
+        "abbreviation": "OUT"
+       },
+       "type": "Hip",
+       "location": "Torso",
+       "side": "Left",
+       "returnDate": "2026-11-09"
+      },
+      "athlete": {
+       "displayName": "Jock Landale",
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/3146557.png",
+        "alt": "Jock Landale"
+       },
+       "position": {
+        "abbreviation": "C"
+       },
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nba/player/_/id/3146557/jock-landale",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "id": "17",
+    "displayName": "Brooklyn Nets",
+    "injuries": [
+     {
+      "id": "538069",
+      "status": "Out",
+      "date": "2026-11-08T04:04Z",
+      "shortComment": "Brown, who finished with 18 points (5-13 FG, 3-8 3Pt, 5-7 FT), one rebound, three assists and one steal over 25 minutes in Saturday's 124-121 loss to Atlanta, won't play in Sunday's game against Dallas, Erik Slater of ClutchPoints.com reports.",
+      "details": {
+       "fantasyStatus": {
+        "description": "OUT",
+        "abbreviation": "OUT"
+       },
+       "type": "Rest",
+       "location": "Other",
+       "returnDate": "2026-11-11"
+      },
+      "athlete": {
+       "displayName": "Mikel Brown Jr.",
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/5101761.png",
+        "alt": "Mikel Brown Jr."
+       },
+       "position": {
+        "abbreviation": "G"
+       },
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nba/player/_/id/5101761/mikel-brown-jr",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        }
+       ]
+      }
+     },
+     {
+      "id": "536676",
+      "status": "Out",
+      "date": "2026-10-29T17:09Z",
+      "shortComment": "The Nets exercised Demin's third-year team option for the 2027-28 season, Sharif Phillips-Keaton of USA Today reports Thursday.",
+      "details": {
+       "fantasyStatus": {
+        "description": "OUT",
+        "abbreviation": "OUT"
+       },
+       "type": "Leg",
+       "location": "Leg",
+       "detail": "Bruise",
+       "side": "Right",
+       "returnDate": "2026-11-11"
+      },
+      "athlete": {
+       "displayName": "Egor Demin",
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/5175643.png",
+        "alt": "Egor Demin"
+       },
+       "position": {
+        "abbreviation": "G"
+       },
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nba/player/_/id/5175643/egor-demin",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "id": "30",
+    "displayName": "Charlotte Hornets",
+    "injuries": [
+     {
+      "id": "-60501",
+      "status": "Day-To-Day",
+      "date": "2026-11-07T17:39Z",
+      "shortComment": "Diabate (quadriceps) has been ruled out for Friday's game against Boston, according to the Hornets' official injury report.",
+      "details": {
+       "fantasyStatus": {
+        "description": "GTD",
+        "abbreviation": "GTD"
+       },
+       "type": "Quadriceps",
+       "location": "Leg",
+       "returnDate": "2026-11-09"
+      },
+      "athlete": {
+       "displayName": "Moussa Diabate",
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/4433249.png",
+        "alt": "Moussa Diabate"
+       },
+       "position": {
+        "abbreviation": "F"
+       },
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nba/player/_/id/4433249/moussa-diabate",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        }
+       ]
+      }
+     },
+     {
+      "id": "537922",
+      "status": "Day-To-Day",
+      "date": "2026-11-07T04:27Z",
+      "shortComment": "Head coach Charles Lee said Miller (groin) will be re-evaluated over the weekend, and they expect to have more information by Monday, Steve Reed of The Associated Press reports.",
+      "details": {
+       "fantasyStatus": {
+        "description": "GTD",
+        "abbreviation": "GTD"
+       },
+       "type": "Groin",
+       "location": "Groin",
+       "detail": "Soreness",
+       "side": "Right",
+       "returnDate": "2026-11-09"
+      },
+      "athlete": {
+       "displayName": "Brandon Miller",
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/4433287.png",
+        "alt": "Brandon Miller"
+       },
+       "position": {
+        "abbreviation": "F"
+       },
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nba/player/_/id/4433287/brandon-miller",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        }
+       ]
+      }
+     },
+     {
+      "id": "537850",
+      "status": "Out",
+      "date": "2026-11-06T18:09Z",
+      "shortComment": "Schroder (thigh) is out for Friday's game versus Boston.",
+      "details": {
+       "fantasyStatus": {
+        "description": "OUT",
+        "abbreviation": "OUT"
+       },
+       "type": "Thigh",
+       "location": "Leg",
+       "returnDate": "2026-11-09"
+      },
+      "athlete": {
+       "displayName": "Dennis Schroder",
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nba/players/full/3032979.png",
+        "alt": "Dennis Schroder"
+       },
+       "position": {
+        "abbreviation": "G"
+       },
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nba/player/_/id/3032979/dennis-schroder",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        }
+       ]
+      }
+     }
+    ]
+   },
+   {
+    "id": "9",
+    "displayName": "Nobody Hurt",
+    "injuries": []
+   }
+  ]
+ },
+ "transactions": {
+  "count": 433,
+  "transactions": [
+   {
+    "date": "2026-11-07T08:00Z",
+    "description": "Signed G Richie Saunders to two-way contract.",
+    "team": {
+     "id": "29",
+     "displayName": "Memphis Grizzlies"
+    }
+   },
+   {
+    "date": "2026-11-05T08:00Z",
+    "description": "Signed G Kevin McCullar Jr. to a two-way contract.",
+    "team": {
+     "id": "28",
+     "displayName": "Toronto Raptors"
+    }
+   },
+   {
+    "date": "2026-11-05T08:00Z",
+    "description": "Signed F Norchad Omier to a two-way contract. Waived F Riley Minix.",
+    "team": {
+     "id": "5",
+     "displayName": "Cleveland Cavaliers"
+    }
+   },
+   {
+    "date": "2026-11-04T08:00Z",
+    "description": "Signed F Dalen Terry to a contract for the remainder of the season.",
+    "team": {
+     "id": "25",
+     "displayName": "Oklahoma City Thunder"
+    }
+   }
+  ]
+ }
+}

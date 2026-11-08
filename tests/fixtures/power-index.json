@@ -1,0 +1,416 @@
+{
+ "items": [
+  {
+   "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/24?lang=en&region=us"
+   },
+   "stats": [
+    {
+     "name": "bpi",
+     "displayName": "BPI",
+     "description": "Basketball Power Index that measures team\u2019s true strength on net points scale; expected point margin vs average opponent on neutral court.",
+     "abbreviation": "BPI",
+     "value": 8.711,
+     "displayValue": "8.711"
+    },
+    {
+     "name": "bpirank",
+     "displayName": "BPI RANK",
+     "description": "Basketball Power Index Rank vs all NBA teams",
+     "abbreviation": "bpiRank",
+     "value": 1.0,
+     "displayValue": "1st"
+    },
+    {
+     "name": "bpioffense",
+     "displayName": "BPI OFFENSE",
+     "description": "Offensive component of BPI. Offensive contribution to expected point margin vs average opponent on neutral court.",
+     "abbreviation": "Off",
+     "value": 4.213,
+     "displayValue": "4.213"
+    },
+    {
+     "name": "bpidefense",
+     "displayName": "BPI DEFENSE",
+     "description": "Defensive component of BPI. Defensive contribution to expected point margin vs average opponent on neutral court.",
+     "abbreviation": "Def",
+     "value": 4.498,
+     "displayValue": "4.498"
+    },
+    {
+     "name": "numwins",
+     "displayName": "NUM WINS",
+     "description": "Team\u2019s current wins record",
+     "abbreviation": "W",
+     "value": 8.0,
+     "displayValue": "8"
+    },
+    {
+     "name": "numlosses",
+     "displayName": "NUM LOSSES",
+     "description": "Team\u2019s losses record",
+     "abbreviation": "L",
+     "value": 2.0,
+     "displayValue": "2"
+    },
+    {
+     "name": "projectedw",
+     "displayName": "PROJ WINS",
+     "description": "Projected overall wins, accounting for results to date and BPI-based projections for remaining scheduled games.",
+     "abbreviation": "ProjW",
+     "value": 60.727,
+     "displayValue": "60.727"
+    },
+    {
+     "name": "projectedl",
+     "displayName": "PROJ LOSSES",
+     "description": "Projected overall losses, accounting for results to date and BPI-based projections for remaining scheduled games.",
+     "abbreviation": "ProjL",
+     "value": 21.273,
+     "displayValue": "21.273"
+    },
+    {
+     "name": "probmakeplayoffs",
+     "displayName": "PROB MAKE PLAYOFFS",
+     "description": "Chance to make the NBA playoffs, according to BPI.",
+     "abbreviation": "Playoffs%",
+     "value": 99.99,
+     "displayValue": ">99.9%"
+    },
+    {
+     "name": "probmaketitlegame",
+     "displayName": "PROB MAKE TITLE GAME",
+     "description": "Chance to make the NBA Finals, according to BPI.",
+     "abbreviation": "Finals%",
+     "value": 30.7,
+     "displayValue": "30.7%"
+    },
+    {
+     "name": "probwintitle",
+     "displayName": "PROB WIN TITLE",
+     "description": "Chance to win the NBA Finals, according to BPI.",
+     "abbreviation": "WinTitle%",
+     "value": 20.4,
+     "displayValue": "20.4%"
+    },
+    {
+     "name": "rank",
+     "displayName": "rank",
+     "description": "Rank",
+     "abbreviation": "RK",
+     "value": 1.0,
+     "displayValue": "1"
+    }
+   ]
+  },
+  {
+   "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/25?lang=en&region=us"
+   },
+   "stats": [
+    {
+     "name": "bpi",
+     "displayName": "BPI",
+     "description": "Basketball Power Index that measures team\u2019s true strength on net points scale; expected point margin vs average opponent on neutral court.",
+     "abbreviation": "BPI",
+     "value": 7.953,
+     "displayValue": "7.953"
+    },
+    {
+     "name": "bpirank",
+     "displayName": "BPI RANK",
+     "description": "Basketball Power Index Rank vs all NBA teams",
+     "abbreviation": "bpiRank",
+     "value": 2.0,
+     "displayValue": "2nd"
+    },
+    {
+     "name": "bpioffense",
+     "displayName": "BPI OFFENSE",
+     "description": "Offensive component of BPI. Offensive contribution to expected point margin vs average opponent on neutral court.",
+     "abbreviation": "Off",
+     "value": 1.637,
+     "displayValue": "1.637"
+    },
+    {
+     "name": "bpidefense",
+     "displayName": "BPI DEFENSE",
+     "description": "Defensive component of BPI. Defensive contribution to expected point margin vs average opponent on neutral court.",
+     "abbreviation": "Def",
+     "value": 6.316,
+     "displayValue": "6.316"
+    },
+    {
+     "name": "numwins",
+     "displayName": "NUM WINS",
+     "description": "Team\u2019s current wins record",
+     "abbreviation": "W",
+     "value": 8.0,
+     "displayValue": "8"
+    },
+    {
+     "name": "numlosses",
+     "displayName": "NUM LOSSES",
+     "description": "Team\u2019s losses record",
+     "abbreviation": "L",
+     "value": 2.0,
+     "displayValue": "2"
+    },
+    {
+     "name": "projectedw",
+     "displayName": "PROJ WINS",
+     "description": "Projected overall wins, accounting for results to date and BPI-based projections for remaining scheduled games.",
+     "abbreviation": "ProjW",
+     "value": 60.529,
+     "displayValue": "60.529"
+    },
+    {
+     "name": "projectedl",
+     "displayName": "PROJ LOSSES",
+     "description": "Projected overall losses, accounting for results to date and BPI-based projections for remaining scheduled games.",
+     "abbreviation": "ProjL",
+     "value": 21.471,
+     "displayValue": "21.471"
+    },
+    {
+     "name": "probmakeplayoffs",
+     "displayName": "PROB MAKE PLAYOFFS",
+     "description": "Chance to make the NBA playoffs, according to BPI.",
+     "abbreviation": "Playoffs%",
+     "value": 100.0,
+     "displayValue": ">99.9%"
+    },
+    {
+     "name": "probmaketitlegame",
+     "displayName": "PROB MAKE TITLE GAME",
+     "description": "Chance to make the NBA Finals, according to BPI.",
+     "abbreviation": "Finals%",
+     "value": 32.5,
+     "displayValue": "32.5%"
+    },
+    {
+     "name": "probwintitle",
+     "displayName": "PROB WIN TITLE",
+     "description": "Chance to win the NBA Finals, according to BPI.",
+     "abbreviation": "WinTitle%",
+     "value": 21.5,
+     "displayValue": "21.5%"
+    },
+    {
+     "name": "rank",
+     "displayName": "rank",
+     "description": "Rank",
+     "abbreviation": "RK",
+     "value": 2.0,
+     "displayValue": "2"
+    }
+   ]
+  },
+  {
+   "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/8?lang=en&region=us"
+   },
+   "stats": [
+    {
+     "name": "bpi",
+     "displayName": "BPI",
+     "description": "Basketball Power Index that measures team\u2019s true strength on net points scale; expected point margin vs average opponent on neutral court.",
+     "abbreviation": "BPI",
+     "value": 6.856,
+     "displayValue": "6.856"
+    },
+    {
+     "name": "bpirank",
+     "displayName": "BPI RANK",
+     "description": "Basketball Power Index Rank vs all NBA teams",
+     "abbreviation": "bpiRank",
+     "value": 3.0,
+     "displayValue": "3rd"
+    },
+    {
+     "name": "bpioffense",
+     "displayName": "BPI OFFENSE",
+     "description": "Offensive component of BPI. Offensive contribution to expected point margin vs average opponent on neutral court.",
+     "abbreviation": "Off",
+     "value": 1.455,
+     "displayValue": "1.455"
+    },
+    {
+     "name": "bpidefense",
+     "displayName": "BPI DEFENSE",
+     "description": "Defensive component of BPI. Defensive contribution to expected point margin vs average opponent on neutral court.",
+     "abbreviation": "Def",
+     "value": 5.4,
+     "displayValue": "5.400"
+    },
+    {
+     "name": "numwins",
+     "displayName": "NUM WINS",
+     "description": "Team\u2019s current wins record",
+     "abbreviation": "W",
+     "value": 6.0,
+     "displayValue": "6"
+    },
+    {
+     "name": "numlosses",
+     "displayName": "NUM LOSSES",
+     "description": "Team\u2019s losses record",
+     "abbreviation": "L",
+     "value": 2.0,
+     "displayValue": "2"
+    },
+    {
+     "name": "projectedw",
+     "displayName": "PROJ WINS",
+     "description": "Projected overall wins, accounting for results to date and BPI-based projections for remaining scheduled games.",
+     "abbreviation": "ProjW",
+     "value": 56.903,
+     "displayValue": "56.903"
+    },
+    {
+     "name": "projectedl",
+     "displayName": "PROJ LOSSES",
+     "description": "Projected overall losses, accounting for results to date and BPI-based projections for remaining scheduled games.",
+     "abbreviation": "ProjL",
+     "value": 25.097,
+     "displayValue": "25.097"
+    },
+    {
+     "name": "probmakeplayoffs",
+     "displayName": "PROB MAKE PLAYOFFS",
+     "description": "Chance to make the NBA playoffs, according to BPI.",
+     "abbreviation": "Playoffs%",
+     "value": 100.0,
+     "displayValue": ">99.9%"
+    },
+    {
+     "name": "probmaketitlegame",
+     "displayName": "PROB MAKE TITLE GAME",
+     "description": "Chance to make the NBA Finals, according to BPI.",
+     "abbreviation": "Finals%",
+     "value": 27.200000000000003,
+     "displayValue": "27.2%"
+    },
+    {
+     "name": "probwintitle",
+     "displayName": "PROB WIN TITLE",
+     "description": "Chance to win the NBA Finals, according to BPI.",
+     "abbreviation": "WinTitle%",
+     "value": 12.1,
+     "displayValue": "12.1%"
+    },
+    {
+     "name": "rank",
+     "displayName": "rank",
+     "description": "Rank",
+     "abbreviation": "RK",
+     "value": 3.0,
+     "displayValue": "3"
+    }
+   ]
+  },
+  {
+   "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2027/teams/2?lang=en&region=us"
+   },
+   "stats": [
+    {
+     "name": "bpi",
+     "displayName": "BPI",
+     "description": "Basketball Power Index that measures team\u2019s true strength on net points scale; expected point margin vs average opponent on neutral court.",
+     "abbreviation": "BPI",
+     "value": 6.042,
+     "displayValue": "6.042"
+    },
+    {
+     "name": "bpirank",
+     "displayName": "BPI RANK",
+     "description": "Basketball Power Index Rank vs all NBA teams",
+     "abbreviation": "bpiRank",
+     "value": 4.0,
+     "displayValue": "4th"
+    },
+    {
+     "name": "bpioffense",
+     "displayName": "BPI OFFENSE",
+     "description": "Offensive component of BPI. Offensive contribution to expected point margin vs average opponent on neutral court.",
+     "abbreviation": "Off",
+     "value": 3.391,
+     "displayValue": "3.391"
+    },
+    {
+     "name": "bpidefense",
+     "displayName": "BPI DEFENSE",
+     "description": "Defensive component of BPI. Defensive contribution to expected point margin vs average opponent on neutral court.",
+     "abbreviation": "Def",
+     "value": 2.651,
+     "displayValue": "2.651"
+    },
+    {
+     "name": "numwins",
+     "displayName": "NUM WINS",
+     "description": "Team\u2019s current wins record",
+     "abbreviation": "W",
+     "value": 7.0,
+     "displayValue": "7"
+    },
+    {
+     "name": "numlosses",
+     "displayName": "NUM LOSSES",
+     "description": "Team\u2019s losses record",
+     "abbreviation": "L",
+     "value": 2.0,
+     "displayValue": "2"
+    },
+    {
+     "name": "projectedw",
+     "displayName": "PROJ WINS",
+     "description": "Projected overall wins, accounting for results to date and BPI-based projections for remaining scheduled games.",
+     "abbreviation": "ProjW",
+     "value": 55.82,
+     "displayValue": "55.820"
+    },
+    {
+     "name": "projectedl",
+     "displayName": "PROJ LOSSES",
+     "description": "Projected overall losses, accounting for results to date and BPI-based projections for remaining scheduled games.",
+     "abbreviation": "ProjL",
+     "value": 26.18,
+     "displayValue": "26.180"
+    },
+    {
+     "name": "probmakeplayoffs",
+     "displayName": "PROB MAKE PLAYOFFS",
+     "description": "Chance to make the NBA playoffs, according to BPI.",
+     "abbreviation": "Playoffs%",
+     "value": 100.0,
+     "displayValue": ">99.9%"
+    },
+    {
+     "name": "probmaketitlegame",
+     "displayName": "PROB MAKE TITLE GAME",
+     "description": "Chance to make the NBA Finals, according to BPI.",
+     "abbreviation": "Finals%",
+     "value": 23.0,
+     "displayValue": "23%"
+    },
+    {
+     "name": "probwintitle",
+     "displayName": "PROB WIN TITLE",
+     "description": "Chance to win the NBA Finals, according to BPI.",
+     "abbreviation": "WinTitle%",
+     "value": 9.3,
+     "displayValue": "9.3%"
+    },
+    {
+     "name": "rank",
+     "displayName": "rank",
+     "description": "Rank",
+     "abbreviation": "RK",
+     "value": 4.0,
+     "displayValue": "4"
+    }
+   ]
+  }
+ ]
+}

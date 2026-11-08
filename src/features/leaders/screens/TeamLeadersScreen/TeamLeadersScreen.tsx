@@ -10,13 +10,19 @@ import { TEAM_METRICS } from '@/lib/league';
 import { palette } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
 import { StatPills } from '../../components';
+import { BpiPage } from './BpiPage';
 import { MetricPage } from './MetricPage';
 import { TAB_LABEL } from './constants';
 
 /** Moves of up to this many stats slide; further ones jump (sliding through half the list would mean drawing it). */
 const NEAR = 2;
 const JUMP_MS = 340;
-const LABELS = TEAM_METRICS.map((m) => TAB_LABEL[m.key] ?? m.short);
+/** The pager's pages: ESPN's power index first, then one page per team stat. */
+const PAGES: { key: string; label: string; metric?: (typeof TEAM_METRICS)[number] }[] = [
+  { key: 'bpi', label: 'BPI' },
+  ...TEAM_METRICS.map((m) => ({ key: m.key as string, label: TAB_LABEL[m.key] ?? m.short, metric: m })),
+];
+const LABELS = PAGES.map((p) => p.label);
 
 /**
  * Every team ranked by one stat. The stats are a pager like the rosters and the day view: swipe sideways, or tap a pill; the
@@ -26,8 +32,8 @@ const LABELS = TEAM_METRICS.map((m) => TAB_LABEL[m.key] ?? m.short);
 export function TeamLeadersScreen() {
   const { width } = useWindowDimensions();
   const { stat } = useLocalSearchParams<{ stat?: string }>();
-  const found = TEAM_METRICS.findIndex((m) => m.key === stat);
-  const index = found >= 0 ? found : Math.max(0, TEAM_METRICS.findIndex((m) => m.key === 'ppg'));
+  const found = PAGES.findIndex((p) => p.key === stat);
+  const index = found >= 0 ? found : Math.max(0, PAGES.findIndex((p) => p.key === 'ppg'));
   const currentTeamId = useScreenTeamStore((s) => s.currentTeamId);
   const { data: rows, isPending, error, refetch } = useLeagueTeamStats();
   const { data: teams } = useTeams();
@@ -66,18 +72,18 @@ export function TeamLeadersScreen() {
   }, [index, jumping, page, dip]);
 
   const onSettled = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const settled = Math.max(0, Math.min(TEAM_METRICS.length - 1, Math.round(e.nativeEvent.contentOffset.x / width)));
+    const settled = Math.max(0, Math.min(PAGES.length - 1, Math.round(e.nativeEvent.contentOffset.x / width)));
     if (settled === at.current) return;
     at.current = settled;
     Haptics.selectionAsync();
-    router.setParams({ stat: TEAM_METRICS[settled].key });
+    router.setParams({ stat: PAGES[settled].key });
   };
 
   return (
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
       <ScreenHeader title="Team Leaders" color={palette.chalk} />
 
-      <StatPills labels={LABELS} page={page} selected={index} onSelect={(i) => router.setParams({ stat: TEAM_METRICS[i].key })} />
+      <StatPills labels={LABELS} page={page} selected={index} onSelect={(i) => router.setParams({ stat: PAGES[i].key })} />
 
       {isPending ? (
         <ListSkeleton count={10} />
@@ -87,10 +93,10 @@ export function TeamLeadersScreen() {
         <Animated.View style={[styles.pager, dipStyle]}>
           <Animated.FlatList
             ref={pagerRef}
-            data={TEAM_METRICS}
+            data={PAGES}
             horizontal
             pagingEnabled
-            keyExtractor={(m) => m.key}
+            keyExtractor={(p) => p.key}
             showsHorizontalScrollIndicator={false}
             initialScrollIndex={index}
             getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
@@ -101,9 +107,13 @@ export function TeamLeadersScreen() {
             onScroll={onScroll}
             scrollEventThrottle={16}
             onMomentumScrollEnd={onSettled}
-            renderItem={({ item }) => (
-              <MetricPage metric={item} rows={rows ?? []} teams={teams} currentTeamId={currentTeamId} width={width} />
-            )}
+            renderItem={({ item }) =>
+              item.metric ? (
+                <MetricPage metric={item.metric} rows={rows ?? []} teams={teams} currentTeamId={currentTeamId} width={width} />
+              ) : (
+                <BpiPage teams={teams} currentTeamId={currentTeamId} width={width} />
+              )
+            }
           />
         </Animated.View>
       )}

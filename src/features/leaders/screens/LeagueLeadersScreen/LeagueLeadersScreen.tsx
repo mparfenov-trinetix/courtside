@@ -4,18 +4,19 @@ import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, V
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Chip, ErrorState, ListSkeleton, ScreenHeader } from '@/components';
+import { Chip, ErrorState, ListSkeleton, ScreenHeader, EmptyState } from '@/components';
 import { useLeaderCategory, useTeams, useRefresh } from '@/hooks';
 import type { LeaderCategory, LeaderEntry } from '@/lib/espn';
-import { Efficiency, HotCold } from '../../components';
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { AwardOdds, Efficiency, HotCold } from '../../components';
+import { fonts, palette, withAlpha, surfaces, teamTheme } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
 type Category = LeaderCategory;
-type Tab = Category | 'form' | 'eff';
+type Tab = Category | 'form' | 'eff' | 'odds';
 
 const TABS: { key: Tab; label: string; full: string }[] = [
   { key: 'form', label: 'HOT / COLD', full: 'Hot and cold' },
+  { key: 'odds', label: 'ODDS', full: 'Title and award odds' },
   { key: 'ppg', label: 'PPG', full: 'Points Per Game' },
   { key: 'rpg', label: 'RPG', full: 'Rebounds Per Game' },
   { key: 'apg', label: 'APG', full: 'Assists Per Game' },
@@ -39,7 +40,7 @@ export function LeagueLeadersScreen() {
   const [active, setActive] = useState<Tab>('ppg');
   const [displayCount, setDisplayCount] = useState(PAGE);
   // Only the open category is read (the form tabs read their own).
-  const own = active !== 'form' && active !== 'eff';
+  const own = active !== 'form' && active !== 'eff' && active !== 'odds';
   const { data, isPending, error, refetch } = useLeaderCategory(own ? active : 'ppg', 50, own);
   const refreshControl = useRefresh([['leaders']]);
   const { data: teams } = useTeams();
@@ -49,9 +50,9 @@ export function LeagueLeadersScreen() {
     setDisplayCount(PAGE);
   };
 
-  const allLeaders = (active === 'form' || active === 'eff' ? [] : data ?? []).map((entry) => {
+  const allLeaders = (active === 'form' || active === 'eff' || active === 'odds' ? [] : data ?? []).map((entry) => {
     const team = teams?.find((t) => t.id === entry.teamId);
-    return team ? { ...entry, teamAbbr: team.abbreviation, teamColor: team.color } : entry;
+    return team ? { ...entry, teamAbbr: team.abbreviation, teamColor: teamTheme(team).brand } : entry;
   });
   const leaders = allLeaders.slice(0, displayCount);
   const hasMore = displayCount < allLeaders.length;
@@ -79,6 +80,8 @@ export function LeagueLeadersScreen() {
 
       {active === 'form' ? (
         <HotCold abbrOf={(id) => teams?.find((t) => t.id === id)?.abbreviation} />
+      ) : active === 'odds' ? (
+        <AwardOdds />
       ) : active === 'eff' ? (
         <Efficiency abbrOf={(id) => teams?.find((t) => t.id === id)?.abbreviation} />
       ) : isPending ? (
@@ -86,10 +89,7 @@ export function LeagueLeadersScreen() {
       ) : error ? (
         <ErrorState message={error.message} onRetry={refetch} />
       ) : leaders.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>No stats yet</Text>
-          <Text style={styles.emptyText}>Leaders will appear once the season starts.</Text>
-        </View>
+        <EmptyState title="No stats yet" text="Leaders will appear once the season starts." placement="center" />
       ) : (
         <FlatList
           key={active}
@@ -178,24 +178,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 4,
   },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontFamily: fonts.displayBold,
-    fontSize: 28,
-    color: palette.chalk,
-  },
-  emptyText: {
-    fontFamily: fonts.body,
-    fontSize: 15,
-    color: palette.muted,
-    textAlign: 'center',
-  },
   footer: {
     paddingVertical: 16,
     alignItems: 'center',
@@ -214,7 +196,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 16,
-    backgroundColor: withAlpha('#FFFFFF', 0.05),
+    backgroundColor: surfaces.card,
   },
   rank: {
     width: 22,

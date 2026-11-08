@@ -9,4 +9,6 @@ export * from './TeamPills';
 export * from './TeamRefresh';
 export * from './TeamRoster';
 export * from './TeamSeasonStats';
+export * from './TeamStarCard';
 export * from './TeamSwitcher';
+export * from './TitleOdds';
