@@ -1,11 +1,9 @@
-import type { GameLogEntry } from '@/lib/espn';
+import { headshotUrl, type GameLogEntry } from '@/lib/espn';
 import { WATCHLIST_GAMES, WATCHLIST_PLAYERS } from './constants';
 import type { WatchlistGameProps, WatchlistPlayerProps, WatchlistProps } from './types';
 
 type WatchedGameLike = { id: string; date: string; away: { abbr: string; logo: string }; home: { abbr: string; logo: string } };
 
-/** ESPN's headshot for an athlete id (the same file the app shows). */
-const headshotOf = (id: string) => `https://a.espncdn.com/i/headshots/nba/players/full/${id}.png`;
 type SummaryLike = { live: boolean; completed: boolean; status: string; away: { score: number }; home: { score: number } };
 
 /**
@@ -53,7 +51,7 @@ export function buildWatchlistProps(
     return [
       {
         name: p.name,
-        avatar: headshotOf(p.id),
+        avatar: headshotUrl(p.id),
         line: `${last.pts} pts · ${last.reb} reb · ${last.ast} ast`,
         pts: String(last.pts),
         reb: String(last.reb),

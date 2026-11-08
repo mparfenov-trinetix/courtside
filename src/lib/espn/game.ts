@@ -1,5 +1,6 @@
 import { BASE, getJson, report } from './client';
 import type { Json } from './client';
+import { headshotUrl } from './legend-photos';
 import { normalizeVideos, type GameVideo } from './video';
 import { classifyGame, cupStage, seriesLine, type GameKind } from './common';
 import { normalizeTeam } from './teams';
@@ -179,7 +180,7 @@ export function normalizeGameSummary(json: Json, gameId: string): GameSummary {
         shortName: a.athlete?.shortName ?? a.athlete?.displayName ?? '',
         jersey: a.athlete?.jersey,
         position: a.athlete?.position?.abbreviation,
-        headshot: athleteId ? `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png` : undefined,
+        headshot: athleteId ? headshotUrl(athleteId) : undefined,
         starter: a.starter === true,
         didNotPlay: a.didNotPlay === true,
         stats: statsRecord((a.stats ?? []) as string[]),

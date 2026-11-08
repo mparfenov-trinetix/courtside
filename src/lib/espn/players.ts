@@ -1,3 +1,4 @@
+import { headshotUrl, legendPhoto } from './legend-photos';
 import { CORE, getJson } from './client';
 import type { Json } from './client';
 import { currentSeason, teamLogo } from './common';
@@ -144,8 +145,7 @@ export type PlayerSearchResult = {
   headshot: string;
 };
 
-export const headshotUrl = (athleteId: string) =>
-  `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png`;
+export { headshotUrl };
 
 /**
  * NBA players from ESPN's `search/v2` feed, in its own order (best known first). That feed searches every sport at once, so the
@@ -161,8 +161,9 @@ export function normalizePlayerSearch(json: Json): PlayerSearchResult[] {
     .flatMap((g): Json[] => g.contents ?? [])
     .flatMap((c): PlayerSearchResult[] => {
       const id = /~l:46~a:(\d+)$/.exec(String(c.uid ?? ''))?.[1];
-      // Only players ESPN has a photo of: the ones without are the unknowns (a few games decades ago, a two-way signing never played).
-      const photo = c.image?.default ? String(c.image.default) : '';
+      // Only players with a photo: ESPN's, or NBA.com's for a legend ESPN has none of (Jordan, Iverson). The ones with neither are the
+      // unknowns (a few games decades ago, a two-way signing never played).
+      const photo = c.image?.default ? String(c.image.default) : id ? (legendPhoto(id) ?? '') : '';
       if (!id || seen.has(id) || !c.displayName || !photo) return [];
       seen.add(id);
       return [{ id, name: String(c.displayName), teamName: c.subtitle ? String(c.subtitle) : undefined, headshot: photo }];
@@ -173,6 +174,16 @@ export async function searchPlayers(query: string): Promise<PlayerSearchResult[]
   const q = encodeURIComponent(query.trim());
   const json = await getJson(`https://site.web.api.espn.com/apis/search/v2?query=${q}&type=player&limit=50`);
   return normalizePlayerSearch(json);
+}
+
+const sameName = (a: string, b: string) => a.toLowerCase().replace(/[^a-z]/g, '') === b.toLowerCase().replace(/[^a-z]/g, '');
+
+/**
+ * The NBA player with exactly this name in ESPN's player search (id and photo), or null. Used where a record only knows a name: a draft
+ * pick before 2019 links to a college page, whose id is not his NBA id. Someone ESPN has no photo of is not found (see `normalizePlayerSearch`).
+ */
+export async function findPlayerByName(name: string): Promise<PlayerSearchResult | null> {
+  return (await searchPlayers(name)).find((r) => sameName(r.name, name)) ?? null;
 }
 
 export type CareerRow = {

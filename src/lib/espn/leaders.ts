@@ -1,6 +1,7 @@
 import { CORE, getJson, report } from './client';
 import type { Json } from './client';
 import { currentSeason } from './common';
+import { headshotUrl } from './legend-photos';
 
 export type LeaderEntry = {
   athleteId: string;
@@ -65,13 +66,13 @@ function athleteOf(ref: string): Promise<AthleteInfo> {
           athleteId,
           name: data.displayName ?? data.fullName ?? 'Unknown',
           shortName: data.shortName ?? data.displayName ?? '',
-          headshot: data.headshot?.href ?? (athleteId ? `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png` : undefined),
+          headshot: data.headshot?.href ?? (athleteId ? headshotUrl(athleteId) : undefined),
         };
       })
       .catch((): AthleteInfo => {
         athletes.delete(ref);
         const athleteId = ref.match(/athletes\/(\d+)/)?.[1] ?? '';
-        return { athleteId, name: 'Unknown', shortName: '', headshot: athleteId ? `https://a.espncdn.com/i/headshots/nba/players/full/${athleteId}.png` : undefined };
+        return { athleteId, name: 'Unknown', shortName: '', headshot: athleteId ? headshotUrl(athleteId) : undefined };
       });
     athletes.set(ref, known);
   }
