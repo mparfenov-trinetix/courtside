@@ -35,7 +35,7 @@ export function GameLogos({
   awaySlot: SharedValue<LogoSlot>;
   homeSlot: SharedValue<LogoSlot>;
   hasStarted: boolean;
-  /** The team is in the bonus this period (live games): a light gold "B" sits at the logo's bottom left until the header collapses. */
+  /** The team is in the bonus this period (live games): a light gold "B" sits at the logo's inner bottom corner (the side facing the score) until the header collapses. */
   awayBonus: boolean;
   homeBonus: boolean;
   /** With `origin`, names the logos that fly in from the list this game was opened from. */
@@ -106,7 +106,12 @@ function Logo({
         </Animated.View>
       </Pressable>
       {bonus ? (
-        <Animated.View pointerEvents="none" style={[styles.bonus, badge]} accessible accessibilityLabel={`${team.team.abbreviation} in the bonus`}>
+        <Animated.View
+          pointerEvents="none"
+          // Away (left of the score) wears it at the logo's bottom right, home (right of the score) at its bottom left: always the corner nearest the score.
+          style={[styles.bonus, side === -1 ? styles.bonusInnerRight : styles.bonusInnerLeft, badge]}
+          accessible
+          accessibilityLabel={`${team.team.abbreviation} in the bonus`}>
           <Text style={styles.bonusText}>B</Text>
         </Animated.View>
       ) : null}
@@ -116,7 +121,9 @@ function Logo({
 
 const styles = StyleSheet.create({
   logo: { position: 'absolute', left: 0, top: 0, width: HERO_LOGO, height: HERO_LOGO },
-  // Small light-gold disc with a dark B, overlapping the logo's bottom-left corner.
-  bonus: { position: 'absolute', left: -3, bottom: -3, width: 15, height: 15, borderRadius: 8, backgroundColor: '#FDE68A', alignItems: 'center', justifyContent: 'center' },
+  // A light-gold rounded square (not a disc) with a dark B, overlapping the logo's inner bottom corner.
+  bonus: { position: 'absolute', bottom: -3, width: 19, height: 16, borderRadius: 6, backgroundColor: '#FDE68A', alignItems: 'center', justifyContent: 'center' },
+  bonusInnerLeft: { left: -4 },
+  bonusInnerRight: { right: -4 },
   bonusText: { fontFamily: fonts.displayBold, fontSize: 11, lineHeight: 13, color: '#5B4300' },
 });

@@ -20,7 +20,8 @@ import type { LiveGameProps } from '@/lib/widgets';
 /**
  * The live score of one game, on the lock screen and in the Dynamic Island. The banner is split in the two teams' own
  * colors, each side with its crest and a big score (the leader's brighter); the clock sits between them with a "DET TO"
- * pill during a timeout. A light gold "B" on a crest means that team is in the bonus.
+ * pill during a timeout. A light gold rounded-square "B" on a crest's inner bottom corner (the one nearest the score) means that team
+ * is in the bonus.
  * Runs in the activity's own runtime: pure, synchronous, and nothing outside this function but the imports above.
  */
 const LiveGameLayout = (props: LiveGameProps, environment: LiveActivityEnvironment) => {
@@ -39,18 +40,19 @@ const LiveGameLayout = (props: LiveGameProps, environment: LiveActivityEnvironme
       <Text modifiers={[font({ size: size * 0.38, weight: 'heavy' }), foregroundStyle(white), frame({ width: size, height: size })]}>{abbr}</Text>
     );
 
-  // The crest with a small gold "B" at its bottom left when the team is in the bonus.
-  const mark = (file: string, abbr: string, size: number, bonus: boolean) =>
+  // The crest with a small gold rounded-square "B" at its inner bottom corner when the team is in the bonus: bottom right for the away
+  // crest (on the left, the score to its right), bottom left for the home crest. The same badge as the game page's header.
+  const mark = (file: string, abbr: string, size: number, bonus: boolean, away: boolean) =>
     bonus ? (
-      <ZStack alignment="bottomLeading">
+      <ZStack alignment={away ? 'bottomTrailing' : 'bottomLeading'}>
         {crest(file, abbr, size)}
         <Text
           modifiers={[
             font({ size: size * 0.26, weight: 'semibold' }),
             foregroundStyle('#5B4300'),
-            frame({ width: size * 0.32, height: size * 0.32 }),
+            frame({ width: size * 0.38, height: size * 0.32 }),
             background(lightGold),
-            clipShape('circle'),
+            clipShape('roundedRectangle', size * 0.1),
           ]}>
           B
         </Text>
@@ -101,12 +103,12 @@ const LiveGameLayout = (props: LiveGameProps, environment: LiveActivityEnvironme
   // One team: crest, name and a big score. `leading` puts the crest on the outer edge.
   const side = (abbr: string, file: string, value: string, leads: boolean, bonus: boolean, text: string, size: number, leading: boolean) => (
     <HStack spacing={10}>
-      {leading ? mark(file, abbr, size, bonus) : null}
+      {leading ? mark(file, abbr, size, bonus, true) : null}
       <VStack spacing={1} alignment={leading ? 'leading' : 'trailing'}>
         {name(abbr, text, 12)}
         {score(value, leads, size * 0.8)}
       </VStack>
-      {leading ? null : mark(file, abbr, size, bonus)}
+      {leading ? null : mark(file, abbr, size, bonus, false)}
     </HStack>
   );
 
