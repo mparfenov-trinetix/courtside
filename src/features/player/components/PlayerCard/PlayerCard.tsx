@@ -245,7 +245,7 @@ export function PlayerCard({
                   const value = stats?.[s.key];
                   const rank = ranks?.[s.key];
                   return (
-                    <View key={s.key} style={[styles.stat, i > 0 && { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: withAlpha(theme.onPrimary, 0.25) }]}>
+                    <View key={s.key} style={[styles.stat, i > 0 && { borderLeftWidth: 1, borderLeftColor: withAlpha(theme.onPrimary, 0.45) }]}>
                       {pending ? (
                         <Skeleton width={30} height={18} radius={5} style={[styles.statSkeleton, { backgroundColor: withAlpha(theme.onPrimary, 0.2) }]} />
                       ) : (
