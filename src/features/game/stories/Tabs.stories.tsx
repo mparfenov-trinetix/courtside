@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 
-import { BoxScoreTab, PlayByPlay, ShotChart, GameStickyBar, type GameTab } from '../components';
+import { BoxScoreTab, LegendSheet, PlayByPlay, ShotChart, GameStickyBar, type GameTab } from '../components';
 import { buildPeriodOptions } from '@/lib/game';
 import { mix, palette } from '@/lib/theme';
 import { away, awayColor, home, homeColor, plays } from '@/storybook/fixtures';
@@ -46,6 +46,7 @@ export const BoxScore: Story = {
         filtered={false}
         periodLabel="Full"
         hasStarted
+        completed
         derived={null}
         selPeriods={null}
       />
@@ -69,3 +70,6 @@ export const Shots: Story = {
     </ScrollView>
   ),
 };
+
+/** The box score legend bottom sheet: the column names, the rating's note and its colors. */
+export const BoxScoreLegend: Story = { render: () => <LegendSheet visible onClose={() => {}} /> };

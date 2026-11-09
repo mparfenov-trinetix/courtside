@@ -37,3 +37,22 @@ export const textStyle = {
   /** What an empty or failed screen says under it. */
   emptyText: { fontFamily: fonts.body, fontSize: fontSize.large - 1, color: palette.muted, textAlign: 'center' },
 } as const;
+
+/**
+ * The Courtside Rating's colors, a solid square per band of the 1-10 scale: under 6 red, 6-7 orange, 7-8 green, 8-9 light blue, 9 and up a
+ * solid blue. The red and the green are the app's loss and win; the others are this scale's own.
+ */
+const RATING_BANDS: { from: number; background: string }[] = [
+  { from: 9, background: '#2563EB' },
+  { from: 8, background: '#60C5F1' },
+  { from: 7, background: "#00A86B" },
+  { from: 6, background: '#FB923C' },
+  { from: -Infinity, background: "#B22222" },
+];
+
+/** The square behind a rating and the text on it (white on every band, as the user asked). The rating is rounded to the tenth first, so 5.96 (shown as 6.0) is orange, not red. */
+export function ratingTone(rating: number): { background: string; text: string } {
+  const shown = Math.round(rating * 10) / 10;
+  const background = (RATING_BANDS.find((b) => shown >= b.from) ?? RATING_BANDS[RATING_BANDS.length - 1]).background;
+  return { background, text: '#FFFFFF' };
+}

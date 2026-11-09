@@ -3,11 +3,12 @@ import type { Line } from './quarter-stats';
 
 // ─── Box score columns ────────────────────────────────────────────────────────
 
-export const COLS = ['MIN', 'PTS', 'REB', 'AST', 'TO', 'STL', 'BLK', '3PT', 'FG', 'FT', 'PF', '+/-'] as const;
+/** `CR` (Courtside Rating, the app's own 1-10 rating, from Game Score) comes first so it is on screen without scrolling the stats sideways. */
+export const COLS = ['CR', 'MIN', 'PTS', 'REB', 'AST', 'TO', 'STL', 'BLK', '3PT', 'FG', 'FT', 'PF', '+/-'] as const;
 export type Col = (typeof COLS)[number];
 
 export const COL_W: Record<Col, number> = {
-  MIN: 40, PTS: 38, REB: 38, AST: 38, TO: 34, STL: 34, BLK: 34, '3PT': 50, FG: 56, FT: 50, PF: 30, '+/-': 42,
+  MIN: 40, PTS: 38, REB: 38, AST: 38, TO: 34, STL: 34, BLK: 34, '3PT': 50, FG: 56, FT: 50, PF: 30, '+/-': 42, CR: 32,
 };
 
 // ─── Period selection ─────────────────────────────────────────────────────────

@@ -290,6 +290,7 @@ export function GameScreen() {
               filtered={filtered}
               periodLabel={option.label}
               hasStarted={hasStarted}
+              completed={completed}
               derived={derived}
               selPeriods={selPeriods}
               background={mix(base, awayColor, 0.14)}

@@ -184,6 +184,17 @@ export function DraftIcon({ size = 22, color }: IconProps) {
   );
 }
 
+/** A circle with an "i": more information (the box score legend). */
+export function InfoIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx={12} cy={12} r={9} {...stroke(color)} />
+      <Path d="M12 11v5.5" {...stroke(color)} />
+      <Circle cx={12} cy={7.8} r={0.6} {...stroke(color)} />
+    </Svg>
+  );
+}
+
 /** A folded newspaper: headline bar, a picture block and lines of text. */
 export function NewsIcon({ size = 22, color }: IconProps) {
   return (

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import { normalizeGameSummary, normalizePlayerSearch } from '../src/lib/espn';
-import { shotsOf, timeoutInProgress, buildFourFactors, deriveFlow, deriveQuarterStats, sumLineups, sumPeriods } from '../src/lib/game';
+import { formatGameScore, formatRating, gameRating, gameScore, positionName, ratingOf, shotsOf, timeoutInProgress, buildFourFactors, deriveFlow, deriveQuarterStats, sumLineups, sumPeriods } from '../src/lib/game';
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/game-final.json', import.meta.url), 'utf8'));
 const game = normalizeGameSummary(fixture, '401909912');
@@ -256,4 +256,75 @@ test('player search: only NBA rows with a photo, retired players included, other
   );
   assert.match(found[0].headshot, /players\/full\/261\.png$/);
   assert.deepEqual(normalizePlayerSearch({}), []);
+});
+
+test("Game Score: Hollinger's formula over a box score line", () => {
+  // A real line: 22 pts on 8-16 FG and 4-5 FT, 5 reb (all defensive), 5 ast, 3 TO, 1 stl, 0 blk, 1 PF.
+  const line = { MIN: '33', PTS: '22', FG: '8-16', '3PT': '2-5', FT: '4-5', REB: '5', AST: '5', TO: '3', STL: '1', BLK: '0', OREB: '0', DREB: '5', PF: '1' };
+  assert.ok(Math.abs(gameScore(line)! - 16.2) < 1e-9);
+  assert.equal(formatGameScore(gameScore(line)), '16.2');
+  // Offensive rebounds count for more than defensive ones, blocks and assists for 0.7, a bad shooting night goes negative.
+  assert.ok(Math.abs(gameScore({ ...line, OREB: '2', DREB: '3' })! - (16.2 + 1.4 - 0.6)) < 1e-9);
+  assert.ok(gameScore({ PTS: '2', FG: '1-12', FT: '0-0', TO: '4', PF: '5' })! < 0);
+  // Someone who did not play has no line, so no score.
+  assert.equal(gameScore({}), undefined);
+  assert.equal(formatGameScore(undefined), '–');
+});
+
+test('Game Score: every player who played in the fixture has one, and the best game is a big scorer', () => {
+  const played = [...home.starters, ...home.bench, ...away.starters, ...away.bench].filter((p) => !p.didNotPlay);
+  const scores = played.map((p) => ({ p, score: gameScore(p.stats) }));
+  assert.ok(scores.every((s) => s.score !== undefined && Number.isFinite(s.score)));
+  const best = scores.reduce((a, b) => (b.score! > a.score! ? b : a));
+  assert.ok(best.score! > 20);
+  assert.ok(Number(best.p.stats.PTS) >= 20);
+});
+
+test('rating: Game Score on a 1-10 scale, 5 already a bad game, 7 a typical one, 8 very good, 10 a monster', () => {
+  assert.equal(ratingOf(-50), 1);
+  assert.equal(ratingOf(0), 5);
+  assert.equal(ratingOf(10), 7);
+  assert.equal(ratingOf(16), 8);
+  assert.equal(ratingOf(25), 9);
+  assert.equal(ratingOf(38), 10);
+  assert.equal(ratingOf(60), 10);
+  // Straight lines between the points, and never a lower rating for a better game.
+  assert.ok(Math.abs(ratingOf(7.5) - 6.5) < 1e-9);
+  for (let s = -12; s < 45; s += 0.5) assert.ok(ratingOf(s + 0.5) >= ratingOf(s));
+  // 40 points, 10 rebounds and 10 assists on good shooting is a 10 (or within a whisker of it).
+  const monster = { MIN: '38', PTS: '40', FG: '15-24', FT: '8-9', OREB: '2', DREB: '8', AST: '10', STL: '2', BLK: '0', PF: '2', TO: '3' };
+  assert.ok(gameRating(monster)! >= 9.7);
+  // The same stats on 14-for-35 shooting are worth less.
+  assert.ok(gameRating({ ...monster, FG: '14-35' })! < gameRating(monster)! - 0.5);
+});
+
+test('rating: no rating for a player who did not play or only had a few minutes, one decimal otherwise', () => {
+  const line = { MIN: '33', PTS: '22', FG: '8-16', FT: '4-5', REB: '5', AST: '5', TO: '3', STL: '1', BLK: '0', OREB: '0', DREB: '5', PF: '1' };
+  assert.equal(formatRating(gameRating(line)), '8.0');
+  assert.equal(gameRating({ ...line, MIN: '3' }), undefined);
+  assert.equal(gameRating({ ...line, MIN: '--' }), undefined);
+  assert.equal(gameRating({}), undefined);
+  assert.equal(formatRating(undefined), '–');
+});
+
+test('rating: in the fixture game a typical rotation player lands between 6 and 8, and the best game is 8 or more', () => {
+  const rated = [...home.starters, ...home.bench, ...away.starters, ...away.bench].flatMap((p) => gameRating(p.stats) ?? []);
+  assert.ok(rated.length >= 14);
+  const mean = rated.reduce((a, b) => a + b, 0) / rated.length;
+  assert.ok(mean >= 6 && mean <= 8, `mean ${mean}`);
+  assert.ok(Math.max(...rated) >= 8);
+  assert.ok(Math.min(...rated) >= 1);
+});
+
+test('positions are written out for the default box score view', () => {
+  assert.equal(positionName('G'), 'Guard');
+  assert.equal(positionName('F'), 'Forward');
+  assert.equal(positionName('C'), 'Center');
+  assert.equal(positionName('PG'), 'Point Guard');
+  assert.equal(positionName('F-C'), 'Forward-Center');
+  assert.equal(positionName('G-F'), 'Guard-Forward');
+  assert.equal(positionName('GF'), 'Guard-Forward');
+  assert.equal(positionName('NA'), 'NA');
+  assert.equal(positionName(''), undefined);
+  assert.equal(positionName(undefined), undefined);
 });
