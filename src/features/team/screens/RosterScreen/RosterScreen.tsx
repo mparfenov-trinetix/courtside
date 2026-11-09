@@ -27,7 +27,7 @@ const JUMP_MS = 340;
 const STEADY_MS = 120;
 const ROSTER_STALE_MS = 6 * 60 * 60 * 1000;
 
-/** Every team's roster, one page per team: swipe sideways, tap a pill, or use the arrows to move between them. */
+/** The Teams screen: every team's roster, one page per team: swipe sideways, tap a pill, or use the arrows to move between them. */
 export function RosterScreen() {
   const { data: teams } = useTeams();
   const { currentTeamId, favoriteTeamId } = useScreenTeamStore();
@@ -35,7 +35,7 @@ export function RosterScreen() {
   if (!teams) {
     return (
       <View style={styles.root}>
-        <ScreenHeader title="Rosters" />
+        <ScreenHeader title="Teams" />
         <ListSkeleton count={10} />
       </View>
     );
@@ -154,7 +154,7 @@ function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
 
   return (
     <Animated.View style={[styles.root, background]}>
-      <ScreenHeader title="Rosters" />
+      <ScreenHeader title="Teams" />
 
       <View style={styles.strip}>
         <TeamPills teams={teams} page={page} jump={{ from: jumpFrom, to: jumpTo, blend: jumpBlend }} selected={index} onSelect={goTo} />

@@ -1,14 +1,16 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ErrorState, Card } from '@/components';
+import { ChevronIcon, ErrorState, Card } from '@/components';
 import { RosterSkeleton } from './RosterSkeleton';
 import { useRefresh, useRoster } from '@/hooks';
 import type { Player, Team } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha, type TeamTheme, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
+import { useTeamStore } from '@/state';
 
 /**
  * One team's roster page: its banner, head coach and players. It has no background of its own: the pager paints
@@ -24,6 +26,14 @@ export function TeamRoster({ team, width, active, rows }: { team: Team; width: n
   const { data, isPending, error, refetch } = useRoster(active ? team.id : undefined);
   const refreshControl = useRefresh([['roster', team.id]]);
 
+  // The banner is the way into the team's own page: make it the team being viewed and show its card.
+  const viewTeam = useTeamStore((s) => s.viewTeam);
+  const openTeam = () => {
+    Haptics.selectionAsync();
+    viewTeam(team.id);
+    router.navigate('/home');
+  };
+
   const openPlayer = (player: Player) => {
     Haptics.selectionAsync();
     openDetail({ pathname: '/player/[id]', params: { id: player.id, teamId: team.id } });
@@ -31,18 +41,25 @@ export function TeamRoster({ team, width, active, rows }: { team: Team; width: n
 
   return (
     <View style={[styles.page, { width }]}>
-      <Card team={theme} padded={false} radius={18} style={styles.banner}>
-        {/* On a light disc, so a logo that shares the team's color (Houston's red) never disappears into the banner. */}
-        <View style={styles.bannerBadge}>
-          <Image source={team.logo} style={styles.bannerLogo} contentFit="contain" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.bannerTitle, { color: theme.onPrimary }]}>{team.displayName}</Text>
-          <Text style={[styles.bannerSub, { color: withAlpha(theme.onPrimary, 0.75) }]}>
-            {data ? `${data.players.length} players` : ' '}
-          </Text>
-        </View>
-      </Card>
+      <Pressable
+        onPress={openTeam}
+        accessibilityRole="button"
+        accessibilityLabel={`${team.displayName}, open the team page`}
+        style={({ pressed }) => pressed && { opacity: 0.85 }}>
+        <Card team={theme} padded={false} radius={18} style={styles.banner}>
+          {/* On a light disc, so a logo that shares the team's color (Houston's red) never disappears into the banner. */}
+          <View style={styles.bannerBadge}>
+            <Image source={team.logo} style={styles.bannerLogo} contentFit="contain" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.bannerTitle, { color: theme.onPrimary }]}>{team.displayName}</Text>
+            <Text style={[styles.bannerSub, { color: withAlpha(theme.onPrimary, 0.75) }]}>
+              {data ? `${data.players.length} players · Team page` : ' '}
+            </Text>
+          </View>
+          <ChevronIcon color={withAlpha(theme.onPrimary, 0.75)} />
+        </Card>
+      </Pressable>
 
       {error && rows ? (
         <ErrorState message={error.message} onRetry={refetch} />

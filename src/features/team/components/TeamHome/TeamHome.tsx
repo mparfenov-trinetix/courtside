@@ -259,9 +259,9 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         {/* Roster button */}
         <Pressable
           onPress={() => {
-            // The roster screen follows the "current" team, so make this one current first.
+            // The Teams screen follows the "current" team, so make this one current first.
             if (team.id !== currentTeamId) viewTeam(team.id);
-            router.navigate('/roster');
+            router.navigate('/teams');
           }}
           accessibilityRole="button"
           style={({ pressed }) => [

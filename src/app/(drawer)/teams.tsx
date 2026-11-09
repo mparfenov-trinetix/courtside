@@ -1,1 +1,1 @@
-export { TeamsScreen as default } from '@/features/team';
+export { RosterScreen as default } from '@/features/team';

@@ -67,6 +67,7 @@ export function TeamPills({
       showsHorizontalScrollIndicator={false}
       onScroll={onScroll}
       scrollEventThrottle={16}
+      bounces={false}
       // Opens with the selected team in the middle.
       onLayout={(e) => layout(e.nativeEvent.layout.width, selected)}
       style={styles.strip}

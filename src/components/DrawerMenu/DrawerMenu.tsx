@@ -32,14 +32,13 @@ export const SECTIONS: MenuSection[] = [
     ],
   },
   {
-    // The whole league: tables, leaderboards (players, and teams ranked by a team stat), every roster and a way to put two players or teams side by side.
+    // The whole league: tables, leaderboards (players, and teams ranked by a team stat), every team's roster (the Teams pager) and a way to put two players or teams side by side.
     title: 'League',
     items: [
       { route: 'standings', href: '/standings', label: 'Standings', Icon: StandingsIcon },
       { route: 'league-leaders', href: '/league-leaders', label: 'Player leaders', Icon: TrophyIcon },
       { route: 'team-leaders', href: '/team-leaders' as Href, label: 'Team leaders', Icon: PodiumIcon },
-      { route: 'roster', href: '/roster', label: 'Rosters', Icon: PeopleIcon },
-      { route: 'teams', href: '/teams', label: 'Teams', Icon: GridIcon },
+      { route: 'teams', href: '/teams', label: 'Teams', Icon: PeopleIcon },
       { route: 'compare', href: '/compare' as Href, label: 'Compare', Icon: CompareIcon },
       { route: 'wire', href: '/wire' as Href, label: 'League wire', Icon: WireIcon },
     ],
