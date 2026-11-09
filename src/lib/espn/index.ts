@@ -33,6 +33,18 @@ export {
   type AllStarWeekend,
 } from './all-star';
 export {
+  AWARDS_FROM,
+  awardAthleteIds,
+  awardSeasons,
+  fetchSeasonAwards,
+  normalizeSeasonAwards,
+  type Award,
+  type AwardGroup,
+  type AwardGroupKey,
+  type AwardWinner,
+  type SeasonAwards,
+} from './awards';
+export {
   articleBlocks,
   fetchArticle,
   fetchNews,

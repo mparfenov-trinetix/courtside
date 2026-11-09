@@ -9,6 +9,7 @@ import {
   fetchAllStars,
   fetchAllStarWeekend,
   fetchDraft,
+  fetchSeasonAwards,
   fetchNews,
   fetchArticle,
   fetchFutures,
@@ -509,6 +510,16 @@ export function useArticle(id: string) {
       return article;
     },
     staleTime: Infinity,
+  });
+}
+
+/** One season's awards: the winners of each award and the All-NBA, All-Defensive and All-Rookie teams. A past season never changes (kept for good, and on disk). */
+export function useSeasonAwards(season: number) {
+  return useQuery({
+    queryKey: ['seasonAwards', season],
+    queryFn: () => fetchSeasonAwards(season),
+    staleTime: season >= currentSeason() ? HOUR : Infinity,
+    gcTime: Infinity,
   });
 }
 

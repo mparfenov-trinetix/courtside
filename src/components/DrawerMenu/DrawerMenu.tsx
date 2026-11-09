@@ -13,7 +13,7 @@ import { fonts, logoOn, mix, palette, teamTheme, withAlpha, surfaces } from '@/l
 import { pushOnce, returningFromDetail } from '@/navigation';
 import { useTeamStore } from '@/state';
 import { Glass } from '../Glass';
-import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, DraftIcon, GridIcon, NewsIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon, WireIcon } from '../Icons';
+import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, DraftIcon, GridIcon, MedalIcon, NewsIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon, WireIcon } from '../Icons';
 import { NbaLogo } from '../NbaLogo';
 import { DRAWER_WIDTH, SCENE_RADIUS, type MenuSection } from './constants';
 
@@ -51,6 +51,7 @@ export const SECTIONS: MenuSection[] = [
       { route: 'cup', href: '/cup' as Href, label: 'NBA Cup', Icon: CupIcon },
       { route: 'all-star', href: '/all-star' as Href, label: 'All-Star Weekend', Icon: StarIcon },
       { route: 'draft', href: '/draft' as Href, label: 'NBA Draft', Icon: DraftIcon },
+      { route: 'awards', href: '/awards' as Href, label: 'Awards', Icon: MedalIcon },
     ],
   },
 ];

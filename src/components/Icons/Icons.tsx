@@ -195,6 +195,17 @@ export function NewsIcon({ size = 22, color }: IconProps) {
   );
 }
 
+/** A medal on a ribbon: the season awards. */
+export function MedalIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M8 3l4 6.5L16 3" {...stroke(color)} />
+      <Circle cx={12} cy={15} r={5.5} {...stroke(color)} />
+      <Path d="M12 12.4l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3.9-1.8z" {...stroke(color)} strokeWidth={1.2} />
+    </Svg>
+  );
+}
+
 /** A pulse line: the league's wire (injuries and moves). */
 export function WireIcon({ size = 22, color }: IconProps) {
   return (
