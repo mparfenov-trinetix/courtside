@@ -40,7 +40,7 @@ export const textStyle = {
 
 /**
  * The Courtside Rating's colors, a solid square per band of the 1-10 scale: under 6 red, 6-7 orange, 7-8 green, 8-9 light blue, 9 and up a
- * solid blue. The red and the green are the app's loss and win; the others are this scale's own.
+ * solid blue. All five are this scale's own (the red and the green are deeper than the app's loss and win colors, so the white number reads on them).
  */
 const RATING_BANDS: { from: number; background: string }[] = [
   { from: 9, background: '#2563EB' },

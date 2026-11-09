@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { contrast, ensureContrast, palette, ratingTone, teamTheme } from '../src/lib/theme';
+import { contrast, ensureContrast, ratingTone, teamTheme } from '../src/lib/theme';
 
 // All 30 teams as ESPN lists them (name, color, alternateColor), recorded so the test needs no network.
 const TEAMS: { abbreviation: string; color: string; alternateColor: string }[] = JSON.parse(
@@ -71,16 +71,19 @@ test('team themes: the same two colors give the very same object (worked out onc
 
 test('rating colors: red under 6, orange, green, light blue, then solid blue, by the rating as shown', () => {
   const bg = (r: number) => ratingTone(r).background;
-  assert.equal(bg(1), palette.loss);
-  assert.equal(bg(5.9), palette.loss);
+  // The scale's own red and green (not the app's loss and win colors).
+  const RED = '#B22222';
+  const GREEN = '#00A86B';
+  assert.equal(bg(1), RED);
+  assert.equal(bg(5.9), RED);
   // 5.96 is shown as 6.0, so it takes 6.0's color.
   assert.equal(bg(5.96), bg(6));
-  assert.notEqual(bg(6), palette.loss);
+  assert.notEqual(bg(6), RED);
   const bands = [3, 6.5, 7.5, 8.5, 9.5].map(bg);
   assert.equal(new Set(bands).size, 5, 'five different colors');
   assert.equal(bg(6), bg(6.9));
-  assert.equal(bg(7), palette.win);
-  assert.equal(bg(7.9), palette.win);
+  assert.equal(bg(7), GREEN);
+  assert.equal(bg(7.9), GREEN);
   assert.equal(bg(8), bg(8.9));
   assert.equal(bg(9), bg(10));
   assert.notEqual(bg(8.9), bg(9));
