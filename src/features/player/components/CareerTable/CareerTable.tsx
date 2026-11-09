@@ -16,7 +16,11 @@ const num = (v?: string) => {
   return isNaN(n) ? -Infinity : n;
 };
 
-/** One list in the order it should read: the newest season first and history below it; for a traded season, the first team, then the combined line, then the rest. */
+/**
+ * One list in the order it should read: the newest season first and history below it. ESPN lists a traded season oldest first
+ * (first team, new team, combined line last); here it is the team he ended the season with, then the combined line, then the
+ * team(s) before it (Quickley 2023-24: TOR, NY · TOR, NY).
+ */
 function arrange(rows: CareerRow[]): CareerRow[] {
   const seasons: string[] = [];
   for (const r of rows) if (!seasons.includes(r.season)) seasons.push(r.season);
@@ -25,7 +29,9 @@ function arrange(rows: CareerRow[]): CareerRow[] {
     const group = rows.filter((r) => r.season === season);
     const tot = group.find((r) => r.abbr === 'TOT');
     const teams = group.filter((r) => r.abbr !== 'TOT');
-    return tot && teams.length > 1 ? [teams[0], tot, ...teams.slice(1)] : group;
+    if (!tot || teams.length < 2) return group;
+    const [latest, ...earlier] = teams.reverse();
+    return [latest, tot, ...earlier];
   });
 }
 
@@ -58,7 +64,9 @@ export function CareerTable({ career, accent, background = palette.arena }: { ca
   const sorted = sortCol
     ? [...rows].sort((a, b) => (sortDir === 'desc' ? 1 : -1) * (num(b.stats[sortCol]) - num(a.stats[sortCol])))
     : rows;
-  const teamsOf = (row: CareerRow) => (row.abbr === 'TOT' ? rows.filter((r) => r.season === row.season && r.abbr !== 'TOT') : []);
+  // The combined line names the teams in the order he played for them ("TOR · NY"): ESPN's own order, not the table's.
+  const teamsOf = (row: CareerRow) =>
+    row.abbr === 'TOT' ? career.seasons.filter((r) => r.season === row.season && r.abbr !== 'TOT') : [];
 
   const handleSort = (col: string) => {
     if (sortCol !== col) {
