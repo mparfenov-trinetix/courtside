@@ -184,6 +184,17 @@ export function DraftIcon({ size = 22, color }: IconProps) {
   );
 }
 
+/** A folded newspaper: headline bar, a picture block and lines of text. */
+export function NewsIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M5 4.5h11.5a1 1 0 0 1 1 1V19.5H6.5a1.5 1.5 0 0 1-1.5-1.5V4.5z" {...stroke(color)} />
+      <Path d="M17.5 9.5H20v8.5a1.5 1.5 0 0 1-1.5 1.5h-1" {...stroke(color)} />
+      <Path d="M8 8h6.5M8 11.5h3M8 15h3M13 11.5h1.5M13 15h1.5" {...stroke(color)} />
+    </Svg>
+  );
+}
+
 /** A pulse line: the league's wire (injuries and moves). */
 export function WireIcon({ size = 22, color }: IconProps) {
   return (

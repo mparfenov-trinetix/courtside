@@ -58,6 +58,7 @@ export default function DrawerLayout() {
       <Drawer.Screen name="all-star" options={{ title: 'All-Star Weekend' }} />
       <Drawer.Screen name="draft" options={{ title: 'NBA Draft' }} />
       <Drawer.Screen name="wire" options={{ title: 'League Wire' }} />
+      <Drawer.Screen name="news" options={{ title: 'News' }} />
       <Drawer.Screen name="calendar" options={{ title: 'Calendar' }} />
       <Drawer.Screen name="compare" options={{ title: 'Compare' }} />
       <Drawer.Screen name="watchlist" options={{ title: 'Watchlist' }} />

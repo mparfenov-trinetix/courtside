@@ -33,6 +33,17 @@ export {
   type AllStarWeekend,
 } from './all-star';
 export {
+  articleBlocks,
+  fetchArticle,
+  fetchNews,
+  normalizeArticle,
+  normalizeNews,
+  type ArticleBlock,
+  type ArticleText,
+  type NewsArticle,
+  type NewsKind,
+} from './news';
+export {
   DRAFT_FROM,
   draftSeasons,
   fetchDraft,

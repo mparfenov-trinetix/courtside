@@ -13,7 +13,7 @@ import { fonts, logoOn, mix, palette, teamTheme, withAlpha, surfaces } from '@/l
 import { pushOnce, returningFromDetail } from '@/navigation';
 import { useTeamStore } from '@/state';
 import { Glass } from '../Glass';
-import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, DraftIcon, GridIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon, WireIcon } from '../Icons';
+import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, DraftIcon, GridIcon, NewsIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon, WireIcon } from '../Icons';
 import { NbaLogo } from '../NbaLogo';
 import { DRAWER_WIDTH, SCENE_RADIUS, type MenuSection } from './constants';
 
@@ -41,6 +41,7 @@ export const SECTIONS: MenuSection[] = [
       { route: 'teams', href: '/teams', label: 'Teams', Icon: PeopleIcon },
       { route: 'compare', href: '/compare' as Href, label: 'Compare', Icon: CompareIcon },
       { route: 'wire', href: '/wire' as Href, label: 'League wire', Icon: WireIcon },
+      { route: 'news', href: '/news' as Href, label: 'News', Icon: NewsIcon },
     ],
   },
   {

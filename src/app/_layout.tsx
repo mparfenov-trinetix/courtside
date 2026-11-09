@@ -154,6 +154,7 @@ export default function RootLayout() {
               <Stack.Screen name="player/[id]" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="team/[id]" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="article/[id]" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="search" options={{ animation: 'fade' }} />
               <Stack.Screen name="matchup-standings" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="matchup-playoffs" options={{ animation: 'slide_from_right' }} />

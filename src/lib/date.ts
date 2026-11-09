@@ -87,3 +87,18 @@ export function scoreboardKeysFor(day: Date): string[] {
   const keys = [toNbaDateKey(start), toNbaDateKey(new Date(end.getTime() - 1))];
   return keys[0] === keys[1] ? [keys[0]] : keys;
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** How long ago an ESPN timestamp was, the way a news list says it: "Just now", "12 min ago", "3 h ago", "Yesterday", then "Nov 7". */
+export function timeAgo(iso: string, now: number = Date.now()): string {
+  const then = parseEspnDate(iso);
+  if (Number.isNaN(then.getTime())) return '';
+  const minutes = Math.floor((now - then.getTime()) / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  if (hours < 48) return 'Yesterday';
+  return `${MONTHS[then.getMonth()]} ${then.getDate()}`;
+}

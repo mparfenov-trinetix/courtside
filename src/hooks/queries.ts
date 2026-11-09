@@ -9,6 +9,8 @@ import {
   fetchAllStars,
   fetchAllStarWeekend,
   fetchDraft,
+  fetchNews,
+  fetchArticle,
   fetchFutures,
   fetchPowerIndex,
   fetchInjuries,
@@ -484,6 +486,29 @@ export function useDraft(season: number) {
     queryFn: () => fetchDraft(season),
     staleTime: season >= currentSeason() ? HOUR : Infinity,
     gcTime: Infinity,
+  });
+}
+
+/** The latest NBA news: the league's, or one team's. ESPN files a new story every few minutes on a busy day, so it is read afresh every five. */
+export function useNews(teamId?: string, enabled = true) {
+  return useQuery({
+    queryKey: ['news', teamId ?? 'league'],
+    queryFn: () => fetchNews(teamId),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** One article's text. A published article does not change, so it is kept for the session. */
+export function useArticle(id: string) {
+  return useQuery({
+    queryKey: ['article', id],
+    queryFn: async () => {
+      const article = await fetchArticle(id);
+      if (!article) throw new Error('ESPN has no text for this article.');
+      return article;
+    },
+    staleTime: Infinity,
   });
 }
 
