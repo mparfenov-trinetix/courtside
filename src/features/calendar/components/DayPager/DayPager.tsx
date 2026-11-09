@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View, type FlatList, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { Easing, useAnimatedScrollHandler, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { prefetchGamesOnDay } from '@/hooks';
+import { prefetchGamesOnDay, useSceneSettled } from '@/hooks';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { MONTHS } from '../../constants';
 import { DayPage } from '../DayPage';
@@ -15,8 +15,8 @@ const NEAR = 2;
 const JUMP_MS = 340;
 /** After the pager stops, how long before the pages around it are filled in. */
 const STEADY_MS = 120;
-/** After the screen opens, how long before the neighbouring days are built: the slide-in takes about 550 ms. */
-const OPEN_MS = 900;
+/** After the slide-in from the menu is over, how long before the neighbouring days are built. */
+const OPEN_MS = 300;
 /** Days further away are read one at a time, this far apart, after the neighbours are in. */
 const PREFETCH_GAP_MS = 350;
 
@@ -62,10 +62,12 @@ export function DayPager({
   }, []);
   // The screen has opened: fill in the days around the one on screen, once its slide-in is over (neighbours built during it
   // landed in the same frames as the move).
+  const opened = useSceneSettled(OPEN_MS);
   useEffect(() => {
-    settleSoon(at.current, OPEN_MS);
+    if (!opened) return;
+    settleSoon(at.current, 0);
     return () => clearTimeout(timer.current);
-  }, [settleSoon]);
+  }, [opened, settleSoon]);
   // Once at rest, the days a swipe or two away are read into the cache, so the next page opens with its games.
   const client = useQueryClient();
   useEffect(() => {

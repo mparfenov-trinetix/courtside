@@ -50,11 +50,12 @@ export function LeagueLeadersScreen() {
     setDisplayCount(PAGE);
   };
 
-  const allLeaders = (active === 'form' || active === 'eff' || active === 'odds' ? [] : data ?? []).map((entry) => {
+  const allLeaders = active === 'form' || active === 'eff' || active === 'odds' ? [] : data ?? [];
+  // Only the rows shown get their team's name and color (fifty of them were worked out on every render, ten are on screen).
+  const leaders = allLeaders.slice(0, displayCount).map((entry) => {
     const team = teams?.find((t) => t.id === entry.teamId);
     return team ? { ...entry, teamAbbr: team.abbreviation, teamColor: teamTheme(team).brand } : entry;
   });
-  const leaders = allLeaders.slice(0, displayCount);
   const hasMore = displayCount < allLeaders.length;
   const activeTab = TABS.find((t) => t.key === active)!;
 

@@ -1,45 +1,15 @@
 import { memo, useMemo } from 'react';
-
-
-
 import { ScrollView, StyleSheet, View } from 'react-native';
-
-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-
-
-
 import { ErrorState, EmptyState } from '@/components';
-
-
-
 import { useGamesOnDay, useRefresh, useTeam, useTeams } from '@/hooks';
-
-
-
 import { involvesTeam, type ScoreboardGame } from '@/lib/espn';
-
-
-
 import { teamTheme } from '@/lib/theme';
-
 import { useScreenTeamStore } from '@/state';
-
-
-
 import { TODAY_PILL_CLEARANCE } from '../../constants';
-
-
-
 import { GameCard } from '../GameCard';
-
-
-
 import { GameCardSkeleton } from '../GameCardSkeleton';
-
-
-
 
 /**
  * One day of the pager: that day's games, the selected team's first, then the live ones, then the rest.

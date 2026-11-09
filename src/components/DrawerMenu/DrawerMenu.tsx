@@ -2,13 +2,13 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useIsFocused, useRoute, type Href } from 'expo-router';
 import { DrawerContentScrollView, useDrawerProgress, type DrawerContentComponentProps } from 'expo-router/drawer';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Animated, { Easing, Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTeam } from '@/hooks';
+import { SceneSettledContext, useTeam } from '@/hooks';
 import { fonts, logoOn, mix, palette, teamTheme, withAlpha, surfaces } from '@/lib/theme';
 import { pushOnce, returningFromDetail } from '@/navigation';
 import { useTeamStore } from '@/state';
@@ -254,6 +254,9 @@ export function SceneFrame({ children }: { children: ReactNode }) {
   const focused = useIsFocused();
   const routeName = useRoute().name;
   const enter = useSharedValue(1);
+  // Whether the slide is over, for the screen's own second pass (`useSceneSettled`): the first screen after launch does not slide, so it
+  // is settled from the start; every other screen is settled once its slide has run.
+  const [settled, setSettled] = useState(launchScene);
   useEffect(() => {
     if (!focused) return;
     if (launchScene) {
@@ -267,15 +270,22 @@ export function SceneFrame({ children }: { children: ReactNode }) {
     lastScene = routeName;
     if (returning) return;
     enter.set(0);
+    let done: ReturnType<typeof setTimeout> | undefined;
     // Not in the same frame the screen is built in: the first render of a heavy screen (the Calendar's pager and its queries) takes
     // the frames the first part of the motion needs, and the slide would start with a hitch. Two frames later it has drawn.
     let second = 0;
     const first = requestAnimationFrame(() => {
-      second = requestAnimationFrame(() => enter.set(withTiming(1, { duration: SCENE_IN_MS, easing: SCENE_EASE })));
+      // A screen coming back into focus was settled before: it is not until this slide is over.
+      setSettled(false);
+      second = requestAnimationFrame(() => {
+        enter.set(withTiming(1, { duration: SCENE_IN_MS, easing: SCENE_EASE }));
+        done = setTimeout(() => setSettled(true), SCENE_IN_MS + 40);
+      });
     });
     return () => {
       cancelAnimationFrame(first);
       cancelAnimationFrame(second);
+      clearTimeout(done);
     };
   }, [focused, enter, routeName]);
   // The screen only slides (cheap: one layer moved). The fade is a veil in the menu's color laid over it and thinning out: fading the
@@ -289,7 +299,7 @@ export function SceneFrame({ children }: { children: ReactNode }) {
   return (
     <View style={styles.frame}>
       <Animated.View style={[styles.frame, content]}>
-        {children}
+        <SceneSettledContext.Provider value={settled}>{children}</SceneSettledContext.Provider>
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: menu }, veil]} />
       </Animated.View>
       <Animated.View pointerEvents="none" style={[styles.shadow, edge]}>

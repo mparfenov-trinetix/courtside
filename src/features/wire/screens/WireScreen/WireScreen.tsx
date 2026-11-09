@@ -4,7 +4,7 @@ import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native
 
 import { InjuryReport, TransactionList } from '../../components';
 import { ListSkeleton, PaneTitle, ScreenHeader } from '@/components';
-import { useAfterSettle } from '@/hooks';
+import { useSceneSettled } from '@/hooks';
 import { palette } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
 
@@ -23,7 +23,7 @@ export function WireScreen() {
   });
   // The pane on screen; the other is built once the screen has settled (or when swiped to), a skeleton until then.
   const [pane, setPane] = useState(0);
-  const settled = useAfterSettle(700);
+  const settled = useSceneSettled(150);
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.arena }}>

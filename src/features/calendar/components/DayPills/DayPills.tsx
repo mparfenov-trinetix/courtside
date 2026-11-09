@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
-import { useAfterSettle, useStripFollow } from '@/hooks';
+import { useSceneSettled, useStripFollow } from '@/hooks';
 
 import { toDateKey } from '@/lib/date';
 import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
@@ -52,7 +52,7 @@ export function DayPills({
 
   // The first frames draw only the days around the selected one: sixty-odd pressables at once cost more than the screen's
   // whole slide-in. The rest are added once it has settled, where the pills already shown stay as they are.
-  const complete = useAfterSettle(700);
+  const complete = useSceneSettled(150);
   const first = complete ? 0 : Math.max(0, selected - FIRST_DRAW);
   const last = complete ? dates.length - 1 : Math.min(dates.length - 1, selected + FIRST_DRAW);
 

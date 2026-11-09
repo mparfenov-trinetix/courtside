@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AgendaView, DayPager, MonthView, ScopeLabel, TodayPill, ViewSheet, startOfMonth } from '../../components';
 import { IconButton, SeasonSheet, slideIn, ErrorState, ListSkeleton, ScreenHeader, EmptyState } from '@/components';
-import { usePostseason, useRefresh, useSeasonGames, useTeam } from '@/hooks';
+import { usePostseason, useRefresh, useSceneSettled, useSeasonGames, useTeam } from '@/hooks';
 import { currentSeason } from '@/lib/espn';
 import { calendarEvents } from '@/lib/league';
 import { localToday, parseEspnDate, toDateKey } from '@/lib/date';
@@ -55,6 +55,9 @@ export function CalendarScreen() {
   const [extra, setExtra] = useState<Date | null>(null);
   const dates = useMemo(() => buildDates(extra), [extra]);
   const [mode, setMode] = useState<CalendarMode>('day');
+  // The view's fade-and-slide is for switching views. On the screen's first draw it would fade the whole pager (every card drawn
+  // into a buffer, frame after frame) on top of the slide-in from the menu, which is what the scene's veil exists to avoid.
+  const switchable = useSceneSettled();
   const [viewSheet, setViewSheet] = useState(false);
   const [slide, setSlide] = useState<1 | -1>(1);
   const [selected, setSelected] = useState<Date>(today);
@@ -116,7 +119,7 @@ export function CalendarScreen() {
       <ScreenHeader title={<ScopeLabel mode={mode} team={team} />} color={palette.chalk} right={headerRight} />
 
       {/* Content slides in from the side of the view it replaces */}
-      <Animated.View key={mode} entering={slideIn(slide)} style={styles.view}>
+      <Animated.View key={mode} entering={switchable ? slideIn(slide) : undefined} style={styles.view}>
       {mode === 'day' && <DayPager dates={dates} today={today} selected={selected} onSelect={setSelected} accent={theme.accent} gameDays={gameDays} />}
 
       {mode !== 'day' && !team ? (

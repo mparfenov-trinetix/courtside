@@ -5,7 +5,7 @@ import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native
 
 import { ListSkeleton, PaneTitle, ScreenHeader, SeasonButton, SeasonSheet, Spotlight } from '@/components';
 import { PlayInView, PlayoffsView } from '../../components';
-import { useAfterSettle } from '@/hooks';
+import { useSceneSettled } from '@/hooks';
 import { currentSeason } from '@/lib/espn';
 import { hasPlayIn } from '@/lib/league';
 import { palette } from '@/lib/theme';
@@ -34,7 +34,7 @@ export function PlayoffsScreen({ pushed = false }: { pushed?: boolean }) {
     page.set(e.contentOffset.x / width);
   });
   // Only the pane on screen is drawn at once; the other (a bracket is heavy) follows once the screen has settled.
-  const settled = useAfterSettle(700);
+  const settled = useSceneSettled(150);
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.arena }}>

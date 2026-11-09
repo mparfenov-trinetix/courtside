@@ -13,14 +13,17 @@ import {
 import Animated, { Easing, interpolateColor, withTiming, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
 import { ListSkeleton, ScreenHeader } from '@/components';
-import { useTeams } from '@/hooks';
+import { useSceneSettled, useTeams } from '@/hooks';
 import { fetchRoster, type Team } from '@/lib/espn';
 import { palette, teamTheme } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
 import { TeamPills, TeamRoster } from '../../components';
 
-/** After the screen opens, and after the pager stops, how long before the rows are built. */
-const OPEN_MS = 350;
+/** After the slide-in from the menu is over, how long before the rows are built. */
+const OPEN_MS = 100;
+/** Once at rest, the first of the nearby teams is read this long after, then the others one at a time this far apart (each answer is parsed and cached on the JS thread). */
+const PREFETCH_FIRST_MS = 500;
+const PREFETCH_GAP_MS = 350;
 /** Moves of up to this many teams slide; further ones jump. */
 const NEAR = 2;
 const JUMP_MS = 340;
@@ -66,27 +69,33 @@ function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
   };
   // The rows already built stay while the pager moves: the page that was settled on (and its neighbours) keeps its rows.
   const unsettle = () => clearTimeout(timer.current);
+  const opened = useSceneSettled(OPEN_MS);
   useEffect(() => {
-    // The screen has opened (the drawer has finished sliding): now fill it in.
-    const t = setTimeout(() => setSettledAt(start), OPEN_MS);
+    // The screen has opened (the menu has finished sliding it in): now fill it in.
+    if (!opened) return;
+    const t = setTimeout(() => setSettledAt(start), 0);
     return () => {
       clearTimeout(t);
       clearTimeout(timer.current);
     };
-  }, [start]);
+  }, [opened, start]);
   // Once at rest, the teams a swipe or two away are fetched and their first headshots decoded, so the next page opens with
   // everything it needs already in the cache (rosters are kept for a week and persisted, so this is paid once).
   const client = useQueryClient();
   useEffect(() => {
     if (settledAt == null) return;
-    for (const at of [settledAt - 1, settledAt + 1, settledAt - 2, settledAt + 2]) {
-      const team = teams[at];
-      if (!team) continue;
-      client
-        .fetchQuery({ queryKey: ['roster', team.id], queryFn: () => fetchRoster(team.id), staleTime: ROSTER_STALE_MS })
-        .then((roster) => Image.prefetch(roster.players.slice(0, 9).flatMap((p) => (p.headshot ? [p.headshot] : []))))
-        .catch(() => {});
-    }
+    // One team at a time, the nearest first, and not before the page that was settled on has drawn its own rows.
+    const timers = [settledAt + 1, settledAt - 1, settledAt + 2, settledAt - 2].map((at, i) =>
+      setTimeout(() => {
+        const team = teams[at];
+        if (!team) return;
+        client
+          .fetchQuery({ queryKey: ['roster', team.id], queryFn: () => fetchRoster(team.id), staleTime: ROSTER_STALE_MS })
+          .then((roster) => Image.prefetch(roster.players.slice(0, 9).flatMap((p) => (p.headshot ? [p.headshot] : []))))
+          .catch(() => {});
+      }, PREFETCH_FIRST_MS + i * PREFETCH_GAP_MS),
+    );
+    return () => timers.forEach(clearTimeout);
   }, [settledAt, teams, client]);
   // The pager's position as a fractional page (1.5 = halfway from the second team to the third). The screen's
   // background follows it, so it blends from one team's color to the next as the pages slide, whatever moved them.

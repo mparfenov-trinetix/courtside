@@ -5,7 +5,7 @@ import { StyleSheet, useWindowDimensions, View, type FlatList, type NativeScroll
 import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
 import { ErrorState, ListSkeleton, ScreenHeader } from '@/components';
-import { useLeagueTeamStats, useTeams } from '@/hooks';
+import { useLeagueTeamStats, useSceneSettled, useTeams } from '@/hooks';
 import { TEAM_METRICS } from '@/lib/league';
 import { palette } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
@@ -37,6 +37,9 @@ export function TeamLeadersScreen() {
   const currentTeamId = useScreenTeamStore((s) => s.currentTeamId);
   const { data: rows, isPending, error, refetch } = useLeagueTeamStats();
   const { data: teams } = useTeams();
+  // The stat on screen is drawn at once; the pages next to it (thirty logo rows each, and the power index's own request) once the
+  // slide in from the menu is over, so none of it lands inside the slide.
+  const settled = useSceneSettled(120);
 
   const pagerRef = useRef<FlatList>(null);
   // The page the pager is on or heading to.
@@ -107,8 +110,11 @@ export function TeamLeadersScreen() {
             onScroll={onScroll}
             scrollEventThrottle={16}
             onMomentumScrollEnd={onSettled}
-            renderItem={({ item }) =>
-              item.metric ? (
+            extraData={settled}
+            renderItem={({ item, index: i }) =>
+              i !== index && !settled ? (
+                <View style={{ width }} />
+              ) : item.metric ? (
                 <MetricPage metric={item.metric} rows={rows ?? []} teams={teams} currentTeamId={currentTeamId} width={width} />
               ) : (
                 <BpiPage teams={teams} currentTeamId={currentTeamId} width={width} />
