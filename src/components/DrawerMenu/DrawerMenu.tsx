@@ -255,8 +255,9 @@ export function SceneFrame({ children }: { children: ReactNode }) {
   const routeName = useRoute().name;
   const enter = useSharedValue(1);
   // Whether the slide is over, for the screen's own second pass (`useSceneSettled`): the first screen after launch does not slide, so it
-  // is settled from the start; every other screen is settled once its slide has run.
-  const [settled, setSettled] = useState(launchScene);
+  // is settled from the start, and so is a screen mounted in the background (`usePreloadScreens`: nobody sees it, so it does all of its
+  // work then); every other screen is settled once its slide has run.
+  const [settled, setSettled] = useState(launchScene || !focused);
   useEffect(() => {
     if (!focused) return;
     if (launchScene) {

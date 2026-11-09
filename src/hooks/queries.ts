@@ -1,4 +1,4 @@
-import { useQueries, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { queryOptions, useQueries, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useIsFocused } from 'expo-router';
 import { useEffect, useState } from 'react';
 
@@ -45,12 +45,17 @@ import { awaitsTipOff, boardPhase, gamePhase, shotsOf } from '@/lib/game';
 
 const HOUR = 60 * 60 * 1000;
 
-export function useTeams() {
-  return useQuery({
+// The queries a screen opens with are also read ahead (the intro does it, see `IntroOverlay`), so the options live here and the hook and
+// the prefetch cannot drift apart: a prefetch under another key or stale time warms nothing.
+export const teamsOptions = () =>
+  queryOptions({
     queryKey: ['teams'],
     queryFn: fetchTeams,
     staleTime: 24 * HOUR, // team list basically never changes
   });
+
+export function useTeams() {
+  return useQuery(teamsOptions());
 }
 
 /** Look up one team from the cached list (instant, no extra request). */
@@ -97,23 +102,28 @@ export function useTeamSchedule(teamId?: string | null) {
 }
 
 /** A team's whole season (regular season, play-in, playoffs); a finished season never changes. */
-export function useSeasonGames(teamId: string | null | undefined, season: number) {
-  return useQuery({
+export const seasonGamesOptions = (teamId: string | null | undefined, season: number) =>
+  queryOptions({
     queryKey: ['teamSeason', teamId, season],
     queryFn: () => fetchTeamSeason(teamId!, season),
     enabled: !!teamId,
     staleTime: season === currentSeason() ? 30 * 60 * 1000 : Infinity,
   });
+
+export function useSeasonGames(teamId: string | null | undefined, season: number) {
+  return useQuery(seasonGamesOptions(teamId, season));
 }
 
 /** One category of the league leaders (the top `limit`). The second part of the key is the shape of the data: bump it if it changes. */
-export function useLeaderCategory(category: LeaderCategory, limit = 50, enabled = true) {
-  return useQuery({
-    enabled,
+export const leaderCategoryOptions = (category: LeaderCategory, limit = 50) =>
+  queryOptions({
     queryKey: ['leaders', 3, category, limit],
     queryFn: () => fetchLeaderCategory(category, limit),
     staleTime: HOUR,
   });
+
+export function useLeaderCategory(category: LeaderCategory, limit = 50, enabled = true) {
+  return useQuery({ ...leaderCategoryOptions(category, limit), enabled });
 }
 
 export function useStandings(season?: number) {
@@ -333,12 +343,15 @@ export function usePlayerSearch(query: string) {
   });
 }
 
-export function useLeagueTeamStats() {
-  return useQuery({
+export const leagueTeamStatsOptions = () =>
+  queryOptions({
     queryKey: ['leagueTeamStats'],
     queryFn: fetchLeagueTeamStats,
     staleTime: HOUR,
   });
+
+export function useLeagueTeamStats() {
+  return useQuery(leagueTeamStatsOptions());
 }
 
 export function usePlayerCareer(athleteId?: string | null) {

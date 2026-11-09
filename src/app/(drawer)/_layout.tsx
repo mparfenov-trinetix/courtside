@@ -1,14 +1,19 @@
-import { Redirect, useSegments } from 'expo-router';
+import { Redirect, type Href, useSegments } from 'expo-router';
 import { Drawer, type DrawerContentComponentProps } from 'expo-router/drawer';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { DRAWER_WIDTH, DrawerMenu, SceneFrame, menuBackground } from '@/components';
 import { useTeam } from '@/hooks';
+import { PRELOAD_PACE, currentPreloadPace, usePreloadScreens } from '@/navigation';
 import { teamTheme } from '@/lib/theme';
 import { useTeamStore } from '@/state';
 
 // Defined once, outside the component: a new function each render would make the navigator rebuild every screen.
 const renderMenu = (props: DrawerContentComponentProps) => <DrawerMenu {...props} />;
+/** The screens whose first visit stalls the most (the heaviest first builds), mounted in the background after launch, in this order. The intro waits for them. */
+const PRELOADED: Href[] = ['/calendar', '/team-leaders', '/teams'];
+/** A light one (a list of ten rows): built later, once the intro has left, so the intro is not held for it. */
+const PRELOADED_LATER: Href[] = ['/league-leaders'];
 const sceneLayout = ({ children }: { children: ReactNode }) => <SceneFrame>{children}</SceneFrame>;
 
 export default function DrawerLayout() {
@@ -19,6 +24,12 @@ export default function DrawerLayout() {
   // catch the same finger as the back swipe (the screen below dragged open like the menu for a moment). Only a drawer screen on
   // top may open the menu.
   const onTop = useSegments()[0] === '(drawer)';
+
+  // Mounted behind the intro the intro asks for the screens one at a time; mounted for any other reason (a link opened a game and the drawer
+  // is underneath) they are paced gently. Decided once, when the layout mounts.
+  const [pace] = useState(currentPreloadPace);
+  usePreloadScreens(PRELOADED, hydrated && !!favoriteTeamId, pace);
+  usePreloadScreens(PRELOADED_LATER, hydrated && !!favoriteTeamId, PRELOAD_PACE.later, false);
 
   if (hydrated && !favoriteTeamId) return <Redirect href="/onboarding" />;
 

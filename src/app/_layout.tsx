@@ -15,7 +15,7 @@ import { useFonts } from 'expo-font';
 import { DarkTheme, Stack, ThemeProvider, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ReduceMotion, ReducedMotionConfig } from 'react-native-reanimated';
@@ -23,6 +23,7 @@ import { ReduceMotion, ReducedMotionConfig } from 'react-native-reanimated';
 import { WidgetSync } from '@/widgets';
 import { NavDepthTracker } from '@/navigation';
 import { DataHealthBanner, ScreenError } from '@/components';
+import { IntroOverlay } from '@/features/intro';
 import { reportIssue } from '@/lib/data-health';
 import { currentSeason, setHealthReporter } from '@/lib/espn';
 import { palette } from '@/lib/theme';
@@ -96,10 +97,13 @@ export default function RootLayout() {
   // the Dynamic Island or a link opening a game) never mounts the intro, so the splash would stay up for good: hide it
   // as soon as the app is ready on any other page, and, as a last resort, after a few seconds whatever happens.
   const pathname = usePathname();
+  // The intro plays over the app for a launch that starts on `/` (not for one that a widget, the Dynamic Island or a link opened on a page).
+  const [showIntro, setShowIntro] = useState(pathname === '/');
   const ready = fontsLoaded || !!fontError;
   useEffect(() => {
-    if (ready && pathname !== '/') SplashScreen.hide();
-  }, [ready, pathname]);
+    // While the intro is up it hides the splash itself, once the app under it is built (the app's route changes to `/home` meanwhile).
+    if (ready && pathname !== '/' && !showIntro) SplashScreen.hide();
+  }, [ready, pathname, showIntro]);
   useEffect(() => {
     const id = setTimeout(() => SplashScreen.hide(), 5000);
     return () => clearTimeout(id);
@@ -156,6 +160,7 @@ export default function RootLayout() {
               <Stack.Screen name="matchup-cup" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="matchup-compare" options={{ animation: 'slide_from_right' }} />
             </Stack>
+            {showIntro && <IntroOverlay onDone={() => setShowIntro(false)} />}
             <NavDepthTracker />
             <WidgetSync />
             <DataHealthBanner />
