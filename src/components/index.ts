@@ -14,6 +14,7 @@ export * from './HeadToHead';
 export * from './Highlights';
 export * from './HeatBadge';
 export * from './Icons';
+export * from './PaneTitle';
 export * from './YearStrip';
 export * from './ListSkeleton';
 export * from './LiveFlash';

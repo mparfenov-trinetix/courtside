@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, Chip, EmptyState, ErrorState, ListSkeleton, Pill } from '@/components';
 import { useInjuries, useRefresh, useTeams } from '@/hooks';
 import type { InjuredPlayer, Team } from '@/lib/espn';
-import { fontSize, fonts, palette, space, surfaces } from '@/lib/theme';
+import { fontSize, fonts, palette, space, surfaces, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
 type Filter = 'all' | 'out' | 'dtd';
@@ -19,7 +19,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 const matches = (p: InjuredPlayer, f: Filter) => f === 'all' || (f === 'out' ? p.status === 'Out' : p.status !== 'Out');
 const dayLabel = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-type Item = { key: string; team: { id: string; name: string } } | { key: string; teamId: string; player: InjuredPlayer };
+type Item = { key: string; team: { id: string; name: string; count: number } } | { key: string; teamId: string; player: InjuredPlayer };
 
 /** Every team's injury report, your team first, with a filter for who is out and who is day-to-day. A tap opens the player. */
 export function InjuryReport({ favoriteTeamId }: { favoriteTeamId: string | null }) {
@@ -34,16 +34,18 @@ export function InjuryReport({ favoriteTeamId }: { favoriteTeamId: string | null
     return groups.flatMap((g) => {
       const players = g.injuries.filter((p) => matches(p, filter));
       if (players.length === 0) return [];
-      return [{ key: `team-${g.teamId}`, team: { id: g.teamId, name: g.teamName } } as Item, ...players.map((player): Item => ({ key: `${g.teamId}-${player.id}`, teamId: g.teamId, player }))];
+      return [{ key: `team-${g.teamId}`, team: { id: g.teamId, name: g.teamName, count: players.length } } as Item, ...players.map((player): Item => ({ key: `${g.teamId}-${player.id}`, teamId: g.teamId, player }))];
     });
   }, [data, filter, favoriteTeamId]);
 
-  const total = (data ?? []).reduce((n, g) => n + g.injuries.length, 0);
+  const all = (data ?? []).flatMap((g) => g.injuries);
+  const total = all.length;
+  const counts: Record<Filter, number> = { all: total, out: all.filter((p) => matches(p, 'out')).length, dtd: all.filter((p) => matches(p, 'dtd')).length };
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.filters}>
         {FILTERS.map((f) => (
-          <Chip key={f.key} size="md" active={filter === f.key} label={f.label} onPress={() => setFilter(f.key)} role="radio" />
+          <Chip key={f.key} size="md" active={filter === f.key} label={total ? `${f.label} · ${counts[f.key]}` : f.label} onPress={() => setFilter(f.key)} role="radio" />
         ))}
       </View>
       {isPending ? (
@@ -65,7 +67,7 @@ export function InjuryReport({ favoriteTeamId }: { favoriteTeamId: string | null
             'player' in item ? (
               <PlayerRow player={item.player} teamId={item.teamId} />
             ) : (
-              <TeamHeader team={teams?.find((t) => t.id === item.team.id)} name={item.team.name} mine={item.team.id === favoriteTeamId} />
+              <TeamHeader team={teams?.find((t) => t.id === item.team.id)} name={item.team.name} mine={item.team.id === favoriteTeamId} count={item.team.count} />
             )
           }
         />
@@ -74,7 +76,7 @@ export function InjuryReport({ favoriteTeamId }: { favoriteTeamId: string | null
   );
 }
 
-function TeamHeader({ team, name, mine }: { team?: Team; name: string; mine: boolean }) {
+function TeamHeader({ team, name, mine, count }: { team?: Team; name: string; mine: boolean; count: number }) {
   return (
     <Pressable
       onPress={() => team && openDetail(`/team/${team.id}` as never)}
@@ -82,32 +84,39 @@ function TeamHeader({ team, name, mine }: { team?: Team; name: string; mine: boo
       accessibilityRole="button"
       style={styles.team}>
       {team ? <Image source={team.logoDark || team.logo} style={styles.teamLogo} contentFit="contain" /> : <View style={styles.teamLogo} />}
-      <Text style={styles.teamName}>{name}</Text>
+      <Text style={styles.teamName} numberOfLines={1}>{name}</Text>
       {mine ? <Pill tone="gold">YOUR TEAM</Pill> : null}
+      <Text style={styles.count}>{count}</Text>
     </Pressable>
   );
 }
 
 function PlayerRow({ player, teamId }: { player: InjuredPlayer; teamId: string }) {
   const out = player.status === 'Out';
+  const tint = out ? palette.loss : palette.gold;
   return (
     <Pressable
       onPress={() => openDetail({ pathname: '/player/[id]', params: { id: player.id, teamId } })}
       accessibilityRole="button"
-      accessibilityLabel={`${player.name}, ${player.status}${player.detail ? `, ${player.detail}` : ''}`}
+      accessibilityLabel={`${player.name}, ${player.status}${player.detail ? `, ${player.detail}` : ''}${player.returnDate ? `, expected back ${dayLabel(`${player.returnDate}T12:00:00`)}` : ''}`}
       style={({ pressed }) => pressed && { opacity: 0.7 }}>
-      <Card padded={false} style={styles.row}>
+      {/* A bar down the left edge in the status color, so a screenful scans as out (red) and day-to-day (gold) before any word is read. */}
+      <Card padded={false} style={[styles.row, { borderLeftWidth: 3, borderLeftColor: withAlpha(tint, 0.7) }]}>
         <View style={styles.avatar}>
           {player.headshot ? <Image source={player.headshot} style={styles.headshot} contentFit="cover" contentPosition="top" transition={150} /> : null}
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <View style={styles.top}>
-            <Text style={styles.name} numberOfLines={1}>{player.name}</Text>
+            <Text style={styles.name} numberOfLines={1}>
+              {player.name}
+              {player.position ? <Text style={styles.position}>{`  ${player.position}`}</Text> : null}
+            </Text>
             <Pill tone={out ? 'loss' : 'gold'}>{out ? 'OUT' : 'DAY-TO-DAY'}</Pill>
           </View>
-          {player.detail ? <Text style={styles.detail} numberOfLines={1}>{player.detail}{player.position ? ` · ${player.position}` : ''}</Text> : null}
-          {player.note ? <Text style={styles.note} numberOfLines={2}>{player.note}</Text> : null}
-          <Text style={styles.when}>{player.returnDate ? `Expected back ${dayLabel(`${player.returnDate}T12:00:00`)} · ` : ''}Updated {dayLabel(player.updated)}</Text>
+          <View style={styles.top}>
+            <Text style={styles.detail} numberOfLines={1}>{player.detail ?? player.note ?? ''}</Text>
+            {player.returnDate ? <Text style={styles.back}>Back {dayLabel(`${player.returnDate}T12:00:00`)}</Text> : null}
+          </View>
         </View>
       </Card>
     </Pressable>
@@ -119,12 +128,13 @@ const styles = StyleSheet.create({
   team: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingTop: space.md, paddingHorizontal: space.xs },
   teamLogo: { width: 26, height: 26 },
   teamName: { flex: 1, fontFamily: fonts.displayBold, fontSize: fontSize.title, color: palette.chalk },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md, padding: space.md },
-  avatar: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: surfaces.raised },
-  headshot: { width: 44, height: 44 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm, paddingRight: space.md, paddingLeft: space.sm },
+  avatar: { width: 40, height: 40, borderRadius: 20, overflow: 'hidden', backgroundColor: surfaces.raised },
+  headshot: { width: 40, height: 40 },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   name: { flex: 1, fontFamily: fonts.bodyBold, fontSize: fontSize.large, color: palette.chalk },
-  detail: { fontFamily: fonts.bodySemi, fontSize: fontSize.small, color: palette.chalk },
-  note: { fontFamily: fonts.body, fontSize: fontSize.label, color: palette.muted },
-  when: { fontFamily: fonts.body, fontSize: fontSize.caption, color: palette.muted, marginTop: 2 },
+  position: { fontFamily: fonts.bodySemi, fontSize: fontSize.label, color: palette.muted },
+  detail: { flex: 1, fontFamily: fonts.body, fontSize: fontSize.small, color: palette.muted },
+  back: { fontFamily: fonts.bodySemi, fontSize: fontSize.label, color: palette.chalk },
+  count: { fontFamily: fonts.bodySemi, fontSize: fontSize.small, color: palette.muted },
 });

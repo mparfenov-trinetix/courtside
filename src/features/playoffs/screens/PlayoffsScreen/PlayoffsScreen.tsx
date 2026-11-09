@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
-import { ListSkeleton, ScreenHeader, SeasonButton, SeasonSheet, Spotlight } from '@/components';
-import { PaneTitle, PlayInView, PlayoffsView } from '../../components';
+import { ListSkeleton, PaneTitle, ScreenHeader, SeasonButton, SeasonSheet, Spotlight } from '@/components';
+import { PlayInView, PlayoffsView } from '../../components';
 import { useAfterSettle } from '@/hooks';
 import { currentSeason } from '@/lib/espn';
 import { hasPlayIn } from '@/lib/league';
