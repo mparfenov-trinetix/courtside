@@ -64,7 +64,8 @@ export type AllStarPlayer = {
   name: string;
   headshot?: string;
   teamName: string;
-  starter: boolean;
+  /** Whether he started: unknown (undefined) for a game whose feed flags no starter at all. */
+  starter?: boolean;
   min: number;
   pts: number;
   reb: number;
@@ -120,33 +121,72 @@ export function normalizeAllStarGame(event: Json): AllStarGame {
   };
 }
 
+type Counts = { pts: number; reb: number; ast: number };
+
+/**
+ * Points, rebounds and assists from a game's play-by-play, for a game whose box score ESPN left empty: it lists the twenty-odd players of
+ * every All-Star Game from 2003 to 2012 with a zero in every column (and "--" minutes), yet has the whole game play by play. A scoring play
+ * is the shooter's points (a free throw too) and, when its text names an assist, the second participant's assist; a rebound is any
+ * rebound play with a player on it (a team rebound has none). The points of every year from 2004 add up to the game's final score;
+ * 2003's feed misses eight of its 300.
+ */
+export function allStarCountsFromPlays(plays: Json[]): Map<string, Counts> {
+  const counts = new Map<string, Counts>();
+  const of = (id: string) => {
+    let c = counts.get(id);
+    if (!c) counts.set(id, (c = { pts: 0, reb: 0, ast: 0 }));
+    return c;
+  };
+  for (const play of plays) {
+    const ids = ((play.participants ?? []) as Json[]).flatMap((p) => (p.athlete?.id != null ? [String(p.athlete.id)] : []));
+    if (ids.length === 0) continue;
+    if (play.scoringPlay) {
+      of(ids[0]).pts += Number(play.scoreValue) || 0;
+      if (ids[1] && /assist/i.test(String(play.text ?? ''))) of(ids[1]).ast += 1;
+    }
+    if (/rebound/i.test(String(play.type?.text ?? ''))) of(ids[0]).reb += 1;
+  }
+  return counts;
+}
+
 /** Everyone who played, from the games' box scores, one line each (summed over the games he played), the top scorers first. */
 export function normalizeAllStarPlayers(summaries: Json[]): AllStarPlayer[] {
   const byId = new Map<string, AllStarPlayer>();
   for (const summary of summaries) {
-    for (const team of (summary.boxscore?.players ?? []) as Json[]) {
-      const block = (team.statistics?.[0] ?? {}) as Json;
+    const blocks = ((summary.boxscore?.players ?? []) as Json[]).map((team) => ({ team, block: (team.statistics?.[0] ?? {}) as Json }));
+    const rows = blocks.flatMap(({ block }) => (block.athletes ?? []) as Json[]);
+    // An empty box score (every PTS a zero): the counting stats come from the play-by-play instead.
+    const boxPoints = blocks.reduce((sum, { block }) => {
+      const at = ((block.labels ?? []) as string[]).indexOf('PTS');
+      return sum + ((block.athletes ?? []) as Json[]).reduce((s, a) => s + (Number.parseFloat(a.stats?.[at] ?? '') || 0), 0);
+    }, 0);
+    const derived = boxPoints === 0 ? allStarCountsFromPlays((summary.plays ?? []) as Json[]) : undefined;
+    // Some games flag no starter at all: then who started is not known, which is not the same as nobody starting.
+    const startersKnown = rows.some((a) => a.starter);
+    for (const { team, block } of blocks) {
       const labels: string[] = block.labels ?? [];
       const at = (label: string) => labels.indexOf(label);
       for (const a of (block.athletes ?? []) as Json[]) {
         const id = String(a.athlete?.id ?? '');
         if (!id) continue;
         const stat = (label: string) => Number.parseFloat(a.stats?.[at(label)] ?? '') || 0;
-        const line = { min: stat('MIN'), pts: stat('PTS'), reb: stat('REB'), ast: stat('AST') };
+        const counts = derived ? (derived.get(id) ?? { pts: 0, reb: 0, ast: 0 }) : { pts: stat('PTS'), reb: stat('REB'), ast: stat('AST') };
+        const line = { min: stat('MIN'), ...counts };
+        const starter = startersKnown ? !!a.starter : undefined;
         const seen = byId.get(id);
         if (seen) {
           seen.min += line.min;
           seen.pts += line.pts;
           seen.reb += line.reb;
           seen.ast += line.ast;
-          seen.starter = seen.starter || !!a.starter;
+          if (starter != null) seen.starter = !!seen.starter || starter;
         } else {
           byId.set(id, {
             id,
             name: String(a.athlete?.displayName ?? ''),
             headshot: a.athlete?.headshot?.href ? String(a.athlete.headshot.href) : headshotUrl(id),
             teamName: String(team.team?.displayName ?? ''),
-            starter: !!a.starter,
+            starter,
             ...line,
           });
         }

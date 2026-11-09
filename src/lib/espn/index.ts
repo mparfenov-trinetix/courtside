@@ -19,6 +19,7 @@ export { fetchPlayerCareer, fetchPlayerGameLog, fetchPlayerStats, fetchPlayerBio
 export { headshotUrl, legendPhoto } from './legend-photos';
 export type { CareerRow, GameLogEntry, PlayerBio, PlayerCareer, PlayerSearchResult, PlayerSeasonStats } from './players';
 export {
+  allStarCountsFromPlays,
   allStarGameKey,
   allStarSeasons,
   fetchAllStars,

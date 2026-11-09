@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import { groupByTeam } from '../src/features/allstar/utils/format';
-import { allStarSeasons, headshotUrl, normalizeAllStarWeekend, parseAllStarNote } from '../src/lib/espn';
+import { allStarCountsFromPlays, allStarSeasons, headshotUrl, normalizeAllStarWeekend, parseAllStarNote } from '../src/lib/espn';
 
 // Two real weekends, trimmed to what the normalizers read: 2024 (East against West) and 2025 (four captains' teams, two semifinals and a final).
 const FIXTURE = JSON.parse(readFileSync(new URL('./fixtures/all-star-weekends.json', import.meta.url), 'utf8'));
@@ -79,4 +79,29 @@ test('legend photos: ESPN has none of Jordan and Iverson, so their file is NBA.c
   assert.equal(headshotUrl('1035'), 'https://cdn.nba.com/headshots/nba/latest/260x190/893.png');
   assert.equal(headshotUrl('366'), 'https://cdn.nba.com/headshots/nba/latest/260x190/947.png');
   assert.equal(headshotUrl('3112335'), 'https://a.espncdn.com/i/headshots/nba/players/full/3112335.png');
+});
+
+test('all-star 2012: ESPN\'s box score is all zeros, so points, rebounds and assists come from the play-by-play and add up to the score', () => {
+  const w = weekend(2012);
+  const score = w.games[0].teams[0].score + w.games[0].teams[1].score;
+  assert.equal(score, 301);
+  assert.equal(w.players.length, 24);
+  // Every point of the game is a player's, and the best scorer is first with real numbers.
+  assert.equal(w.players.reduce((sum, p) => sum + p.pts, 0), score);
+  assert.equal(w.players[0].pts > 20, true);
+  assert.equal(w.players.some((p) => p.reb > 0) && w.players.some((p) => p.ast > 0), true);
+  // The feed has no minutes for this game (the list hides them).
+  assert.equal(w.players.every((p) => p.min === 0), true);
+});
+
+test('all-star counts from plays: a shot is the shooter\'s points and the second player\'s assist, a rebound is the player on it, a team rebound is nobody\'s', () => {
+  const counts = allStarCountsFromPlays([
+    { scoringPlay: true, scoreValue: 3, text: 'A makes three pointer (B assists)', participants: [{ athlete: { id: 'A' } }, { athlete: { id: 'B' } }] },
+    { scoringPlay: true, scoreValue: 1, text: 'A makes free throw 1 of 2', participants: [{ athlete: { id: 'A' } }] },
+    { scoringPlay: false, type: { text: 'Defensive Rebound' }, text: 'B defensive rebound', participants: [{ athlete: { id: 'B' } }] },
+    { scoringPlay: false, type: { text: 'Team Rebound' }, text: 'Team rebound', participants: [] },
+  ]);
+  assert.deepEqual(counts.get('A'), { pts: 4, reb: 0, ast: 0 });
+  assert.deepEqual(counts.get('B'), { pts: 0, reb: 1, ast: 1 });
+  assert.equal(counts.size, 2);
 });

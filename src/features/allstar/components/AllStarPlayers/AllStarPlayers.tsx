@@ -38,7 +38,7 @@ function PlayerRow({ player, first }: { player: AllStarPlayer; first: boolean })
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.name} numberOfLines={1}>{player.name}</Text>
-        <Text style={styles.meta}>{player.starter ? 'Starter' : 'Reserve'}{player.min ? ` · ${player.min} min` : ''}</Text>
+        <Text style={styles.meta}>{[player.starter == null ? '' : player.starter ? 'Starter' : 'Reserve', player.min ? `${player.min} min` : ''].filter(Boolean).join(' · ')}</Text>
       </View>
       <Stat value={player.pts} label="PTS" strong />
       <Stat value={player.reb} label="REB" />
