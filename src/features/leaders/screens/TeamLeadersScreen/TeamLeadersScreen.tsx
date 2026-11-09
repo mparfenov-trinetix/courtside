@@ -12,14 +12,16 @@ import { useScreenTeamStore } from '@/state';
 import { StatPills } from '../../components';
 import { BpiPage } from './BpiPage';
 import { MetricPage } from './MetricPage';
+import { OddsPage } from './OddsPage';
 import { TAB_LABEL } from './constants';
 
 /** Moves of up to this many stats slide; further ones jump (sliding through half the list would mean drawing it). */
 const NEAR = 2;
 const JUMP_MS = 340;
-/** The pager's pages: ESPN's power index first, then one page per team stat. */
+/** The pager's pages: ESPN's power index, the sportsbook's title odds, then one page per team stat. */
 const PAGES: { key: string; label: string; metric?: (typeof TEAM_METRICS)[number] }[] = [
   { key: 'bpi', label: 'BPI' },
+  { key: 'odds', label: 'Odds' },
   ...TEAM_METRICS.map((m) => ({ key: m.key as string, label: TAB_LABEL[m.key] ?? m.short, metric: m })),
 ];
 const LABELS = PAGES.map((p) => p.label);
@@ -116,6 +118,8 @@ export function TeamLeadersScreen() {
                 <View style={{ width }} />
               ) : item.metric ? (
                 <MetricPage metric={item.metric} rows={rows ?? []} teams={teams} currentTeamId={currentTeamId} width={width} />
+              ) : item.key === 'odds' ? (
+                <OddsPage teams={teams} currentTeamId={currentTeamId} width={width} />
               ) : (
                 <BpiPage teams={teams} currentTeamId={currentTeamId} width={width} />
               )

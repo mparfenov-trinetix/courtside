@@ -10,11 +10,11 @@ import { openDetail } from '@/navigation';
 
 /** How many names each market lists: the favorites, the rest are long shots. */
 const SHOWN = 5;
-/** The order the markets come in: the title first, then the player awards. */
-const ORDER = ['title', 'mvp', 'roy', 'dpoy', 'mip', 'sixth', 'clutch', 'coach'];
+/** The order the markets come in: the player awards (the title odds are a page of Team Leaders). */
+const ORDER = ['mvp', 'roy', 'dpoy', 'mip', 'sixth', 'clutch', 'coach'];
 
 /**
- * The sportsbook's odds for the title and the awards, favorites first: a chance (the odds with the book's margin removed) and the
+ * The sportsbook's odds for the awards, favorites first: a chance (the odds with the book's margin removed) and the
  * American line. A tap opens the player's page or the team. The book's opinion, not ESPN's, so it moves with the news.
  */
 export function AwardOdds() {
@@ -31,7 +31,7 @@ export function AwardOdds() {
       {markets.map((market) => (
         <Market key={market.key} market={market} teams={teams ?? []} />
       ))}
-      <Text style={styles.note}>Sportsbook odds (DraftKings, via ESPN), shown as a chance with the margin removed. Not advice.</Text>
+      <Text style={styles.note}>Sportsbook odds (DraftKings, via ESPN), shown as a chance with the margin removed. Not advice. The title odds are on Team Leaders.</Text>
     </ScrollView>
   );
 }

@@ -16,7 +16,7 @@ type Tab = Category | 'form' | 'eff' | 'odds';
 
 const TABS: { key: Tab; label: string; full: string }[] = [
   { key: 'form', label: 'HOT / COLD', full: 'Hot and cold' },
-  { key: 'odds', label: 'ODDS', full: 'Title and award odds' },
+  { key: 'odds', label: 'ODDS', full: 'Award odds' },
   { key: 'ppg', label: 'PPG', full: 'Points Per Game' },
   { key: 'rpg', label: 'RPG', full: 'Rebounds Per Game' },
   { key: 'apg', label: 'APG', full: 'Assists Per Game' },
