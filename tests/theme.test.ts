@@ -61,3 +61,10 @@ test('team themes: no team is the neutral fallback', () => {
   const none = teamTheme(null);
   for (const t of TEAMS) assert.notEqual(teamTheme(t as never).primary, none.primary);
 });
+
+test('team themes: the same two colors give the very same object (worked out once), and no team has its own', () => {
+  const [a, b] = TEAMS;
+  assert.equal(teamTheme(a as never), teamTheme({ color: a.color, alternateColor: a.alternateColor }));
+  assert.notEqual(teamTheme(a as never), teamTheme(b as never));
+  assert.equal(teamTheme(null), teamTheme(undefined));
+});

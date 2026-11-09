@@ -107,7 +107,7 @@ export type TeamTheme = {
   edge: string;
 };
 
-export function teamTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null): TeamTheme {
+function computeTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null): TeamTheme {
   if (!team) {
     return {
       primary: palette.arenaRaised,
@@ -157,6 +157,25 @@ export function teamTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null):
     stripe,
     edge,
   };
+}
+
+let noTeamTheme: TeamTheme | undefined;
+const themes = new Map<string, TeamTheme>();
+
+/**
+ * A team's colors (see `computeTheme`). Worked out once per pair of ESPN colors and handed out again: the contrast search behind `accent`,
+ * `stripe` and `edge` is colour math, and a screen asks for it per pill, row and card (over a hundred times to open Teams).
+ * The object is shared, so it must not be changed.
+ */
+export function teamTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null): TeamTheme {
+  if (!team) return (noTeamTheme ??= computeTheme(null));
+  const key = `${team.color}|${team.alternateColor}`;
+  let theme = themes.get(key);
+  if (!theme) {
+    theme = computeTheme(team);
+    themes.set(key, theme);
+  }
+  return theme;
 }
 
 /**
