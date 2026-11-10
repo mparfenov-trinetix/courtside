@@ -57,6 +57,25 @@ test('team themes: a card that is close to its page color gets an edge that show
   }
 });
 
+test('team themes: no two teams share a card color, and the groups that did are told apart', () => {
+  const card = (abbr: string) => teamTheme(TEAMS.find((t) => t.abbreviation === abbr) as never).primary;
+  // ESPN gave the Pistons, Knicks and 76ers one royal blue, the Pacers, Nuggets and Pelicans one navy, the Nets and Spurs one black;
+  // the 76ers keep ESPN's blue, the Hawks' red was the Rockets' and the Raptors' was the Bulls'.
+  const groups = [['DET', 'NY', 'PHI'], ['IND', 'DEN', 'NO'], ['BKN', 'SA'], ['LAL', 'SAC'], ['WSH', 'DET'], ['GS', 'IND'], ['ATL', 'HOU', 'POR'], ['CHI', 'TOR']];
+  for (const g of groups) {
+    for (let i = 0; i < g.length; i++) {
+      for (let j = i + 1; j < g.length; j++) assert.ok(apart(card(g[i]), card(g[j])) >= 40, `${g[i]} and ${g[j]} are ${Math.round(apart(card(g[i]), card(g[j])))} apart`);
+    }
+  }
+  const all = TEAMS.map((t) => teamTheme(t as never).primary.toLowerCase());
+  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) assert.notEqual(all[i], all[j], `${TEAMS[i].abbreviation} and ${TEAMS[j].abbreviation} share ${all[i]}`);
+});
+
+test('team themes: a light card (the Pacers, Spurs, Warriors) takes dark text, a dark one white', () => {
+  for (const abbr of ['IND', 'SA', 'GS']) assert.equal(teamTheme(TEAMS.find((t) => t.abbreviation === abbr) as never).onPrimary, '#0A0A0A', abbr);
+  for (const abbr of ['BKN', 'NO', 'MIA', 'DET', 'WSH', 'DEN', 'ATL', 'NY', 'TOR']) assert.equal(teamTheme(TEAMS.find((t) => t.abbreviation === abbr) as never).onPrimary, '#FFFFFF', abbr);
+});
+
 test('team themes: no team is the neutral fallback', () => {
   const none = teamTheme(null);
   for (const t of TEAMS) assert.notEqual(teamTheme(t as never).primary, none.primary);

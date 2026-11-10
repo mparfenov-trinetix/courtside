@@ -107,7 +107,35 @@ export type TeamTheme = {
   edge: string;
 };
 
-function computeTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null): TeamTheme {
+/**
+ * ESPN's two colors per team, replaced for the nine teams whose look would otherwise be another team's (the key is ESPN's pair, lower case,
+ * so it works for a team from any feed; a team whose ESPN colors change falls back to them). Three teams were the very same royal blue (the
+ * Pistons, Knicks and 76ers), the Pacers, Nuggets and Pelicans the very same navy (the Nuggets kept it), the Nets and Spurs the very same black. Each now keeps
+ * to colors the club really wears, and every card, page and accent in the app follows it:
+ * Pacers lemon gold with navy, Pelicans a dark dirty gold with navy (the Nuggets keep ESPN's navy with gold), Knicks orange with blue, Spurs silver with black, 76ers a bright blue, Pistons a deep
+ * royal blue, Wizards a vivid blue with red (they were a red like four other teams), Kings a lighter violet (the Lakers' purple to the digit),
+ * Hawks keep their red but wear the volt green of their own rebrand in place of the gold the Warriors and Lakers wear.
+ * The cards were chosen to be at least 16 apart in CIE Lab from every other card (ESPN's were 0 for three pairs; 3 to 11 for six more).
+ */
+const TEAM_PALETTE: Record<string, { color: string; alternateColor: string }> = {
+  '#0c2340|#ffd520': { color: '#FFDC4A', alternateColor: '#0C2340' }, // Pacers
+  '#0a2240|#b4975a': { color: '#957F2C', alternateColor: '#0A2240' }, // Pelicans: a dark, dirty gold (the Nuggets keep ESPN's navy and gold)
+  '#1d428a|#f58426': { color: '#E8711A', alternateColor: '#006BB6' }, // Knicks (a shade deeper than their orange so white text reads on it, 3.1:1)
+  '#000000|#c4ced4': { color: '#C4CED4', alternateColor: '#000000' }, // Spurs
+  '#1d428a|#c8102e': { color: '#0B2A66', alternateColor: '#C8102E' }, // Pistons
+  '#e31837|#002b5c': { color: '#1226B7', alternateColor: '#E31837' }, // Wizards
+  '#5a2d81|#6a7a82': { color: '#7F39B0', alternateColor: '#6A7A82' }, // Kings
+  '#d91244|#000000': { color: '#3A3A42', alternateColor: '#D91244' }, // Raptors: ESPN's red was the Bulls' to 3.9 in Lab, and no free red is left, so charcoal with the red as the accent
+  '#c8102e|#fdb927': { color: '#F8210C', alternateColor: '#FDB927' }, // Hawks
+};
+
+/** The two colors a team is drawn in: its entry in `TEAM_PALETTE`, else ESPN's own. */
+export function teamColors(team: Pick<Team, 'color' | 'alternateColor'>): { color: string; alternateColor: string } {
+  return TEAM_PALETTE[`${team.color}|${team.alternateColor}`.toLowerCase()] ?? { color: team.color, alternateColor: team.alternateColor };
+}
+
+function computeTheme(source?: Pick<Team, 'color' | 'alternateColor'> | null): TeamTheme {
+  const team = source ? teamColors(source) : null;
   if (!team) {
     return {
       primary: palette.arenaRaised,
@@ -132,8 +160,8 @@ function computeTheme(team?: Pick<Team, 'color' | 'alternateColor'> | null): Tea
     brand = luminance(primary) < 0.08 ? mix(primary, '#FFFFFF', 0.3) : primary;
   }
   if (luminance(brand) < 0.03) brand = mix(brand, '#FFFFFF', 0.6);
-  // Text on the card is white unless the card is light (the existing rule held up: every team reads at 3.9:1 or better).
-  const onPrimary = luminance(primary) > 0.45 ? '#0A0A0A' : '#FFFFFF';
+  // Text on the card is white unless the card is light: past a luminance of 0.30 white falls under 3:1 and near-black takes over.
+  const onPrimary = luminance(primary) > 0.3 ? '#0A0A0A' : '#FFFFFF';
   const background = mix(primary, '#05080D', luminance(primary) > 0.4 ? 0.86 : 0.74);
 
   // The stripe may differ from the primary by hue rather than lightness (the Thunder's orange on blue has a 1.2:1 ratio and is
@@ -191,7 +219,8 @@ export function matchupColors(
   if (distance(a, h) >= 110) return { away: a, home: h };
 
   const lift = (c: string) => (luminance(c) < 0.08 ? mix(c, '#FFFFFF', 0.45) : c);
-  const candidates = [home.color, home.alternateColor, mix(home.color, '#FFFFFF', 0.35)]
+  const own = teamColors(home);
+  const candidates = [own.color, own.alternateColor, mix(own.color, '#FFFFFF', 0.35)]
     .map(lift)
     .sort((x, y) => distance(y, a) - distance(x, a));
   return { away: a, home: candidates[0] };

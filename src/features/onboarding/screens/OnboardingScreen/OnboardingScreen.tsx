@@ -1,5 +1,4 @@
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
@@ -13,10 +12,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { NbaLogo , ErrorState, Skeleton, SkeletonGroup } from '@/components';
+import { NbaLogo, ErrorState, OutlinedLogo, Skeleton, SkeletonGroup } from '@/components';
 import { useTeams } from '@/hooks';
 import type { Team } from '@/lib/espn';
-import { fonts, logoOn, palette, teamTheme, withAlpha } from '@/lib/theme';
+import { fonts, logoOn, OUTLINED_LOGO, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
 import { COLUMNS, GAP, PADDING } from './constants';
 
@@ -104,7 +103,7 @@ export function OnboardingScreen() {
               styles.cta,
               { backgroundColor: theme.primary, borderColor: withAlpha(theme.onPrimary, 0.25), opacity: pressed ? 0.85 : 1 },
             ]}>
-            <Image source={logoOn(selected, theme.onPrimary)} style={styles.ctaLogo} contentFit="contain" />
+            <OutlinedLogo source={logoOn(selected, theme.onPrimary)} size={32} outlined={OUTLINED_LOGO.has(selected.abbreviation)} />
             <Text style={[styles.ctaText, { color: theme.onPrimary }]} numberOfLines={1}>
               {selected.id === favoriteAtOpen ? `Keep the ${selected.name} as my team` : `Make the ${selected.name} my team`}
             </Text>
@@ -154,10 +153,11 @@ function TeamTile({
             borderColor: selected ? withAlpha(theme.onPrimary, 0.35) : 'transparent',
           },
         ]}>
-        <Image
+        {/* On its own color a red logo (Houston) is red on red: it gets the white outline the team card gives it. */}
+        <OutlinedLogo
           source={selected ? logoOn(team, theme.onPrimary) : team.logoDark || team.logo}
-          style={{ width: size * 0.56, height: size * 0.56 }}
-          contentFit="contain"
+          size={size * 0.56}
+          outlined={selected && OUTLINED_LOGO.has(team.abbreviation)}
         />
         <Text
           style={[styles.tileName, { color: selected ? theme.onPrimary : palette.chalk }]}
@@ -215,10 +215,6 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     borderWidth: 1,
     boxShadow: '0 12px 30px rgba(0,0,0,0.45)',
-  },
-  ctaLogo: {
-    width: 32,
-    height: 32,
   },
   ctaText: {
     flex: 1,
