@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -54,7 +55,10 @@ export function CalendarScreen() {
   // A month pick far outside the usual range widens the pager's days to include it.
   const [extra, setExtra] = useState<Date | null>(null);
   const dates = useMemo(() => buildDates(extra), [extra]);
-  const [mode, setMode] = useState<CalendarMode>('day');
+  // A link can open the calendar on a view (the team page's "Full schedule" opens the Agenda): `view` names it, and `at` is a stamp that
+  // changes on each link, so following the same link again after browsing elsewhere in the screen brings the view back.
+  const { view, at } = useLocalSearchParams<{ view?: string; at?: string }>();
+  const [mode, setMode] = useState<CalendarMode>(view === 'agenda' ? 'agenda' : 'day');
   // The view's fade-and-slide is for switching views. On the screen's first draw it would fade the whole pager (every card drawn
   // into a buffer, frame after frame) on top of the slide-in from the menu, which is what the scene's veil exists to avoid.
   const switchable = useSceneSettled();
@@ -66,6 +70,15 @@ export function CalendarScreen() {
   // so browsing back through old months (or picking an old season) loads that season's whole schedule.
   const [agendaSeason, setAgendaSeason] = useState(currentSeason);
   const [seasonSheet, setSeasonSheet] = useState(false);
+  // Adjusted while rendering (not in an effect): the link's stamp is remembered, and a new one switches the view once.
+  const [openedBy, setOpenedBy] = useState(at);
+  if (at !== openedBy) {
+    setOpenedBy(at);
+    if (view === 'agenda') {
+      setMode('agenda');
+      setAgendaSeason(currentSeason());
+    }
+  }
   const monthSeason = seasonOfMonth(cursor);
   const monthGames = useSeasonGames(currentTeamId, monthSeason);
   const agendaGames = useSeasonGames(currentTeamId, agendaSeason);

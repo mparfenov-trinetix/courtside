@@ -241,7 +241,8 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
               onPress={() => {
                 // The calendar follows the "current" team, so make this one current first (as the roster button does).
                 if (team.id !== currentTeamId) viewTeam(team.id);
-                router.navigate('/calendar' as never);
+                // The whole season of this team is the Agenda, not the day-by-day league board the calendar opens on.
+                router.navigate({ pathname: '/calendar', params: { view: 'agenda', at: String(Date.now()) } } as never);
               }}
               accessibilityRole="button"
               hitSlop={8}>
