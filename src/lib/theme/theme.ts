@@ -113,7 +113,7 @@ export type TeamTheme = {
  * Pistons, Knicks and 76ers), the Pacers, Nuggets and Pelicans the very same navy (the Nuggets kept it), the Nets and Spurs the very same black. Each now keeps
  * to colors the club really wears, and every card, page and accent in the app follows it:
  * Pacers lemon gold with navy, Pelicans a dark dirty gold with navy (the Nuggets keep ESPN's navy with gold), Knicks orange with blue, Spurs silver with black, 76ers a bright blue, Pistons a deep
- * royal blue, Wizards a vivid blue with red (they were a red like four other teams), Kings a lighter violet (the Lakers' purple to the digit),
+ * royal blue, Wizards a cornflower blue with a red stripe (they were a red like four other teams; the deeper blues are taken, a vivid royal blue read as too much blue, and a pale silver-blue needed dark text), Kings a lighter violet (the Lakers' purple to the digit),
  * Hawks keep their red but wear the volt green of their own rebrand in place of the gold the Warriors and Lakers wear.
  * The cards were chosen to be at least 16 apart in CIE Lab from every other card (ESPN's were 0 for three pairs; 3 to 11 for six more).
  */
@@ -123,7 +123,7 @@ const TEAM_PALETTE: Record<string, { color: string; alternateColor: string }> = 
   '#1d428a|#f58426': { color: '#E8711A', alternateColor: '#006BB6' }, // Knicks (a shade deeper than their orange so white text reads on it, 3.1:1)
   '#000000|#c4ced4': { color: '#C4CED4', alternateColor: '#000000' }, // Spurs
   '#1d428a|#c8102e': { color: '#0B2A66', alternateColor: '#C8102E' }, // Pistons
-  '#e31837|#002b5c': { color: '#1226B7', alternateColor: '#E31837' }, // Wizards
+  '#e31837|#002b5c': { color: '#6A82E6', alternateColor: '#E31837' }, // Wizards: a cornflower blue, light enough to be told from the 76ers, Pistons, Thunder and Mavericks, dark enough for white text (3.5:1)
   '#5a2d81|#6a7a82': { color: '#7F39B0', alternateColor: '#6A7A82' }, // Kings
   '#d91244|#000000': { color: '#3A3A42', alternateColor: '#D91244' }, // Raptors: ESPN's red was the Bulls' to 3.9 in Lab, and no free red is left, so charcoal with the red as the accent
   '#c8102e|#fdb927': { color: '#F8210C', alternateColor: '#FDB927' }, // Hawks
