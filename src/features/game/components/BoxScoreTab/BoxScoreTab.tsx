@@ -8,19 +8,21 @@ import { LegendSheet } from '../LegendSheet';
 import { LineupsCard } from '../LineupsCard';
 import { DetailedTable } from './DetailedTable';
 import { SimpleTable } from './SimpleTable';
+import { useLiveRatings } from './useLiveRatings';
 import { SIMPLE_COLS } from './constants';
 import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
 import { COLS, formatRating, gameRating, parseStatNum, type Col, type SortDir, QuarterStats } from '@/lib/game';
 import { fonts, palette, surfaces, withAlpha } from '@/lib/theme';
 
 /** A player's line with his Courtside Rating added as a column (it is worked out here: ESPN's box score has no rating). */
-const withRating = (list: BoxScorePlayer[]): BoxScorePlayer[] =>
-  list.map((p) => ({ ...p, stats: { ...p.stats, CR: formatRating(gameRating(p.stats)) } }));
+const withRating = (list: BoxScorePlayer[], ratingOf: (p: BoxScorePlayer) => number | undefined): BoxScorePlayer[] =>
+  list.map((p) => ({ ...p, stats: { ...p.stats, CR: formatRating(ratingOf(p)) } }));
 
 /**
  * Player lines for one team at a time, sortable by any column, in two views. The default one has a bigger photo and name (a "Starter" tag on
  * the starters) and only the rating, points, rebounds and assists, which fit the screen. The detailed one has every stat: the player column
- * stays pinned and shrinks while the stats scroll sideways under a scroll indicator. Starters carry a golden edge instead of a divider; a
+ * stays pinned and shrinks while the stats scroll sideways under a scroll indicator. The rating is the finished game's, or, while the game is on,
+ * a projection of it taken when the tab opens and every few minutes of the game after (`useLiveRatings`). Starters carry a golden edge instead of a divider; a
  * "Legend" button in the table's corner explains the column names.
  */
 export function BoxScoreTab({
@@ -33,6 +35,7 @@ export function BoxScoreTab({
   periodLabel,
   hasStarted,
   completed = false,
+  live = false,
   derived,
   selPeriods,
   background = palette.arena,
@@ -49,6 +52,8 @@ export function BoxScoreTab({
   hasStarted: boolean;
   /** The game is over: only then is a rating given (a rating of half a game is not one). */
   completed?: boolean;
+  /** The game is on: ratings are projected from the minutes so far and refreshed every few minutes of the game. */
+  live?: boolean;
   derived: QuarterStats | null;
   selPeriods: number[] | null;
   /** Opaque color of the pinned player column, so it matches the page behind the scrolling stats. */
@@ -63,14 +68,20 @@ export function BoxScoreTab({
   // Rows remount when the period changes, so switching the filter doesn't light them up like a live update would.
   const periodKey = selPeriods?.join(',') ?? 'full';
   const team = side === 'home' ? home : away;
-  // The rating is for the whole of a finished game: not for a period, and not while the game is on.
-  const rated = completed && !filtered;
-  const players = rated ? withRating(side === 'home' ? homePlayers : awayPlayers) : side === 'home' ? homePlayers : awayPlayers;
+  // The rating is for the whole game, a finished one's or a live one's projection: not for a period.
+  const liveRatings = useLiveRatings(awayPlayers, homePlayers, live && !completed);
+  const rated = (completed || live) && !filtered;
+  const sidePlayers = side === 'home' ? homePlayers : awayPlayers;
+  const players = !rated
+    ? sidePlayers
+    : withRating(sidePlayers, completed ? (p) => gameRating(p.stats) : (p) => liveRatings?.get(p.id));
   const teamTotals = side === 'home' ? totals.home : totals.away;
   const cols: Col[] = (filtered ? [...COLS] : COLS.filter((c) => c === 'CR' || team.columnNames.includes(c))).filter((c) => c !== 'CR' || rated);
-  // Points first, as the box score is read; a period's own lines by minutes (the ones who played in it come first).
-  const effectiveSort: Col = sortCol ?? (filtered ? 'MIN' : 'PTS');
-  const effectiveDir: SortDir = sortCol ? sortDir : 'desc';
+  // Points first, as the box score is read, and the column you chose stays chosen when the period filter changes (the rating, which a
+  // period does not have, is the one exception: it comes back with the whole game). In a period the ones who played in it come first among equals.
+  const chosen = sortCol && (sortCol !== 'CR' || rated) ? sortCol : null;
+  const effectiveSort: Col = chosen ?? 'PTS';
+  const effectiveDir: SortDir = chosen ? sortDir : 'desc';
 
   const handleSort = (col: Col) => {
     if (sortCol === col) setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'));
@@ -93,7 +104,8 @@ export function BoxScoreTab({
   const rows = [...players].sort((a, b) => {
     const av = parseStatNum(a.stats[effectiveSort]);
     const bv = parseStatNum(b.stats[effectiveSort]);
-    return effectiveDir === 'desc' ? bv - av : av - bv;
+    if (av !== bv) return effectiveDir === 'desc' ? bv - av : av - bv;
+    return parseStatNum(b.stats.MIN) - parseStatNum(a.stats.MIN);
   });
   const sort = { col: effectiveSort, dir: effectiveDir, onSort: handleSort };
 
@@ -142,6 +154,7 @@ export function BoxScoreTab({
             />
           </View>
           {filtered ? <Text style={styles.note}>{periodLabel} stats rebuilt from play-by-play</Text> : null}
+          {rated && !completed ? <Text style={styles.note}>Live ratings: projected from the game so far, refreshed every few minutes</Text> : null}
 
           {detailed ? (
             <DetailedTable
@@ -169,7 +182,7 @@ export function BoxScoreTab({
         </View>
       )}
 
-      <LegendSheet visible={legendOpen} onClose={() => setLegendOpen(false)} />
+      <LegendSheet visible={legendOpen} live={rated && !completed} onClose={() => setLegendOpen(false)} />
     </View>
   );
 }

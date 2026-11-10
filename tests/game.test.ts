@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import { normalizeGameSummary, normalizePlayerSearch } from '../src/lib/espn';
-import { formatGameScore, formatRating, gameRating, gameScore, positionName, ratingOf, shotsOf, timeoutInProgress, buildFourFactors, deriveFlow, deriveQuarterStats, sumLineups, sumPeriods } from '../src/lib/game';
+import { formatGameScore, formatRating, gameFraction, gameRating, gameScore, positionName, projectedRating, ratingOf, shotsOf, timeoutInProgress, buildFourFactors, deriveFlow, deriveQuarterStats, sumLineups, sumPeriods } from '../src/lib/game';
 
 const fixture = JSON.parse(readFileSync(new URL('./fixtures/game-final.json', import.meta.url), 'utf8'));
 const game = normalizeGameSummary(fixture, '401909912');
@@ -305,6 +305,10 @@ test('rating: no rating for a player who did not play or only had a few minutes,
   assert.equal(gameRating({ ...line, MIN: '--' }), undefined);
   assert.equal(gameRating({}), undefined);
   assert.equal(formatRating(undefined), '–');
+  // The top of the scale is a plain 10, and 9.96 (which rounds to it) too.
+  assert.equal(formatRating(10), '10');
+  assert.equal(formatRating(9.96), '10');
+  assert.equal(formatRating(9.94), '9.9');
 });
 
 test('rating: in the fixture game a typical rotation player lands between 6 and 8, and the best game is 8 or more', () => {
@@ -327,4 +331,39 @@ test('positions are written out for the default box score view', () => {
   assert.equal(positionName('NA'), 'NA');
   assert.equal(positionName(''), undefined);
   assert.equal(positionName(undefined), undefined);
+});
+
+test('live rating: at the end of the game it is the finished game\'s rating, and under five minutes it is nothing', () => {
+  const line = { MIN: '33', PTS: '22', FG: '8-16', FT: '4-5', REB: '5', AST: '5', TO: '3', STL: '1', BLK: '0', OREB: '0', DREB: '5', PF: '1' };
+  assert.equal(projectedRating(line, 1), gameRating(line));
+  assert.equal(projectedRating(line, 2), gameRating(line), 'a fraction past 1 is the end');
+  assert.equal(projectedRating({ ...line, MIN: '3' }, 0.2), undefined);
+  assert.equal(projectedRating({ ...line, MIN: '--' }, 0.5), undefined);
+});
+
+test('live rating: a player on his usual pace is not rated low just because the game is young', () => {
+  // Half of the 22-point game, half of the minutes: the same player at the half.
+  const half = { MIN: '16', PTS: '11', FG: '4-8', FT: '2-3', REB: '3', AST: '2', TO: '1', STL: '1', BLK: '0', OREB: '0', DREB: '3', PF: '1' };
+  const shown = gameRating(half)!; // the raw half-game line read as a finished game
+  const projected = projectedRating(half, 0.5)!;
+  assert.ok(projected > shown + 0.5, `${projected.toFixed(2)} should lift off the raw ${shown.toFixed(2)}`);
+  assert.ok(projected > 6.5 && projected < 8.5, `an ordinary good half projects to an ordinary good game, not ${projected.toFixed(2)}`);
+});
+
+test('live rating: a hot start is leaned toward an ordinary player\'s, and the lean fades as the game goes on', () => {
+  const hot = { MIN: '8', PTS: '7', FG: '3-5', FT: '1-2', REB: '2', AST: '1', TO: '0', STL: '0', BLK: '0', OREB: '0', DREB: '2', PF: '0' };
+  const early = projectedRating(hot, 0.17)!;
+  // The same pace taken at face value to the end of his 40 minutes, with no lean toward an ordinary player's.
+  const score = gameScore(hot)!;
+  const faceValue = ratingOf(score + (score / 8) * 32);
+  assert.ok(early < faceValue, `${early.toFixed(2)} stays under the face-value ${faceValue.toFixed(2)}`);
+  assert.ok(early > 6, 'but a good start still reads as good');
+  // The same line held back to later in the game counts for more of the rating (less of it is still to be played).
+  assert.ok(projectedRating({ ...hot, MIN: '8' }, 0.5)! < early, 'at the half the same line has less to add');
+});
+
+test('live rating: the game\'s fraction comes from the minutes played, up to 1', () => {
+  assert.equal(gameFraction([]), 0);
+  assert.equal(gameFraction([{ MIN: '120' }, { MIN: '60' }]), 0.75);
+  assert.equal(gameFraction([{ MIN: '240' }, { MIN: '25' }]), 1);
 });

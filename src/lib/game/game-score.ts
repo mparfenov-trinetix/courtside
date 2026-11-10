@@ -76,5 +76,46 @@ export function gameRating(stats: Record<string, string>): number | undefined {
   return ratingOf(score);
 }
 
-/** "7.4": one decimal, and "–" for someone with no rating. */
-export const formatRating = (rating?: number): string => (rating === undefined ? '–' : rating.toFixed(1));
+/** "7.4": one decimal, "10" for the top of the scale (no ".0"), and "–" for someone with no rating. */
+export function formatRating(rating?: number): string {
+  if (rating === undefined) return '–';
+  const text = rating.toFixed(1);
+  return text === '10.0' ? '10' : text;
+}
+
+/** A typical Game Score per minute (10 over a 30-minute game): what a live rating leans on until a player has played enough to show his own. */
+export const PRIOR_RATE = 1 / 3;
+/** How many minutes of that typical player weigh against a player's own, so a hot first quarter moves his rating without throwing it. */
+export const PRIOR_MINUTES = 8;
+/** The most a regulation game's team minutes can be: five players for 48 minutes. */
+export const TEAM_MINUTES = 240;
+/** The most a player is counted on to play in a game that is on. */
+export const MAX_PLAYER_MINUTES = 40;
+
+/** Minutes a player's line says he played ("23"; "–" or nothing for someone who did not). */
+export const minutesOf = (stats: Record<string, string>): number => {
+  const m = parseInt(stats.MIN ?? '', 10);
+  return Number.isFinite(m) ? m : 0;
+};
+
+/** How much of a game is over, 0 to 1, from the minutes its players have played (a live box score has no clock to read it from). */
+export const gameFraction = (stats: Record<string, string>[]): number => Math.min(1, stats.reduce((sum, s) => sum + minutesOf(s), 0) / TEAM_MINUTES);
+
+/**
+ * The rating a player is heading for in a game that is still on: his Game Score so far plus what he can be expected to add in the rest of the
+ * game, at the pace of his own minutes (`minutes / fraction` is the total he is on course for, 40 at the most) and at a rate leaned toward a typical player's
+ * while he has played little. `fraction` is how much of the game is over (`gameFraction`). At 1 it is exactly the finished game's rating; the
+ * raw Game Score is a count, so showing it as it stands would rate every player low until late in the game.
+ * Undefined, as for a finished game, for someone who did not play or played under `MIN_RATED_MINUTES`.
+ */
+export function projectedRating(stats: Record<string, string>, fraction: number): number | undefined {
+  const score = gameScore(stats);
+  const minutes = minutesOf(stats);
+  if (score === undefined || minutes < MIN_RATED_MINUTES) return undefined;
+  const f = Math.min(1, Math.max(0.05, fraction));
+  if (f >= 1) return ratingOf(score);
+  const rate = (score + PRIOR_RATE * PRIOR_MINUTES) / (minutes + PRIOR_MINUTES);
+  // The minutes he is on course for, but no more than a starter plays: early in a game a player who has not sat yet is on course for all 48.
+  const remaining = Math.max(0, Math.min(MAX_PLAYER_MINUTES, minutes / f) - minutes);
+  return ratingOf(score + rate * remaining);
+}

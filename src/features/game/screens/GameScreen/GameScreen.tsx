@@ -291,6 +291,7 @@ export function GameScreen() {
               kind={data.kind}
               season={data.season}
               note={data.note}
+              live={live}
               hasStarted={hasStarted}
               selPeriods={selPeriods}
               periodNote={filtered ? `${option.label} · from play-by-play` : undefined}

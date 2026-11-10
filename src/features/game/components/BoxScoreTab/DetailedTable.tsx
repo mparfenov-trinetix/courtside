@@ -8,7 +8,7 @@ import { RatingSquare } from './RatingSquare';
 import { ScrollIndicator } from './ScrollIndicator';
 import { SortHeader } from './SortHeader';
 import { statStyle } from './statStyle';
-import { DETAIL_COL_FULL, DETAIL_COL_SHRUNK, DETAIL_SHRINK_AT, GOLD, HEADER_H, HEADSHOT_SIZE, RATING_BOX, ROW_H, TOTALS_H } from './constants';
+import { detailColWidths, DETAIL_SHRINK_AT, GOLD, HEADER_H, HEADSHOT_SIZE, RATING_BOX, ROW_H, TOTALS_H } from './constants';
 import { FlashOverlay } from '@/components';
 import type { BoxScorePlayer } from '@/lib/espn';
 import { COL_W, type Col, type SortDir } from '@/lib/game';
@@ -53,6 +53,7 @@ export function DetailedTable({
   const statCols = cols.filter((c) => c !== 'CR');
   const contentWidth = statCols.reduce((sum, c) => sum + COL_W[c], 0) + 16;
   const hasTotals = !!totals && Object.keys(totals).length > 0;
+  const { full, shrunk } = detailColWidths(rated);
   const scrollX = useSharedValue(0);
   const tableWidth = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((e) => {
@@ -62,7 +63,7 @@ export function DetailedTable({
   const edge = useAnimatedStyle(() => ({ opacity: interpolate(scrollX.get(), [0, 14], [0, 1], Extrapolation.CLAMP) }));
   // The player column shrinks over the first stretch of the scroll.
   const pinnedStyle = useAnimatedStyle(() => ({
-    width: interpolate(scrollX.get(), [0, DETAIL_SHRINK_AT], [DETAIL_COL_FULL, DETAIL_COL_SHRUNK], Extrapolation.CLAMP),
+    width: interpolate(scrollX.get(), [0, DETAIL_SHRINK_AT], [full, shrunk], Extrapolation.CLAMP),
   }));
 
   return (
@@ -136,7 +137,7 @@ export function DetailedTable({
             )}
           </View>
         </Animated.ScrollView>
-        <ScrollIndicator scrollX={scrollX} tableWidth={tableWidth} contentWidth={contentWidth} />
+        <ScrollIndicator scrollX={scrollX} tableWidth={tableWidth} contentWidth={contentWidth} full={full} shrunk={shrunk} />
       </View>
     </View>
   );

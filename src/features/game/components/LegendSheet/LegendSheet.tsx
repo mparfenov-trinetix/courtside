@@ -40,7 +40,7 @@ const BANDS = [
  * "Box score legend" bottom sheet: what the column names mean, and the colors of the Courtside Rating. Animated by hand like the Calendar's
  * view sheet (the dim fades, the sheet slides, the Modal stays mounted until the close animation ends).
  */
-export function LegendSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function LegendSheet({ visible, live = false, onClose }: { visible: boolean; /** A game that is on: its ratings are projections, and the sheet says so. */ live?: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const [mounted, setMounted] = useState(visible);
   if (visible && !mounted) setMounted(true);
@@ -85,7 +85,10 @@ export function LegendSheet({ visible, onClose }: { visible: boolean; onClose: (
                     <Text style={styles.text}>{row.text}</Text>
                     {row.abbr === 'CR' ? (
                       <>
-                        <Text style={styles.note}>Worked out from the box score for the whole of a finished game, 1 to 10, for players with 5 minutes or more.</Text>
+                        <Text style={styles.note}>
+                          Worked out from the box score for the whole game, 1 to 10, for players with 5 minutes or more.
+                          {live ? ' While the game is on it is a projection of the final rating from the minutes so far, refreshed every few minutes of the game, so it can still move a lot.' : ''}
+                        </Text>
                         <View style={styles.bands}>
                           {BANDS.map((b) => {
                             const tone = ratingTone(b.rating);

@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { palette, surfaces } from '@/lib/theme';
-import { DETAIL_COL_FULL, DETAIL_COL_SHRUNK, DETAIL_SHRINK_AT, HEADER_H } from './constants';
+import { DETAIL_SHRINK_AT, HEADER_H } from './constants';
 
 const INSET = 10;
 
@@ -11,15 +11,15 @@ const INSET = 10;
  * width is worked out from the table's width and the shrinking player column (the same curve as the column's own), so nothing is measured
  * while scrolling. Hidden when everything fits.
  */
-export function ScrollIndicator({ scrollX, tableWidth, contentWidth }: { scrollX: SharedValue<number>; tableWidth: SharedValue<number>; contentWidth: number }) {
+export function ScrollIndicator({ scrollX, tableWidth, contentWidth, full, shrunk }: { scrollX: SharedValue<number>; tableWidth: SharedValue<number>; contentWidth: number; /** The pinned column's width at rest and shrunk. */ full: number; shrunk: number }) {
   const track = useAnimatedStyle(() => {
     const t = Math.min(1, Math.max(0, scrollX.get() / DETAIL_SHRINK_AT));
-    const view = tableWidth.get() - (DETAIL_COL_FULL + (DETAIL_COL_SHRUNK - DETAIL_COL_FULL) * t);
+    const view = tableWidth.get() - (full + (shrunk - full) * t);
     return { opacity: contentWidth > view + 1 ? 1 : 0 };
   });
   const thumb = useAnimatedStyle(() => {
     const t = Math.min(1, Math.max(0, scrollX.get() / DETAIL_SHRINK_AT));
-    const view = tableWidth.get() - (DETAIL_COL_FULL + (DETAIL_COL_SHRUNK - DETAIL_COL_FULL) * t);
+    const view = tableWidth.get() - (full + (shrunk - full) * t);
     const trackWidth = Math.max(0, view - 2 * INSET);
     const width = Math.max(24, trackWidth * Math.min(1, view / contentWidth));
     const progress = Math.min(1, Math.max(0, scrollX.get() / Math.max(1, contentWidth - view)));
