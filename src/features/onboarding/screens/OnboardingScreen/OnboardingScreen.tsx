@@ -44,7 +44,11 @@ export function OnboardingScreen() {
     if (!selected) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setFavorite(selected.id);
-    router.replace('/home');
+    // The picker is pushed over the app from the team card's star and the menu, so the app is still under it: go back to it.
+    // `replace('/home')` mounted a second whole drawer (every screen, widget sync, queries) on top of the first on each change,
+    // which is what made the app lag after a dozen quick changes. On a first launch there is nothing under the picker, and
+    // `dismissTo` replaces it with the home card instead.
+    router.dismissTo('/home');
   };
 
   return (
