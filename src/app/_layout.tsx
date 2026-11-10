@@ -27,6 +27,7 @@ import { IntroOverlay } from '@/features/intro';
 import { reportIssue } from '@/lib/data-health';
 import { currentSeason, setHealthReporter } from '@/lib/espn';
 import { palette } from '@/lib/theme';
+import { useWindowSizeGuard } from '@/lib/window-size';
 import { LastVisitProvider, TeamProvider, WatchlistProvider } from '@/state';
 
 // Keep the native splash up until the intro screen has painted its first frame,
@@ -62,6 +63,8 @@ function shouldPersist(q: Query): boolean {
   if (q.state.status !== 'success') return false;
   const kind = String(q.queryKey[0]);
   if (PERSISTED.has(kind)) return true;
+  // A game's YouTube video that was found stays; a miss is not kept (the channel may not have put it up yet).
+  if (kind === 'gameRecapVideo') return q.state.data != null;
   // Finished seasons never change: their playoffs and Cup are kept for offline too.
   if ((kind === 'postseason' || kind === 'cup') && Number(q.queryKey[1]) < currentSeason()) return true;
   if (kind !== 'game' || !isFinished(q)) return false;
@@ -85,6 +88,7 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => voi
 }
 
 export default function RootLayout() {
+  const onRootLayout = useWindowSizeGuard();
   const [fontsLoaded, fontError] = useFonts({
     Barlow_500Medium,
     Barlow_600SemiBold,
@@ -119,7 +123,7 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.arena }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.arena }} onLayout={onRootLayout}>
       {/* Every Reanimated animation follows the system's "Reduce Motion" setting (it is the library's default; stated here so it stays a decision). */}
       <ReducedMotionConfig mode={ReduceMotion.System} />
       <PersistQueryClientProvider

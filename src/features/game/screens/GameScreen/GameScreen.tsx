@@ -288,6 +288,8 @@ export function GameScreen() {
               info={info}
               pregame={data.pregame}
               videos={data.videos}
+              gameId={id}
+              completed={completed}
               kind={data.kind}
               season={data.season}
               note={data.note}

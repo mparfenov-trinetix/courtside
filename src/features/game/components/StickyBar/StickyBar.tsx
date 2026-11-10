@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Easing,
@@ -10,8 +10,8 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { Chip } from '@/components';
 import type { PeriodOption } from '@/lib/game';
+import { PeriodChips } from '../PeriodChips';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
 export type GameTab = 'summary' | 'box' | 'plays' | 'shots';
@@ -92,22 +92,7 @@ export function GameStickyBar({
 
       {options.length > 1 && (
         <View style={styles.periods}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chips}>
-            {options.map((o) => {
-              const active = o.key === optionKey;
-              return (
-                <Chip
-                  key={o.key}
-                  active={active}
-                  label={o.label}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    onOption(o.key);
-                  }}
-                />
-              );
-            })}
-          </ScrollView>
+          <PeriodChips options={options} activeKey={optionKey} onChange={onOption} />
         </View>
       )}
     </View>
@@ -122,6 +107,4 @@ const styles = StyleSheet.create({
   tabLabel: { fontFamily: fonts.bodySemi, fontSize: 14, color: palette.muted },
   underline: { position: 'absolute', bottom: 0, left: 0, height: 2, borderRadius: 1 },
   periods: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  chipScroll: { flexShrink: 1 },
-  chips: { gap: 6, paddingHorizontal: 16 },
 });

@@ -4,6 +4,7 @@ import Animated from "react-native-reanimated";
 import { Collapsible, HeadToHead, Highlights } from "@/components";
 import { ClutchCard } from "../ClutchCard";
 import { GameFlow } from "../GameFlow";
+import { GameHighlights } from "../GameHighlights";
 import { GameInfoCard, GameLeaders, InjuryReport } from "../GameLeaders";
 import { KeyMoments } from "../KeyMoments";
 import { MatchupPlace } from "../MatchupPlace";
@@ -47,6 +48,8 @@ export function SummaryTab({
   info,
   pregame,
   videos,
+  gameId,
+  completed = false,
   kind,
   season,
   note,
@@ -69,6 +72,9 @@ export function SummaryTab({
   info: GameInfo;
   pregame: PregameData;
   videos: GameVideo[];
+  gameId: string;
+  /** The game is over: its video is looked for on YouTube. */
+  completed?: boolean;
   kind: GameKind;
   season?: number;
   note?: string;
@@ -167,10 +173,22 @@ export function SummaryTab({
     </Animated.View>
   );
 
-  // The game's own clips: the full highlights first, then the single plays in the order they were cut.
-  const highlights = videos.length > 0 && (
+  // The clips of the game: the full highlights first, then the single plays in the order they were cut.
+  const clips = [...videos].sort((a, b) => Number(b.fullGame) - Number(a.fullGame));
+
+  // A finished game's one highlights section: its video from YouTube played right here, with ESPN's clips under it. It sits where a
+  // live game's clips do. The period filter (pinned in the bar above, as on every tab) cannot cut a video, so under a quarter or half
+  // the section steps aside; "Full" brings it back.
+  const media = completed && !selPeriods && (
+    <Animated.View key="media">
+      <GameHighlights gameId={gameId} away={away.team} home={home.team} awayScore={away.score} homeScore={home.score} date={info.date} completed={completed} clips={clips} />
+    </Animated.View>
+  );
+
+  // While a game is on there is no video: the clips come after the numbers.
+  const highlights = !completed && clips.length > 0 && (
     <Animated.View key="highlights">
-      <Highlights videos={[...videos].sort((a, b) => Number(b.fullGame) - Number(a.fullGame))} />
+      <Highlights videos={clips} section />
     </Animated.View>
   );
 
@@ -185,11 +203,9 @@ export function SummaryTab({
     </Animated.View>
   );
 
-  // Live: the swing first, then the numbers and who's producing. Final: who stood out, how the teams
-  // compared, then the story of the game.
-  const ordered = live
-    ? [flowChart, stats, leaders, highlights, clutch, timeouts, moments]
-    : [highlights, leaders, clutch, stats, flowChart, moments, timeouts];
+  // One order for every game, live or finished, so a section is always where you left it: the team numbers and the leaders first (the
+  // period filter in the bar above applies to both), then the clips (the game's video once it is over), then the story of the game.
+  const ordered = [stats, leaders, completed ? media : highlights, flowChart, clutch, moments, timeouts];
 
   return (
     <View>
@@ -212,13 +228,13 @@ export function SummaryTab({
 
       {/* Their meetings stay useful while the game is on; once it is over the result is the story. */}
       {live && (
-        <View style={{ paddingHorizontal: 16 }}>
-          <HeadToHead a={awaySide} b={homeSide} />
+        <View style={{ paddingHorizontal: 16, marginBottom: 14 }}>
+          <HeadToHead a={awaySide} b={homeSide} flush />
         </View>
       )}
 
       {hasStarted && (
-        <View style={{ marginTop: 14 }}>
+        <View>
           <Collapsible
             title={live ? "Injuries and game info" : "Game info"}
             hint={

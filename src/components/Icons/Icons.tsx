@@ -49,10 +49,11 @@ export function PeopleIcon({ size = 22, color }: IconProps) {
   );
 }
 
+/** The triangle is drawn 1.5 units left of where its box would put it: its outline spans 8 to 20.6, its weight sits near the base, and halfway between the two lands on the box's centre, so it reads as centred in a round button with no padding. */
 export function PlayIcon({ size = 22, color }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.6-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z" fill={color} />
+      <Path d="M6.5 5.5v13a1 1 0 0 0 1.5.9l10.6-6.5a1 1 0 0 0 0-1.8L8 4.6A1 1 0 0 0 6.5 5.5z" fill={color} />
     </Svg>
   );
 }

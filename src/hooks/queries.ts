@@ -42,9 +42,10 @@ import {
   type LeaderCategory,
   type ScoreboardGame,
 } from '@/lib/espn';
-import { scoreboardKeysFor, startsOnDay, toDateKey } from '@/lib/date';
+import { parseEspnDate, scoreboardKeysFor, startsOnDay, toDateKey } from '@/lib/date';
 import { NOTED_FROM, conferenceMap, inferPlayoffNotes, playoffSeeds, seedMap } from '@/lib/league';
 import { awaitsTipOff, boardPhase, gamePhase, shotsOf } from '@/lib/game';
+import { findGameRecap, recapQuery, searchVideos, type RecapGame, type SearchVideo } from '@/lib/youtube';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -272,6 +273,29 @@ export function useGameVideos(ids: string[], enabled = true): { perGame: GameVid
     })),
   });
   return { perGame: queries.map((q) => q.data ?? []), pending: enabled && queries.some((q) => q.isPending) };
+}
+
+/**
+ * The video of a finished game on YouTube, the "Game Recap" of the Motion Station channel (the one Sofascore plays), or null while it has
+ * none (it puts them up within hours of the final buzzer). One search per game, any date; a video that was found is kept for good (and
+ * persisted), a miss is tried again every five minutes while the page of a recent game is open, and when a page opens after five minutes.
+ */
+export function useGameVideo(game: RecapGame & { id: string }, enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryKey: ['gameRecapVideo', game.id],
+    queryFn: async (): Promise<SearchVideo | null> => findGameRecap(await searchVideos(recapQuery(game)), game) ?? null,
+    staleTime: (q) => (q.state.data ? Infinity : 5 * 60 * 1000),
+    // A recap that is not up yet shows up within hours of the final buzzer: while the page of a game from the last two days is open,
+    // look again every five minutes (a miss used to be retried only when the page was opened again). An older game with no video stops.
+    refetchInterval: (q) => (q.state.data || !recentGame(game.date) ? false : 5 * 60 * 1000),
+  });
+}
+
+/** The game started within the last two days (or has no date to tell). */
+function recentGame(date?: string): boolean {
+  const start = date ? parseEspnDate(date).getTime() : NaN;
+  return Number.isNaN(start) || Date.now() - start < 2 * 24 * 60 * 60 * 1000;
 }
 
 /**
