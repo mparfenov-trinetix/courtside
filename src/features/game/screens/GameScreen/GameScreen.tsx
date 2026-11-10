@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
@@ -52,8 +52,19 @@ export function GameScreen() {
   const slotY = insets.top + 94;
   const awaySlot = useSharedValue<LogoSlot>({ x: HERO_INSET, y: slotY });
   const homeSlot = useSharedValue<LogoSlot>({ x: width - HERO_INSET, y: slotY });
-  const onLogoSlot = (side: 'away' | 'home', x: number, y: number) =>
-    (side === 'away' ? awaySlot : homeSlot).set({ x, y: y + scrollY.get() });
+  // The header reports each slot relative to itself; the scroll frame's place in this screen is added here. Neither depends on how far
+  // the page is scrolled or pulled (a window position plus the scroll offset went wrong when a refresh re-laid-out the header).
+  const frame = useRef({ x: 0, y: 0 });
+  const relative = useRef<{ away?: LogoSlot; home?: LogoSlot }>({});
+  const place = () => {
+    const { away: a, home: h } = relative.current;
+    if (a) awaySlot.set({ x: frame.current.x + a.x, y: frame.current.y + a.y });
+    if (h) homeSlot.set({ x: frame.current.x + h.x, y: frame.current.y + h.y });
+  };
+  const onLogoSlot = (side: 'away' | 'home', x: number, y: number) => {
+    relative.current[side] = { x, y };
+    place();
+  };
   const flick = useSharedValue(0);
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   // The header's collapse (logos gliding into the bar) takes this much scroll. A scroll that comes to rest inside it
@@ -212,7 +223,12 @@ export function GameScreen() {
         pinned={pinned}
       />
 
-      <View style={{ flex: 1 }}>
+      <View
+        style={{ flex: 1 }}
+        onLayout={(e) => {
+          frame.current = { x: e.nativeEvent.layout.x, y: e.nativeEvent.layout.y };
+          place();
+        }}>
       <Animated.ScrollView
         ref={scrollRef}
         onScroll={onScroll}
@@ -275,7 +291,6 @@ export function GameScreen() {
               kind={data.kind}
               season={data.season}
               note={data.note}
-              live={live}
               hasStarted={hasStarted}
               selPeriods={selPeriods}
               periodNote={filtered ? `${option.label} · from play-by-play` : undefined}
@@ -291,6 +306,7 @@ export function GameScreen() {
               periodLabel={option.label}
               hasStarted={hasStarted}
               completed={completed}
+              live={live}
               derived={derived}
               selPeriods={selPeriods}
               background={mix(base, awayColor, 0.14)}

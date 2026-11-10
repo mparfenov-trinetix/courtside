@@ -58,15 +58,20 @@ export function ScoreHero({
   // The clock, timeout and heat labels fade as the header starts to collapse, before the top bar shows the same ones: at no
   // point of the scroll (so wherever it is stopped) is the same information on screen twice.
   const labels = useAnimatedStyle(() => ({ opacity: scrollY ? Math.max(0, 1 - scrollY.get() / 28) : 1 }));
+  const rootRef = useRef<HostInstance>(null);
   const awaySlot = useRef<HostInstance>(null);
   const homeSlot = useRef<HostInstance>(null);
-  // Called whenever the row or a slot is laid out: a live badge appearing makes the row taller and moves the slots.
+  // Called whenever the row or a slot is laid out: a live badge appearing makes the row taller and moves the slots. The position is
+  // taken relative to this header, never to the window: the page may be scrolled or pulled down (a refresh holds it there) while the
+  // data that triggers a layout arrives, and a window position then needs a scroll offset that is no longer the one it was taken at.
   const measure = () => {
-    awaySlot.current?.measureInWindow((x, y, w, h) => onLogoSlot?.('away', x + w / 2, y + h / 2));
-    homeSlot.current?.measureInWindow((x, y, w, h) => onLogoSlot?.('home', x + w / 2, y + h / 2));
+    const root = rootRef.current;
+    if (!root) return;
+    awaySlot.current?.measureLayout(root, (x, y, w, h) => onLogoSlot?.('away', x + w / 2, y + h / 2));
+    homeSlot.current?.measureLayout(root, (x, y, w, h) => onLogoSlot?.('home', x + w / 2, y + h / 2));
   };
   return (
-    <View>
+    <View ref={rootRef} collapsable={false}>
       <Animated.View onLayout={measure} style={styles.scoreHeader}>
         <TeamScore team={away} seed={seeds?.away} slot={awaySlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
         <View
