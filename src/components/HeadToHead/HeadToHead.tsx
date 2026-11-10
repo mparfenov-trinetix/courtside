@@ -14,11 +14,11 @@ import { COLLAPSED } from './constants';
 export type H2HTeam = { id: string; abbr: string; logo: string; color: string };
 
 /** Last meetings between two teams. Loads its own data; `a` is the team whose side the results are read from. */
-export function HeadToHead({ a, b, delay = 100 }: { a: H2HTeam; b: H2HTeam; delay?: number }) {
+export function HeadToHead({ a, b, delay = 100, flush = false }: { a: H2HTeam; b: H2HTeam; delay?: number; /** No room above: the page puts its own gap between sections. */ flush?: boolean }) {
   const { data, isPending, error } = useHeadToHead(a.id, b.id);
   return (
-    <Animated.View style={styles.wrap}>
-      <Text style={styles.title}>Head to head</Text>
+    <Animated.View style={[styles.wrap, flush && styles.flush]}>
+      <Text style={[styles.title, flush && styles.flushTitle]}>Head to head</Text>
       {isPending ? (
         <View style={[styles.card, styles.center]}>
           <ActivityIndicator color={palette.muted} />
@@ -118,6 +118,8 @@ function MeetingRow({ g, a, b }: { g: HeadToHeadGame; a: H2HTeam; b: H2HTeam }) 
 const styles = StyleSheet.create({
   wrap: { marginTop: 18 },
   title: { ...textStyle.sectionLabel, marginBottom: 8, paddingHorizontal: 4 },
+  flush: { marginTop: 0 },
+  flushTitle: { paddingHorizontal: 0 },
   card: { borderRadius: 16, backgroundColor: surfaces.card, padding: 14, gap: 8 },
   center: { alignItems: 'center', justifyContent: 'center', minHeight: 72 },
   empty: { fontFamily: fonts.body, fontSize: 13, color: palette.muted },

@@ -37,6 +37,8 @@ export function Highlights({
   accent = palette.chalk,
   parentPadding = 0,
   loading = false,
+  tight = false,
+  section = false,
 }: {
   title?: string;
   videos: GameVideo[];
@@ -45,6 +47,10 @@ export function Highlights({
   parentPadding?: number;
   /** The clips are still being read: the title with placeholders where the cards will be. Ignored once there are clips. */
   loading?: boolean;
+  /** Less room above and none below: for a row that follows something it belongs to (the game's video) instead of standing alone. */
+  tight?: boolean;
+  /** A section of a page that lays its sections out with a 14 gap below each (the game tabs): no margin above, 14 below. */
+  section?: boolean;
 }) {
   // `attempt` changes after a failure, which gives the retry a fresh player.
   const [request, setRequest] = useState<{ index: number; attempt: number } | null>(null);
@@ -57,7 +63,7 @@ export function Highlights({
     setPhase('loading');
   };
   return (
-    <View style={[styles.wrap, { marginHorizontal: -parentPadding }]}>
+    <View style={[styles.wrap, tight && styles.tight, section && styles.section, { marginHorizontal: -parentPadding }]}>
       <Text style={styles.title}>{title}</Text>
       {videos.length === 0 ? <HighlightCardsSkeleton /> : null}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
@@ -132,11 +138,13 @@ export function Highlights({
 const styles = StyleSheet.create({
   // Room above and below: a row of thumbnails runs into whatever sits next to it without it.
   wrap: { marginTop: 18, marginBottom: 26 },
-  title: { ...textStyle.sectionLabel, marginBottom: 8, paddingHorizontal: 16 },
+  tight: { marginTop: 10, marginBottom: 0 },
+  section: { marginTop: 0, marginBottom: 14 },
+  title: { ...textStyle.sectionLabel, marginBottom: 6, paddingHorizontal: 16 },
   row: { paddingHorizontal: 16, gap: 10 },
   card: { width: THUMB_W },
   thumb: { width: THUMB_W, height: THUMB_H, borderRadius: 12, overflow: 'hidden', backgroundColor: surfaces.raised, alignItems: 'center', justifyContent: 'center' },
-  play: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', paddingLeft: 2 },
+  play: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   length: {
     position: 'absolute',
     right: 6,

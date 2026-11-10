@@ -101,8 +101,8 @@ export function PlayByPlay({
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingHorizontal: 16, paddingTop: 4 },
-  filters: { flexDirection: 'row', gap: 6, marginBottom: 10 },
+  wrap: { paddingHorizontal: 16 },
+  filters: { flexDirection: 'row', gap: 6, marginBottom: 12 },
   empty: { fontFamily: fonts.body, fontSize: 14, color: palette.muted, textAlign: 'center', paddingVertical: 32 },
   periodHeader: { ...textStyle.sectionLabel, marginTop: 14, marginBottom: 6 },
   row: {

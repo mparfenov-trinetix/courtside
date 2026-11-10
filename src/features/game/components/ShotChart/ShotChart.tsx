@@ -324,7 +324,7 @@ function SummaryStat({ label, value, sub }: { label: string; value: string; sub?
 
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, paddingBottom: 8 },
-  teamTabs: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  teamTabs: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   teamTab: {
     flex: 1,
     height: 40,
