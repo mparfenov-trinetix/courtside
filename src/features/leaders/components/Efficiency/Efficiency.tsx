@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   },
   rank: { width: 22, fontFamily: fonts.bodySemi, fontSize: 15, color: palette.muted, textAlign: 'center' },
   rankTop: { color: palette.chalk, fontFamily: fonts.bodyBold },
-  headshotWrap: { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', backgroundColor: surfaces.raised },
+  headshotWrap: { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', backgroundColor: surfaces.raised, alignItems: 'center', justifyContent: 'center' },
   headshot: { width: 56, height: 48 },
   name: { fontFamily: fonts.bodyBold, fontSize: 16, color: palette.chalk },
   team: { fontFamily: fonts.body, fontSize: 13, color: palette.muted, marginTop: 1 },

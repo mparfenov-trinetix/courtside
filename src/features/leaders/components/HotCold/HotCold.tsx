@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: surfaces.card,
   },
-  headshotWrap: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: surfaces.raised },
+  headshotWrap: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: surfaces.raised, alignItems: 'center', justifyContent: 'center' },
   headshot: { width: 52, height: 44 },
   name: { fontFamily: fonts.bodyBold, fontSize: 15, color: palette.chalk },
   line: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, marginTop: 1 },

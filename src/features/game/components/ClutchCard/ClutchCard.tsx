@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   totalValue: { fontFamily: fonts.display, fontSize: 34 },
   totalLabel: { fontFamily: fonts.bodySemi, fontSize: 11, color: palette.muted, textTransform: 'uppercase', letterSpacing: 0.4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, paddingHorizontal: 14 },
-  face: { width: 40, height: 40, borderRadius: 20, overflow: 'hidden' },
+  face: { width: 40, height: 40, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   headshot: { width: 48, height: 40 },
   name: { fontFamily: fonts.bodyBold, fontSize: 15, color: palette.chalk },
   line: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, marginTop: 1 },
