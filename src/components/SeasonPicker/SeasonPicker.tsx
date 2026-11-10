@@ -15,11 +15,24 @@ export const availableSeasons = (from: number = FIRST_SEASON): number[] => {
   return Array.from({ length: Math.max(now - from + 1, 1) }, (_, i) => now - i);
 };
 
-/** A small "2026-27 ▾" button. */
-export function SeasonButton({ season, onPress }: { season: number; onPress: () => void }) {
+/**
+ * A small "2026-27 ▾" button. `label` writes the year another way ("2026" for a screen that goes by calendar years, the All-Star Game and the
+ * Draft) and `noun` is what the button changes, for the screen reader.
+ */
+export function SeasonButton({
+  season,
+  onPress,
+  label = seasonLabel,
+  noun = 'season',
+}: {
+  season: number;
+  onPress: () => void;
+  label?: (year: number) => string;
+  noun?: string;
+}) {
   return (
-    <GlassButton wide size={40} hitSlop={10} onPress={onPress} label={`Season ${seasonLabel(season)}. Change season`}>
-      <Text style={styles.buttonText}>{seasonLabel(season)}</Text>
+    <GlassButton wide size={40} hitSlop={10} onPress={onPress} label={`${label(season)}. Change ${noun}`}>
+      <Text style={styles.buttonText}>{label(season)}</Text>
       <View style={{ transform: [{ rotate: '90deg' }] }}>
         <ChevronIcon color={palette.chalk} size={14} />
       </View>
@@ -27,13 +40,20 @@ export function SeasonButton({ season, onPress }: { season: number; onPress: () 
   );
 }
 
-/** Bottom sheet listing the current season and the last few. */
+/**
+ * Bottom sheet listing the current season and the last few. A screen whose years are not simply "every season down to `from`" (the Draft has
+ * no class for a season that has not ended, the All-Star Game none for 2000-01) passes its own list in `seasons`, and `label` / `title` for
+ * one that goes by calendar years.
+ */
 export function SeasonSheet({
   visible,
   season,
   onPick,
   onClose,
   from = FIRST_SEASON,
+  seasons,
+  label = seasonLabel,
+  title = 'Season',
 }: {
   visible: boolean;
   season: number;
@@ -41,6 +61,10 @@ export function SeasonSheet({
   onClose: () => void;
   /** Oldest season to offer, for screens whose data doesn't go back as far. */
   from?: number;
+  /** The years to offer, newest first, instead of every season down to `from`. */
+  seasons?: number[];
+  label?: (year: number) => string;
+  title?: string;
 }) {
   const insets = useSafeAreaInsets();
   const now = currentSeason();
@@ -48,14 +72,14 @@ export function SeasonSheet({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={styles.sheet}>
         <View style={styles.head}>
-          <Text style={styles.title}>Season</Text>
+          <Text style={styles.title}>{title}</Text>
           <Pressable onPress={onClose} hitSlop={12}>
             <Text style={styles.done}>Done</Text>
           </Pressable>
         </View>
         {/* The list runs to the bottom edge and pads its own end, so rows scroll under the home indicator instead of being cut off. */}
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
-        {availableSeasons(from).map((year) => {
+        {(seasons ?? availableSeasons(from)).map((year) => {
           const on = year === season;
           return (
             <Pressable
@@ -67,7 +91,7 @@ export function SeasonSheet({
               accessibilityRole="button"
               accessibilityState={{ selected: on }}
               style={({ pressed }) => [styles.row, on && styles.rowOn, pressed && { opacity: 0.7 }]}>
-              <Text style={[styles.rowText, on && { color: palette.chalk }]}>{seasonLabel(year)}</Text>
+              <Text style={[styles.rowText, on && { color: palette.chalk }]}>{label(year)}</Text>
               {year === now ? <Text style={styles.tag}>CURRENT</Text> : null}
               {on ? <Text style={styles.check}>✓</Text> : null}
             </Pressable>

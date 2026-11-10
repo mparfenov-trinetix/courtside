@@ -3,7 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AllStarGames, AllStarPlayers, MissingGameNote, WeekendHero } from '../../components';
-import { EmptyState, ErrorState, ListSkeleton, ScreenHeader, YearStrip } from '@/components';
+import { EmptyState, ErrorState, ListSkeleton, ScreenHeader, SeasonButton, SeasonSheet } from '@/components';
 import { useAllStarWeekend, useRefresh } from '@/hooks';
 import { allStarSeasons, currentSeason } from '@/lib/espn';
 import { palette } from '@/lib/theme';
@@ -16,13 +16,13 @@ export function AllStarScreen() {
   const insets = useSafeAreaInsets();
   const seasons = allStarSeasons();
   const [season, setSeason] = useState(seasons[0]);
+  const [picking, setPicking] = useState(false);
   const { data, isPending, error, refetch } = useAllStarWeekend(season);
   const refreshControl = useRefresh([['allStarWeekend', season]], season === currentSeason());
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.arena }}>
-      <ScreenHeader title="All-Star Weekend" />
-      <YearStrip seasons={seasons} value={season} onChange={setSeason} />
+      <ScreenHeader title="All-Star Weekend" right={<SeasonButton season={season} label={String} noun="year" onPress={() => setPicking(true)} />} />
       {isPending ? (
         <ListSkeleton count={4} avatar="square" />
       ) : error ? (
@@ -37,6 +37,7 @@ export function AllStarScreen() {
           <AllStarPlayers players={data.players} games={data.games} />
         </ScrollView>
       )}
+      <SeasonSheet visible={picking} season={season} seasons={seasons} label={String} title="Year" onPick={setSeason} onClose={() => setPicking(false)} />
     </View>
   );
 }

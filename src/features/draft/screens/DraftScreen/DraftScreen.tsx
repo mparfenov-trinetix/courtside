@@ -3,7 +3,7 @@ import { FlatList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DraftHero, PickRow } from '../../components';
-import { EmptyState, ErrorState, ListSkeleton, ScreenHeader, SectionLabel, YearStrip } from '@/components';
+import { EmptyState, ErrorState, ListSkeleton, ScreenHeader, SectionLabel, SeasonButton, SeasonSheet } from '@/components';
 import { useDraft, useRefresh, useTeams } from '@/hooks';
 import { currentSeason, draftSeasons, type NbaDraftPick } from '@/lib/espn';
 import { palette, space } from '@/lib/theme';
@@ -17,6 +17,7 @@ export function DraftScreen() {
   const insets = useSafeAreaInsets();
   const seasons = draftSeasons();
   const [season, setSeason] = useState(seasons[0]);
+  const [picking, setPicking] = useState(false);
   const { data, isPending, error, refetch } = useDraft(season);
   const { data: teams } = useTeams();
   const favoriteTeamId = useScreenTeamStore((s) => s.favoriteTeamId);
@@ -39,8 +40,7 @@ export function DraftScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.arena }}>
-      <ScreenHeader title="NBA Draft" />
-      <YearStrip seasons={seasons} value={season} onChange={setSeason} />
+      <ScreenHeader title="NBA Draft" right={<SeasonButton season={season} label={String} noun="year" onPress={() => setPicking(true)} />} />
       {isPending ? (
         <ListSkeleton count={7} avatar="round" />
       ) : error ? (
@@ -69,6 +69,7 @@ export function DraftScreen() {
           }
         />
       )}
+      <SeasonSheet visible={picking} season={season} seasons={seasons} label={String} title="Year" onPick={setSeason} onClose={() => setPicking(false)} />
     </View>
   );
 }

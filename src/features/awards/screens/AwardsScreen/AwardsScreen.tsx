@@ -3,7 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AwardSection, AwardsHero } from '../../components';
-import { EmptyState, ErrorState, ListSkeleton, ScreenHeader, YearStrip } from '@/components';
+import { EmptyState, ErrorState, ListSkeleton, ScreenHeader, SeasonButton, SeasonSheet } from '@/components';
 import { useRefresh, useSeasonAwards, useTeams } from '@/hooks';
 import { awardSeasons, currentSeason } from '@/lib/espn';
 import { palette } from '@/lib/theme';
@@ -16,6 +16,7 @@ export function AwardsScreen() {
   const insets = useSafeAreaInsets();
   const seasons = awardSeasons();
   const [season, setSeason] = useState(seasons[0]);
+  const [picking, setPicking] = useState(false);
   const { data, isPending, error, refetch } = useSeasonAwards(season);
   const { data: teams } = useTeams();
   const refreshControl = useRefresh([['seasonAwards', season]], season >= currentSeason());
@@ -23,8 +24,7 @@ export function AwardsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.arena }}>
-      <ScreenHeader title="Awards" />
-      <YearStrip seasons={seasons} value={season} onChange={setSeason} />
+      <ScreenHeader title="Awards" right={<SeasonButton season={season} onPress={() => setPicking(true)} />} />
       {isPending ? (
         <ListSkeleton count={7} avatar="round" />
       ) : error ? (
@@ -39,6 +39,7 @@ export function AwardsScreen() {
           ))}
         </ScrollView>
       )}
+      <SeasonSheet visible={picking} season={season} seasons={seasons} onPick={setSeason} onClose={() => setPicking(false)} />
     </View>
   );
 }

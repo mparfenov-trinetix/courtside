@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/react-native';
 import { ScrollView, View } from 'react-native';
 
 import { AwardSection, AwardsHero } from '../components';
-import { YearStrip } from '@/components';
 import awardsJson from '../../../../tests/fixtures/season-awards.json';
 import { normalizeSeasonAwards } from '@/lib/espn';
 import { palette } from '@/lib/theme';
@@ -25,7 +24,6 @@ const Page = ({ year }: { year: 2025 | 1996 | 1980 }) => {
   return (
     <View style={{ flex: 1, backgroundColor: palette.arena }}>
       <ScrollView contentContainerStyle={{ paddingVertical: 24 }}>
-        <YearStrip seasons={[...new Set([2026, 2025, year])]} value={year} onChange={() => {}} />
         <AwardsHero awards={awards} teamOf={teamOf} />
         {awards.groups.map((g) => (
           <AwardSection key={g.key} group={g} teamOf={teamOf} />
