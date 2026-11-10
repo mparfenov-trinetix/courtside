@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { contrast, ensureContrast, ratingTone, teamTheme } from '../src/lib/theme';
+import { contrast, ensureContrast, logoOn, ratingTone, teamTheme } from '../src/lib/theme';
 
 // All 30 teams as ESPN lists them (name, color, alternateColor), recorded so the test needs no network.
 const TEAMS: { abbreviation: string; color: string; alternateColor: string }[] = JSON.parse(
@@ -110,4 +110,12 @@ test('rating colors: red under 6, orange, green, light blue, then solid blue, by
 
 test('rating colors: the number on every square is white', () => {
   for (let r = 1; r <= 10; r += 0.5) assert.equal(ratingTone(r).text, '#FFFFFF');
+});
+
+test('logos: the Raptors wear their own red logo on their charcoal card, every other white-text team the dark-background one', () => {
+  const logos = { logo: 'full.png', logoDark: 'dark.png', logoOnPrimary: 'onprimary.png' };
+  assert.equal(logoOn({ ...logos, abbreviation: 'TOR' }, '#FFFFFF'), 'full.png');
+  assert.equal(logoOn({ ...logos, abbreviation: 'MIA' }, '#FFFFFF'), 'onprimary.png');
+  assert.equal(logoOn({ ...logos, abbreviation: 'IND' }, '#0A0A0A'), 'full.png');
+  assert.equal(logoOn(logos, '#FFFFFF'), 'onprimary.png');
 });

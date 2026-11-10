@@ -226,8 +226,15 @@ export function matchupColors(
   return { away: a, home: candidates[0] };
 }
 
+/**
+ * Teams whose card is dark and neutral enough for their own full-color logo to read on it: the Raptors' card is charcoal, so their logo is
+ * the red one (the white one it would otherwise get is for a card in ESPN's red).
+ */
+export const COLOR_LOGO = new Set(['TOR']);
+
 /** Pick the logo variant that reads on a background with the given text color. */
-export function logoOn(team: Pick<Team, 'logo' | 'logoDark' | 'logoOnPrimary'>, onColor: string) {
+export function logoOn(team: Pick<Team, 'logo' | 'logoDark' | 'logoOnPrimary'> & { abbreviation?: string }, onColor: string) {
+  if (team.abbreviation && COLOR_LOGO.has(team.abbreviation)) return team.logo;
   return onColor === '#FFFFFF' ? team.logoOnPrimary || team.logoDark || team.logo : team.logo;
 }
 

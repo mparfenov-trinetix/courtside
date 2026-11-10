@@ -36,7 +36,7 @@ export const OUTLINED_WATERMARK = new Set(['ATL', 'CHI']);
  * Teams whose logo is detailed (the Raptors' claw, the Wizards' and Cavaliers' marks) and a little too close to the card's color: an
  * outline copy smears their fine edges, so they stay crisp and are just drawn stronger than the usual 0.12.
  */
-export const STRONG_WATERMARK: Record<string, number> = { TOR: 0.3, WSH: 0.3, CLE: 0.3 };
+export const STRONG_WATERMARK: Record<string, number> = { TOR: 0.18, WSH: 0.3, CLE: 0.3 };
 /** The outlined watermark's opacity (the plain one is 0.12). */
 export const OUTLINED_OPACITY = 0.34;
 
