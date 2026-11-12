@@ -13,6 +13,8 @@ export type LeaderEntry = {
   headshot?: string;
   value: number;
   displayValue: string;
+  /** Percentage categories: how many he makes a game ("1.1" threes at 58%), from his season record. */
+  made?: string;
 };
 
 /** The categories shown, keyed as the app names them, with ESPN's category name and how its value is read. */
@@ -23,15 +25,17 @@ export const LEADER_CATEGORIES = {
   stpg: { espn: 'stealsPerGame' },
   bpg: { espn: 'blocksPerGame' },
   tpm: { espn: '3PointsMadePerGame' },
-  // ESPN sends this one as a fraction (0.478) and its own display rounds it to "0.5": rescale and format here.
-  tppct: { espn: '3PointPct', scale: 100 },
-  fgpct: { espn: 'fieldGoalPercentage' },
-  ftpct: { espn: 'FreeThrowPct' },
+  // ESPN sends this one as a fraction (0.478) and its own display rounds it to "0.5": rescale and format here. The percentages are
+  // shown whole ("58%") with what he makes a game beside them ("(1.1)"), read from his season record (`made`).
+  tppct: { espn: '3PointPct', scale: 100, digits: 0, percent: true, made: 'avgThreePointFieldGoalsMade' },
+  fgpct: { espn: 'fieldGoalPercentage', digits: 0, percent: true, made: 'avgFieldGoalsMade' },
+  ftpct: { espn: 'FreeThrowPct', digits: 0, percent: true, made: 'avgFreeThrowsMade' },
   topg: { espn: 'avgTurnovers' },
   dd: { espn: 'doubleDouble', digits: 0 },
-  mpg: { espn: 'minutesPerGame' },
+  // Minutes are a clock, not a decimal: 37.36 is 37:22 (ESPN's own display, "37.4", is a rounded decimal).
+  mpg: { espn: 'minutesPerGame', clock: true },
   pfpg: { espn: 'foulsPerGame' },
-} as const satisfies Record<string, { espn: string; scale?: number; digits?: number }>;
+} as const satisfies Record<string, { espn: string; scale?: number; digits?: number; percent?: boolean; made?: string; clock?: boolean }>;
 
 export type LeaderCategory = keyof typeof LEADER_CATEGORIES;
 
@@ -88,6 +92,36 @@ export async function fetchTeamStar(teamId: string): Promise<TeamStar | null> {
   return { ...who, ppg: star.ppg, rpg: star.rpg, apg: star.apg };
 }
 
+/** Minutes as a clock: 37.3636 -> "37:22". */
+export function minutesClock(minutes: number): string {
+  const total = Math.round(minutes * 60);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/** One named number out of an athlete's statistics record (`splits.categories[].stats[]`), or undefined when it is not there. */
+export function statByName(json: Json, name: string): number | undefined {
+  for (const category of (json.splits?.categories ?? []) as Json[]) {
+    const stat = ((category.stats ?? []) as Json[]).find((s) => s.name === name);
+    if (stat && typeof stat.value === 'number') return stat.value;
+  }
+  return undefined;
+}
+
+/** Statistics records already read, by ref: the three percentage tabs share the same fifty or so players. */
+const records = new Map<string, Promise<Json | null>>();
+
+function recordOf(ref: string): Promise<Json | null> {
+  let known = records.get(ref);
+  if (!known) {
+    known = getJson(ref).catch(() => {
+      records.delete(ref);
+      return null;
+    });
+    records.set(ref, known);
+  }
+  return known;
+}
+
 /**
  * One category's leaders (the top `limit`). Each category is read on its own, when its tab is opened: reading all fourteen at once
  * meant about 230 athlete requests before the screen showed anything. The one list request carries every category, so asking
@@ -102,10 +136,18 @@ export async function fetchLeaderCategory(key: LeaderCategory, limit = 50): Prom
   const raw = (((cats.find((c) => c.name === espn)?.leaders ?? []) as Json[]).slice(0, limit)).map((l) => ({
     ref: String(l.athlete?.$ref ?? '').replace(/^http:\/\//, 'https://'),
     teamRef: String(l.team?.$ref ?? ''),
+    statsRef: String(l.statistics?.$ref ?? '').replace(/^http:\/\//, 'https://'),
     value: (l.value ?? 0) as number,
     displayValue: (l.displayValue ?? '') as string,
   }));
   const people = await Promise.all(raw.map((r) => (r.ref ? athleteOf(r.ref) : Promise.resolve<AthleteInfo>({ athleteId: '', name: 'Unknown', shortName: '' }))));
+  // The percentage tabs carry what he makes a game: one record each, all at once (about fifty small requests, read once per player).
+  const madeStat = 'made' in fmt ? fmt.made : undefined;
+  const made = madeStat
+    ? await Promise.all(raw.map(async (r) => (r.statsRef ? statByName((await recordOf(r.statsRef)) ?? {}, madeStat) : undefined)))
+    : [];
+  const percent = 'percent' in fmt && fmt.percent;
+  const clock = 'clock' in fmt && fmt.clock;
   const entries = raw.map(({ teamRef, value, displayValue }, i): LeaderEntry => {
     const v = value * scale;
     return {
@@ -117,7 +159,8 @@ export async function fetchLeaderCategory(key: LeaderCategory, limit = 50): Prom
       teamColor: '#1D428A',
       headshot: people[i].headshot,
       value: v,
-      displayValue: scale === 1 && digits === 1 ? displayValue : v.toFixed(digits),
+      displayValue: clock ? minutesClock(v) : (scale === 1 && digits === 1 ? displayValue : v.toFixed(digits)) + (percent ? '%' : ''),
+      made: made[i] != null ? made[i]!.toFixed(1) : undefined,
     };
   });
   // Early in a season there can be no qualifiers at all.

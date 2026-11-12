@@ -24,7 +24,7 @@ export function AwardOdds() {
   if (isPending) return <ListSkeleton count={6} />;
   const markets = ORDER.flatMap((key) => data?.find((m) => m.key === key) ?? []);
   if (markets.length === 0) {
-    return <EmptyState title="No odds posted" text="The sportsbook posts them once the season is close. Check back soon." placement="center" />;
+    return <EmptyState title="No award odds right now" text="ESPN lists no player award markets at the moment (the sportsbook opens and closes them, and the MVP market was there earlier today). They appear here as soon as ESPN lists them again." placement="center" />;
   }
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.lg }}>
@@ -32,6 +32,9 @@ export function AwardOdds() {
         <Market key={market.key} market={market} teams={teams ?? []} />
       ))}
       <Text style={styles.note}>Sportsbook odds (DraftKings, via ESPN), shown as a chance with the margin removed. Not advice. The title odds are on Team Leaders.</Text>
+      {markets.length < ORDER.length && (
+        <Text style={styles.note}>ESPN lists only the awards the sportsbook has opened so far. The rest appear here as they are posted.</Text>
+      )}
     </ScrollView>
   );
 }
