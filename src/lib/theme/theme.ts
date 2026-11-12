@@ -119,7 +119,7 @@ export type TeamTheme = {
  */
 const TEAM_PALETTE: Record<string, { color: string; alternateColor: string }> = {
   '#0c2340|#ffd520': { color: '#FFDC4A', alternateColor: '#0C2340' }, // Pacers
-  '#0a2240|#b4975a': { color: '#957F2C', alternateColor: '#0A2240' }, // Pelicans: a dark, dirty gold (the Nuggets keep ESPN's navy and gold)
+  '#0a2240|#b4975a': { color: '#06182E', alternateColor: '#C8102E' }, // Pelicans: their navy, a shade deeper than the Nuggets' (which keep ESPN's navy and gold), with their red as the stripe and accent
   '#1d428a|#f58426': { color: '#E8711A', alternateColor: '#006BB6' }, // Knicks (a shade deeper than their orange so white text reads on it, 3.1:1)
   '#000000|#c4ced4': { color: '#C4CED4', alternateColor: '#000000' }, // Spurs
   '#1d428a|#c8102e': { color: '#0B2A66', alternateColor: '#C8102E' }, // Pistons
