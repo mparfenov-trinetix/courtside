@@ -5,7 +5,7 @@ export { fetchRoster, fetchTeamDetail, fetchTeams } from './teams';
 export type { Player, Roster, Team, TeamDetail } from './teams';
 export { fetchHeadToHead, fetchTeamSchedule, fetchTeamSeason } from './schedule';
 export type { Game, HeadToHeadGame } from './schedule';
-export { fetchLeaderCategory, fetchTeamStar, LEADER_CATEGORIES, minutesClock, normalizeTeamStar, statByName } from './leaders';
+export { fetchLeaderCategory, fetchTeamRated, fetchTeamStar, LEADER_CATEGORIES, minutesClock, normalizeTeamLeaders, normalizeTeamStar, statByName } from './leaders';
 export type { LeaderCategory, LeaderEntry, TeamStar } from './leaders';
 export { fetchStandings } from './standings';
 export type { ConferenceStandings, StandingEntry } from './standings';

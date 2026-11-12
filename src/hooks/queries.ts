@@ -31,6 +31,7 @@ import {
   fetchScoreboardByDate,
   fetchStandings,
   fetchTeamDetail,
+  fetchTeamRated,
   fetchTeamStar,
   fetchLeagueTeamStats,
   fetchTeams,
@@ -82,6 +83,16 @@ export function useTeamStar(teamId?: string | null) {
   return useQuery({
     queryKey: ['teamStar', teamId, currentSeason()],
     queryFn: () => fetchTeamStar(teamId!),
+    enabled: !!teamId,
+    staleTime: 6 * HOUR,
+  });
+}
+
+/** A team's best rated players, best first, with positions: what a game's key matchup is picked from. */
+export function useTeamRated(teamId?: string | null) {
+  return useQuery({
+    queryKey: ['teamRated', teamId, currentSeason()],
+    queryFn: () => fetchTeamRated(teamId!),
     enabled: !!teamId,
     staleTime: 6 * HOUR,
   });

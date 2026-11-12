@@ -9,3 +9,4 @@ export * from './nba2k-ratings';
 export * from './standings-window';
 export * from './team-stats';
 export * from './titles';
+export * from './key-matchup';

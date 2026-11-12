@@ -6,6 +6,7 @@ export * from './GameHighlights';
 export * from './GameLogos';
 export * from './GameLeaders';
 export * from './GameSkeleton';
+export * from './KeyMatchup';
 export * from './KeyMoments';
 export * from './LegendSheet';
 export * from './LineupsCard';

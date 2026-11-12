@@ -89,7 +89,7 @@ function playerAxes(a: { pts?: number; reb?: number; ast?: number; stl?: number;
 /** `pushed`: opened on top of a player or team page, so the header's button goes back instead of opening the menu. */
 export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id?: string; name?: string; teamId?: string; teamAbbr?: string; mode?: string }>();
+  const params = useLocalSearchParams<{ id?: string; name?: string; teamId?: string; teamAbbr?: string; mode?: string; id2?: string; name2?: string; teamId2?: string; teamAbbr2?: string }>();
   const mode = params.mode === 'teams' ? 'teams' : 'players';
   const [slide, setSlide] = useState<1 | -1>(1);
   const [scope, setScope] = useState<Scope>('season');
@@ -105,7 +105,11 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
       }
     : null;
   const [pickedA, setPickedA] = useState<Slot | undefined>(undefined);
-  const [slotB, setSlotB] = useState<Slot>(null);
+  // A second player can come with the link too (the key matchup of a game opens the two stars side by side).
+  const fromParamsB: Slot = params.id2
+    ? { id: params.id2, name: params.name2 ?? 'Player', teamId: params.teamId2 || undefined, teamAbbr: params.teamAbbr2 || undefined, headshot: headshotUrl(params.id2) }
+    : null;
+  const [slotB, setSlotB] = useState<Slot>(fromParamsB);
   const [picking, setPicking] = useState<'a' | 'b' | null>(null);
   const slotA = pickedA !== undefined ? pickedA : fromParams;
 

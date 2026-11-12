@@ -40,22 +40,27 @@ export const LEADER_CATEGORIES = {
 export type LeaderCategory = keyof typeof LEADER_CATEGORIES;
 
 /** A team's best player by ESPN's own rating, with his per-game points, rebounds and assists. */
-export type TeamStar = { athleteId: string; name: string; shortName: string; headshot?: string; ppg: string; rpg: string; apg: string };
+export type TeamStar = { athleteId: string; name: string; shortName: string; headshot?: string; ppg: string; rpg: string; apg: string; /** ESPN's position abbreviation ("G", "PG", "F", "C"...) and his number. */ position?: string; jersey?: string };
 
 /**
- * The first entry of a team's `rating` leaders (ESPN's ranking of its best players): the athlete's record link and the per-game numbers
- * its display value carries ("23.4 PPG, 9.7 RPG, 9.3 APG, ..."). Null when the team has no rated player yet (the start of a season).
+ * A team's `rating` leaders (ESPN's ranking of its players, the whole roster, best first): each athlete's record link and the per-game numbers
+ * its display value carries ("23.4 PPG, 9.7 RPG, 9.3 APG, ..."). Empty when the team has no rated player yet (the start of a season).
  */
-export function normalizeTeamStar(json: Json): { ref: string; ppg: string; rpg: string; apg: string } | null {
-  const lead: Json | undefined = ((json.categories ?? []) as Json[]).find((c) => c.name === 'rating')?.leaders?.[0];
-  const ref = String(lead?.athlete?.$ref ?? '').replace(/^http:\/\//, 'https://');
-  if (!lead || !ref) return null;
-  const text = String(lead.displayValue ?? '');
-  const part = (label: string) => new RegExp(`([\\d.]+)\\s*${label}`, 'i').exec(text)?.[1] ?? '';
-  return { ref, ppg: part('PPG'), rpg: part('RPG'), apg: part('APG') };
+export function normalizeTeamLeaders(json: Json, limit = 8): { ref: string; ppg: string; rpg: string; apg: string }[] {
+  const leaders: Json[] = ((json.categories ?? []) as Json[]).find((c) => c.name === 'rating')?.leaders ?? [];
+  return leaders.slice(0, limit).flatMap((lead) => {
+    const ref = String(lead?.athlete?.$ref ?? '').replace(/^http:\/\//, 'https://');
+    if (!ref) return [];
+    const text = String(lead.displayValue ?? '');
+    const part = (label: string) => new RegExp(`([\\d.]+)\\s*${label}`, 'i').exec(text)?.[1] ?? '';
+    return [{ ref, ppg: part('PPG'), rpg: part('RPG'), apg: part('APG') }];
+  });
 }
 
-type AthleteInfo = { athleteId: string; name: string; shortName: string; headshot?: string };
+/** The first of them: the team's best player. Null when nobody is rated yet. */
+export const normalizeTeamStar = (json: Json) => normalizeTeamLeaders(json, 1)[0] ?? null;
+
+type AthleteInfo = { athleteId: string; name: string; shortName: string; headshot?: string; position?: string; jersey?: string };
 
 /** Athlete records already read, by ref: the same player leads several categories, and the screen reads them one at a time. */
 const athletes = new Map<string, Promise<AthleteInfo>>();
@@ -71,6 +76,8 @@ function athleteOf(ref: string): Promise<AthleteInfo> {
           name: data.displayName ?? data.fullName ?? 'Unknown',
           shortName: data.shortName ?? data.displayName ?? '',
           headshot: data.headshot?.href ?? (athleteId ? headshotUrl(athleteId) : undefined),
+          position: data.position?.abbreviation ? String(data.position.abbreviation) : undefined,
+          jersey: data.jersey ? String(data.jersey) : undefined,
         };
       })
       .catch((): AthleteInfo => {
@@ -90,6 +97,14 @@ export async function fetchTeamStar(teamId: string): Promise<TeamStar | null> {
   if (!star) return null;
   const who = await athleteOf(star.ref);
   return { ...who, ppg: star.ppg, rpg: star.rpg, apg: star.apg };
+}
+
+/** A team's best rated players, best first (`limit` of them, each with his position and number): who a game's key matchup is picked from. */
+export async function fetchTeamRated(teamId: string, limit = 8): Promise<TeamStar[]> {
+  const json = await getJson(`${CORE}/seasons/${currentSeason()}/types/2/teams/${teamId}/leaders?lang=en&region=us`);
+  const rated = normalizeTeamLeaders(json, limit);
+  const people = await Promise.all(rated.map((r) => athleteOf(r.ref)));
+  return rated.map((r, i) => ({ ...people[i], ppg: r.ppg, rpg: r.rpg, apg: r.apg }));
 }
 
 /** Minutes as a clock: 37.3636 -> "37:22". */
