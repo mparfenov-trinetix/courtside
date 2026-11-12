@@ -1,9 +1,24 @@
 import type { Game, GameLogEntry } from '../espn';
 
 export type CatchUpItem =
-  | { kind: 'result'; id: string; result: 'W' | 'L'; text: string; gameId: string }
+  | { kind: 'result'; id: string; result: 'W' | 'L'; text: string; gameId: string; score: string; home: boolean; opponent: string }
   | { kind: 'standing'; id: string; from: number; to: number }
-  | { kind: 'player'; id: string; playerId: string; teamId: string; name: string; line: string; context: string; gameId: string };
+  | {
+      kind: 'player';
+      id: string;
+      playerId: string;
+      teamId: string;
+      name: string;
+      line: string;
+      context: string;
+      gameId: string;
+      pts: number;
+      reb: number;
+      ast: number;
+      result?: 'W' | 'L';
+      home: boolean;
+      opponent: string;
+    };
 
 /** Away for less than this and there is nothing worth a card. */
 export const MIN_AWAY_MS = 3 * 60 * 60 * 1000;
@@ -37,6 +52,9 @@ export function buildCatchUp(opts: {
       gameId: g.id,
       result: g.result as 'W' | 'L',
       text: `${g.result} ${g.teamScore}–${g.opponentScore} ${g.home ? 'vs' : '@'} ${g.opponentAbbr}`,
+      score: `${g.teamScore}–${g.opponentScore}`,
+      home: g.home,
+      opponent: g.opponentAbbr,
     });
   }
 
@@ -56,6 +74,12 @@ export function buildCatchUp(opts: {
       gameId: last.gameId,
       line: `${last.pts} pts · ${last.reb} reb · ${last.ast} ast`,
       context: `${last.result ?? ''} ${last.home ? 'vs' : '@'} ${last.opponent}`.trim(),
+      pts: last.pts,
+      reb: last.reb,
+      ast: last.ast,
+      result: last.result === 'W' || last.result === 'L' ? last.result : undefined,
+      home: last.home,
+      opponent: last.opponent,
     });
   }
   return items;

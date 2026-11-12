@@ -92,6 +92,9 @@ test('catch-up: results, a standing move and watched players since you left', ()
   assert.deepEqual(items.map((i) => i.kind), ['result', 'result', 'standing', 'player']);
   assert.equal(items[0].kind === 'result' && items[0].text, 'W 110–100 vs CHI');
   assert.equal(items[3].kind === 'player' && items[3].line, '25 pts · 6 reb · 3 ast');
+  const last = items[3];
+  assert.ok(last.kind === 'player' && last.pts === 25 && last.reb === 6 && last.ast === 3 && last.result === 'W' && !last.home && last.opponent === 'NY');
+  assert.ok(items[0].kind === 'result' && items[0].score === '110–100' && items[0].home && items[0].opponent === 'CHI');
   assert.deepEqual(buildCatchUp({ since: now - 60_000, now, schedule: [g('3', '2026-11-04T11:59:30Z', 'W')] }), []);
 });
 
