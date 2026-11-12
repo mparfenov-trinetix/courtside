@@ -13,7 +13,7 @@ import Svg, { Circle, Line, Rect } from 'react-native-svg';
 import { CardLights } from '@/components';
 import type { Tilt } from '@/hooks';
 import type { Team, TeamDetail } from '@/lib/espn';
-import { fonts, logoOn, mix, OUTLINE, OUTLINED_LOGO, OUTLINE_STEPS, teamTheme, withAlpha } from '@/lib/theme';
+import { fonts, logoOn, mix, OUTLINE, OUTLINED_LOGO, OUTLINE_STEPS, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { waveAt, type RefreshAnimation } from '../TeamRefresh';
 import { MAX_ROTATE, RADIUS, GLINT, REFRESH_REACH, SWEEPS } from './constants';
 
@@ -41,11 +41,13 @@ type Props = {
   logoTag?: string;
   /** Place in the conference ("7th in the West"); falls back to ESPN's own text. */
   standing?: string;
+  /** The run it is on ("W5", "L9"): a bubble at the card's bottom right, at the end of the record row. */
+  streak?: string;
   /** The page's pull-to-refresh: the logo plays the team's own motion and a glint sweeps across the card. */
   refresh?: RefreshAnimation;
 };
 
-export function TeamCard({ team, detail, width, tilt, logoTag, standing, refresh }: Props) {
+export function TeamCard({ team, detail, width, tilt, logoTag, standing, streak, refresh }: Props) {
   const height = cardHeight(width);
   const theme = teamTheme(team);
   const { x, y } = tilt;
@@ -185,6 +187,15 @@ export function TeamCard({ team, detail, width, tilt, logoTag, standing, refresh
             <View style={styles.statsRow}>
               <Stat label="Record" value={detail?.record ?? '–'} color={theme.onPrimary} />
               <Stat label="Standing" value={standing ?? detail?.standing ?? '–'} color={theme.onPrimary} grow />
+              {/* The streak, bottom right on a dark bubble so its green or red reads on every team color. */}
+              {streak ? (
+                <View
+                  style={[styles.streak, { borderColor: withAlpha(streak.startsWith('W') ? palette.win : palette.loss, 0.7) }]}
+                  accessible
+                  accessibilityLabel={`${streak.startsWith('W') ? 'Won' : 'Lost'} ${streak.slice(1)} in a row`}>
+                  <Text style={[styles.streakText, { color: streak.startsWith('W') ? palette.win : palette.loss }]}>{streak}</Text>
+                </View>
+              ) : null}
             </View>
           </View>
 
@@ -262,6 +273,8 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
   },
+  streak: { minWidth: 44, height: 28, marginLeft: 8, paddingHorizontal: 10, borderRadius: 14, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(10,10,10,0.62)' },
+  streakText: { fontFamily: fonts.displayBold, fontSize: 18, lineHeight: 22 },
   footer: {
     position: 'absolute',
     left: 22,

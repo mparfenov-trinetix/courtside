@@ -24,6 +24,7 @@ import { TitleOdds } from '../TitleOdds';
 import { Watchlist } from '@/features/watchlist';
 import { useManualRefresh, useStandings, useTeam, useTeamDetail, useTeamSchedule, useTilt } from '@/hooks';
 import { conferenceStanding } from '@/lib/league';
+import { streakOf } from '@/lib/widgets';
 import type { Game } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha, surfaces } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
@@ -88,6 +89,18 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
     bg.value = withTiming(theme.background, { duration: 500 });
   }, [theme.background, bg]);
   const bgStyle = useAnimatedStyle(() => ({ backgroundColor: bg.value }));
+
+  // The run the team is on, from its finished games: "W5", "L9" (nothing before its first game).
+  const streak = useMemo(
+    () =>
+      streakOf(
+        (schedule ?? [])
+          .filter((g) => g.completed && (g.result === 'W' || g.result === 'L'))
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .map((g) => g.result as 'W' | 'L'),
+      ),
+    [schedule],
+  );
 
   const completedGames = useMemo(() => {
     if (!schedule) return [];
@@ -186,7 +199,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         {/* Team card */}
         <View style={styles.cardArea}>
           {pushed ? (
-            <TeamCard key={team.id} team={team} detail={detail} standing={standing} width={cardWidth} tilt={tilt} refresh={refreshAnimation} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
+            <TeamCard key={team.id} team={team} detail={detail} standing={standing} streak={streak} width={cardWidth} tilt={tilt} refresh={refreshAnimation} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
           ) : (
             // Hold the card to switch team. A drag tilts it instead (the gesture takes over before the hold completes).
             <Pressable
@@ -196,7 +209,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
               }}
               delayLongPress={420}
               accessibilityHint="Hold to switch team">
-              <TeamCard key={team.id} team={team} detail={detail} standing={standing} width={cardWidth} tilt={tilt} refresh={refreshAnimation} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
+              <TeamCard key={team.id} team={team} detail={detail} standing={standing} streak={streak} width={cardWidth} tilt={tilt} refresh={refreshAnimation} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
             </Pressable>
           )}
         </View>
