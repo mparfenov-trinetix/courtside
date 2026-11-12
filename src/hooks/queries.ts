@@ -44,7 +44,7 @@ import {
   type ScoreboardGame,
 } from '@/lib/espn';
 import { parseEspnDate, scoreboardKeysFor, startsOnDay, toDateKey } from '@/lib/date';
-import { MATCHUP_MIN_PPG, NOTED_FROM, conferenceMap, inferPlayoffNotes, playoffSeeds, seedMap } from '@/lib/league';
+import { NOTED_FROM, isMatchupStar, conferenceMap, inferPlayoffNotes, playoffSeeds, seedMap } from '@/lib/league';
 import { awaitsTipOff, boardPhase, gamePhase, shotsOf } from '@/lib/game';
 import { findGameRecap, recapQuery, searchVideos, type RecapGame, type SearchVideo } from '@/lib/youtube';
 
@@ -93,7 +93,7 @@ export function useTeamRated(teamId?: string | null) {
   return useQuery({
     queryKey: ['teamRated', teamId, currentSeason()],
     // Only the scorers of a key matchup get their record read (see `fetchTeamRated`).
-    queryFn: () => fetchTeamRated(teamId!, 6, MATCHUP_MIN_PPG),
+    queryFn: () => fetchTeamRated(teamId!, 6, isMatchupStar),
     enabled: !!teamId,
     staleTime: 6 * HOUR,
   });

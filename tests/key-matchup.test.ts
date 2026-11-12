@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { pickKeyMatchup, positionGroup } from '../src/lib/league';
+import { isMatchupStar, pickKeyMatchup, positionGroup } from '../src/lib/league';
 
-const p = (athleteId: string, position: string, ppg: string) => ({ athleteId, name: athleteId, shortName: athleteId, position, ppg, rpg: '5.0', apg: '3.0' });
+const p = (athleteId: string, position: string, ppg: string, rpg = '1.0', apg = '1.0') => ({ athleteId, name: athleteId, shortName: athleteId, position, ppg, rpg, apg });
 const out = (athleteId: string, status = 'Out') => ({ teamId: '1', athleteId, name: athleteId, status });
 
 test('positions fall into guards, forwards and centers', () => {
@@ -32,9 +32,28 @@ test('key matchup: a player who is out is never shown, a day-to-day one is, flag
   assert.equal(dtd.homeStatus, undefined);
 });
 
-test('key matchup: only a real one: two stars (20+ a game, top three of their team) of one position, else none', () => {
-  // Same position but a role player (18.6) across from a star.
-  assert.equal(pickKeyMatchup([p('a', 'F', '18.6')], [p('h', 'F', '25.7')]), null);
+test('a star is 20+ points a game, or under 20 a points, rebounds and assists line of 28+', () => {
+  assert.equal(isMatchupStar({ ppg: '20.0', rpg: '1.0', apg: '1.0' }), true);
+  assert.equal(isMatchupStar({ ppg: '19.9', rpg: '2.0', apg: '2.0' }), false);
+  // 18.6 points, 1.8 rebounds and 2.3 assists (22.7): the line that came up as a key matchup and should not have.
+  assert.equal(isMatchupStar({ ppg: '18.6', rpg: '1.8', apg: '2.3' }), false);
+  // 18 points with 6 rebounds and 4 assists adds up to 28.
+  assert.equal(isMatchupStar({ ppg: '18.0', rpg: '6.0', apg: '4.0' }), true);
+  // 15 points, 6 rebounds and 7 assists: a star's line without the scoring.
+  assert.equal(isMatchupStar({ ppg: '15.0', rpg: '6.0', apg: '7.0' }), true);
+  assert.equal(isMatchupStar({ ppg: '15.0', rpg: '6.0', apg: '6.9' }), false);
+  assert.equal(isMatchupStar({ ppg: '13.0', rpg: '6.0', apg: '7.0' }), false);
+  assert.equal(isMatchupStar({ ppg: '', rpg: '', apg: '' }), false);
+});
+
+test('key matchup: a player who qualifies by his all-round line counts', () => {
+  const m = pickKeyMatchup([p('a', 'G', '15.0', '6.0', '7.0')], [p('h', 'G', '22.0')])!;
+  assert.deepEqual([m.away.athleteId, m.home.athleteId, m.group], ['a', 'h', 'G']);
+});
+
+test('key matchup: only a real one: two stars of one position, top three of their team, else none', () => {
+  // Same position but a role player across from a star.
+  assert.equal(pickKeyMatchup([p('a', 'F', '18.6', '1.8', '2.3')], [p('h', 'F', '25.7')]), null);
   // Two scorers, but not of one position.
   assert.equal(pickKeyMatchup([p('a', 'G', '25')], [p('h', 'C', '25')]), null);
   // A star who is out leaves no one good enough behind him.
