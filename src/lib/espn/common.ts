@@ -69,6 +69,12 @@ const PRIMARY_LOGO_GUID: Record<string, string> = {
   PHI: 'ca1685ed-b799-53e4-7924-e58ea6eb8f3a',
 };
 
+/** The NBA's own three-letter codes where ESPN's differ (it writes GS, NO, NY, SA, UTAH and WSH). */
+const TRICODES: Record<string, string> = { GS: 'GSW', NO: 'NOP', NY: 'NYK', SA: 'SAS', UTAH: 'UTA', WSH: 'WAS' };
+
+/** A team's abbreviation as three letters, the NBA's way: GS is GSW, NO is NOP, SA is SAS. Every other one is ESPN's own already. */
+export const tricode = (abbr: string): string => TRICODES[abbr] ?? abbr;
+
 export function teamLogo(abbr: string | undefined, href: string | undefined): string {
   const guid = abbr ? PRIMARY_LOGO_GUID[abbr] : undefined;
   if (guid) return `https://a.espncdn.com/combiner/i?img=/guid/${guid}/logos/primary_logo_on_black_color.png&w=500&h=500&transparent=true`;
