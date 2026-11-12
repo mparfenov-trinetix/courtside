@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   clear: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.muted, paddingBottom: 6, paddingHorizontal: 4 },
   section: { ...textStyle.sectionLabel, paddingTop: 16, paddingBottom: 6, paddingHorizontal: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, paddingHorizontal: 8, borderRadius: 14 },
-  avatar: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: withAlpha(palette.chalk, 0.1) },
+  avatar: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: withAlpha(palette.chalk, 0.1) },
   avatarTeam: { backgroundColor: 'transparent', borderRadius: 0 },
   headshot: { width: 44, height: 44 },
   logo: { width: 44, height: 44 },

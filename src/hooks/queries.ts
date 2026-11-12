@@ -364,6 +364,23 @@ export function usePlayerGameLog(athleteId?: string | null) {
   });
 }
 
+/**
+ * A player's games over the last `count` seasons (the current one first), each season its own cached read: a finished season never changes. The
+ * current season shares the key of `usePlayerGameLog`.
+ */
+export function usePlayerSeasonLogs(athleteId: string | null | undefined, count = 3) {
+  const current = currentSeason();
+  const seasons = Array.from({ length: count }, (_, i) => current - i);
+  return useQueries({
+    queries: seasons.map((season) => ({
+      queryKey: season === current ? ['playerGameLog', athleteId] : ['playerGameLog', athleteId, season],
+      queryFn: () => fetchPlayerGameLog(athleteId!, season === current ? undefined : season),
+      enabled: !!athleteId,
+      staleTime: season === current ? 30 * 60 * 1000 : Infinity,
+    })),
+  });
+}
+
 export function usePlayerSearch(query: string) {
   const q = query.trim();
   const { data: teams } = useTeams();

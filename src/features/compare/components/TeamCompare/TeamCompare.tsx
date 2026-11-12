@@ -1,17 +1,18 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { useState, type ComponentProps } from 'react';
+import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import Animated, { type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useSlotsStyle } from '../CompareBar';
 import { CompareRow, rowWinner, type Row } from '../CompareRow';
 import { Radar, type RadarAxis } from '../Radar';
-import { HeadToHead, EmptyState } from '@/components';
-import { useLeagueTeamStats, useTeams } from '@/hooks';
+import { HeadToHead, EmptyState, MINI_CARD_RATIO, MiniCardEmpty, MiniTeamCard, dealIn } from '@/components';
+import { useLeagueTeamStats, useSceneSettled, useStandings, useTeamDetail, useTeams } from '@/hooks';
 import type { Team, TeamStatRow } from '@/lib/espn';
-import { TEAM_METRICS, formatMetric, metricByKey, ordinal, rankOf, type TeamMetric } from '@/lib/league';
-import { fonts, matchupColors, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
+import { TEAM_METRICS, conferenceStanding, formatMetric, metricByKey, ordinal, rankOf, type TeamMetric } from '@/lib/league';
+import { fonts, matchupColors, palette, teamTheme, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
 
 function buildRows(rows: TeamStatRow[], a: TeamStatRow, b: TeamStatRow): Row[] {
@@ -45,23 +46,37 @@ function radarAxes(rows: TeamStatRow[], a: TeamStatRow, b: TeamStatRow): RadarAx
   return RADAR.map(({ label, key }) => ({ label, a: score(a, key), b: score(b, key) }));
 }
 
-/** Head-to-head season comparison for two teams, with league ranks computed from all 30. */
-export function TeamCompare() {
+/** The two teams picked: the URL holds them so other screens can deep-link a matchup (e.g. a team page's Compare button), the first falling back to your team. */
+export function useTeamPicks() {
   const currentTeamId = useScreenTeamStore((s) => s.currentTeamId);
   const { data: teams } = useTeams();
-  const { data: table, isPending } = useLeagueTeamStats();
-  // The URL holds the two picks so other screens can deep-link a matchup (e.g. a team page's Compare button).
   const { a, b } = useLocalSearchParams<{ a?: string; b?: string }>();
-  const [picking, setPicking] = useState<'a' | 'b' | null>(null);
-
   const idA = a || currentTeamId;
-  const idB = b || null;
+  // Never the same team twice (a link could ask for it).
+  const idB = b && b !== idA ? b : null;
   const teamA = teams?.find((t) => t.id === idA);
   const teamB = teams?.find((t) => t.id === idB);
-  const statsA = table?.find((r) => r.teamId === idA);
-  const statsB = table?.find((r) => r.teamId === idB);
   const fallback = { color: '#8A96A8', alternateColor: '#F2F4F7' };
   const colors = matchupColors(teamA ?? fallback, teamB ?? { color: '#E2B077', alternateColor: '#F2F4F7' });
+  return { teams, idA, idB, teamA, teamB, colors };
+}
+
+/** Head-to-head season comparison for two teams, with league ranks computed from all 30. `scrollY` is the page's scroll, which the cards follow. */
+export function TeamCompare({ scrollY }: { scrollY: SharedValue<number> }) {
+  const { teams, idA, idB, teamA, teamB, colors } = useTeamPicks();
+  const { data: table, isPending } = useLeagueTeamStats();
+  const [picking, setPicking] = useState<'a' | 'b' | null>(null);
+  const { width: screen } = useWindowDimensions();
+  const cardW = Math.floor((screen - 32 - 10) / 2);
+  const { data: standings, isLoading: loadingStandings } = useStandings();
+  // A team chosen after the screen has settled is dealt in with a flip (not on the screen's own first draw, inside the slide in from the menu).
+  const settled = useSceneSettled(0);
+
+  const { data: detailA, isLoading: loadingA } = useTeamDetail(idA);
+  const { data: detailB, isLoading: loadingB } = useTeamDetail(idB);
+  const statsA = table?.find((r) => r.teamId === idA);
+  const statsB = table?.find((r) => r.teamId === idB);
+  const slotsStyle = useSlotsStyle(scrollY, Math.round(cardW * MINI_CARD_RATIO));
 
   const rows = table && statsA && statsB ? buildRows(table, statsA, statsB) : [];
   const winsA = rows.filter((r) => rowWinner(r) === 'a').length;
@@ -69,11 +84,14 @@ export function TeamCompare() {
 
   return (
     <>
-      <View style={styles.slots}>
-        <TeamSlot team={teamA} color={colors.away} onPress={() => setPicking('a')} />
-        <Text style={styles.vs}>VS</Text>
-        <TeamSlot team={teamB} color={colors.home} onPress={() => setPicking('b')} />
-      </View>
+      {/* The two teams as small team cards (a seat to fill when one is missing), VS between them. */}
+      <Animated.View style={[styles.slots, slotsStyle]}>
+        <TeamSlot key={teamA?.id ?? 'a'} team={teamA} color={colors.away} width={cardW} record={detailA?.record} standing={short(conferenceStanding(standings, idA))} loading={loadingA || loadingStandings} entering={settled ? dealIn('left') : undefined} onPress={() => setPicking('a')} />
+        <TeamSlot key={teamB?.id ?? 'b'} team={teamB} color={colors.home} width={cardW} record={detailB?.record} standing={short(conferenceStanding(standings, idB))} loading={loadingB || loadingStandings} entering={settled ? dealIn('right', 100) : undefined} onPress={() => setPicking('b')} />
+        <View pointerEvents="none" style={[styles.vsBadge, { left: screen / 2 - 20, top: Math.round(cardW * MINI_CARD_RATIO) / 2 - 20 }]}>
+          <Text style={styles.vsText}>VS</Text>
+        </View>
+      </Animated.View>
 
       {rows.length > 0 ? (
         <Animated.View style={styles.card}>
@@ -119,20 +137,12 @@ export function TeamCompare() {
   );
 }
 
-function TeamSlot({ team, color, onPress }: { team?: Team; color: string; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.slot, { borderColor: withAlpha(color, 0.5) }, pressed && { opacity: 0.8 }]}>
-      <View style={[styles.avatar, { backgroundColor: withAlpha(color, 0.3) }]}>
-        {team ? (
-          <Image source={team.logoDark || team.logo} style={styles.logo} contentFit="contain" />
-        ) : (
-          <Text style={styles.plus}>+</Text>
-        )}
-      </View>
-      <Text style={styles.slotName} numberOfLines={2}>{team ? team.name : 'Choose team'}</Text>
-      <Text style={styles.slotSub}>{team ? team.location : 'Tap to pick'}</Text>
-    </Pressable>
-  );
+/** "7th in the West" -> "7th West": the card has little room. */
+const short = (standing?: string) => standing?.replace(' in the ', ' ');
+
+function TeamSlot({ team, color, width, record, standing, loading, entering, onPress }: { team?: Team; color: string; width: number; record?: string; standing?: string; loading: boolean; entering: ComponentProps<typeof MiniTeamCard>['entering']; onPress: () => void }) {
+  if (!team) return <MiniCardEmpty width={width} color={color} title="Choose team" hint="Tap to pick" onPress={onPress} />;
+  return <MiniTeamCard team={team} theme={teamTheme(team)} width={width} record={record} standing={standing} loading={loading} entering={entering} onPress={onPress} />;
 }
 
 function TeamPicker({
@@ -186,23 +196,10 @@ function TeamPicker({
 }
 
 const styles = StyleSheet.create({
-  slots: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 8, marginTop: 8, marginBottom: 16 },
-  vs: { fontFamily: fonts.display, fontSize: 20, color: palette.muted },
-  slot: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-    borderRadius: 22,
-    borderWidth: 1,
-    backgroundColor: surfaces.card,
-  },
-  avatar: { width: 92, height: 92, borderRadius: 46, alignItems: 'center', justifyContent: 'center' },
-  logo: { width: 64, height: 64 },
-  plus: { fontFamily: fonts.display, fontSize: 44, color: palette.chalk },
-  slotName: { fontFamily: fonts.displayBold, fontSize: 20, color: palette.chalk, textAlign: 'center', minHeight: 48 },
-  slotSub: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
+  slots: { flexDirection: 'row', paddingHorizontal: 16, gap: 10, marginTop: 8, marginBottom: 16 },
+  // Above the cards, which flip in around it: they must never swing over it.
+  vsBadge: { position: 'absolute', zIndex: 10, elevation: 10, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.arena, borderWidth: 1.5, borderColor: withAlpha(palette.chalk, 0.5) },
+  vsText: { fontFamily: fonts.display, fontSize: 17, color: palette.chalk, letterSpacing: 0.5 },
   card: { marginHorizontal: 16, borderRadius: 22, padding: 16, backgroundColor: surfaces.card },
   h2h: { marginHorizontal: 16, marginBottom: 8 },
   radarNote: { textAlign: 'center', fontFamily: fonts.body, fontSize: 11, color: palette.muted, marginBottom: 14 },

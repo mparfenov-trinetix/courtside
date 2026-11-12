@@ -10,3 +10,5 @@ export * from './standings-window';
 export * from './team-stats';
 export * from './titles';
 export * from './key-matchup';
+export * from './player-h2h';
+export * from './header-names';

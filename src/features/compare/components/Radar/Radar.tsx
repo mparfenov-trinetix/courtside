@@ -1,8 +1,14 @@
 import { StyleSheet, Text } from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
+import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import Svg, { Circle, Line, Polygon } from 'react-native-svg';
 
 import { fonts, palette, withAlpha } from '@/lib/theme';
+
+/** The chart comes in with a short fade and a small grow that eases to a stop: it used to be a spring (`ZoomIn.springify()`), which bounced every time the toggle between this season and career redrew it. */
+const SETTLE_IN = new Keyframe({
+  0: { opacity: 0, transform: [{ scale: 0.94 }] },
+  100: { opacity: 1, transform: [{ scale: 1 }], easing: Easing.out(Easing.cubic) },
+}).duration(320);
 
 /** One spoke of the chart; `a` and `b` are scores from 0 to 1 (1 = the outer ring). */
 export type RadarAxis = { label: string; a: number; b: number };
@@ -37,7 +43,7 @@ export function Radar({
 
   return (
     <Animated.View
-      entering={ZoomIn.springify().damping(16).stiffness(140)}
+      entering={SETTLE_IN}
       style={[styles.wrap, { width: size, height: size }]}
       accessible
       accessibilityRole="image"

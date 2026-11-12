@@ -1,26 +1,26 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CompareRow, PlayerExtras, type Row, Radar, type RadarAxis, TeamCompare } from '../../components';
-import { Segmented, slideIn, ScreenHeader, SearchInput, EmptyState } from '@/components';
-import { usePlayerCareer, usePlayerSearch, usePlayerStats, useTeams } from '@/hooks';
-import { headshotUrl, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
-import { nba2kRating } from '@/lib/league';
+import { CompareHeaderTitle, CompareRow, PlayerExtras, PlayerHeadToHead, type Row, Radar, type RadarAxis, TeamCompare, useSlotsStyle, useTeamPicks } from '../../components';
+import { MINI_CARD_RATIO, MiniCardEmpty, MiniPlayerCard, Segmented, dealIn, slideIn, ScreenHeader, SearchInput, EmptyState } from '@/components';
+import { usePlayerCareer, usePlayerSearch, usePlayerStats, useSceneSettled, useTeams } from '@/hooks';
+import { headshotUrl, tricode, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
+import { lastNameOf, nba2kRating, namesScale } from '@/lib/league';
 import { goBack } from '@/navigation';
-import { fonts, matchupColors, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
+import { fonts, matchupColors, palette, teamTheme, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { MODES, SCOPES, CEILING } from './constants';
 
 type Slot = PlayerSearchResult | null;
@@ -106,17 +106,26 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
     : null;
   const [pickedA, setPickedA] = useState<Slot | undefined>(undefined);
   // A second player can come with the link too (the key matchup of a game opens the two stars side by side).
-  const fromParamsB: Slot = params.id2
+  // (never the same player as the first: a comparison of someone with himself says nothing)
+  const fromParamsB: Slot = params.id2 && params.id2 !== params.id
     ? { id: params.id2, name: params.name2 ?? 'Player', teamId: params.teamId2 || undefined, teamAbbr: params.teamAbbr2 || undefined, headshot: headshotUrl(params.id2) }
     : null;
   const [slotB, setSlotB] = useState<Slot>(fromParamsB);
   const [picking, setPicking] = useState<'a' | 'b' | null>(null);
   const slotA = pickedA !== undefined ? pickedA : fromParams;
 
-  const { data: statsA } = usePlayerStats(slotA?.id);
-  const { data: statsB } = usePlayerStats(slotB?.id);
-  const { data: careerA } = usePlayerCareer(scope === 'career' ? slotA?.id : undefined);
-  const { data: careerB } = usePlayerCareer(scope === 'career' ? slotB?.id : undefined);
+  const { data: statsA, isLoading: loadingStatsA } = usePlayerStats(slotA?.id);
+  const { data: statsB, isLoading: loadingStatsB } = usePlayerStats(slotB?.id);
+  const { data: careerA, isLoading: loadingCareerA } = usePlayerCareer(scope === 'career' ? slotA?.id : undefined);
+  const { data: careerB, isLoading: loadingCareerB } = usePlayerCareer(scope === 'career' ? slotB?.id : undefined);
+  // A card chosen after the screen has settled is dealt in with a flip (not on the screen's own first draw, which is inside the slide in from the menu).
+  const settled = useSceneSettled(0);
+  // The page's scroll: the cards thin out as it goes and a compact bar with both sides takes their place at the top.
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.set(e.contentOffset.y);
+  });
+  const teamPicks = useTeamPicks();
 
   const teamOf = (s: Slot): Team | undefined => teams?.find((t) => t.id === s?.teamId);
   const teamA = teamOf(slotA);
@@ -132,6 +141,34 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
       : statsA && statsB
         ? buildRows(statsA, statsB, { a: slotA?.name, b: slotB?.name })
         : [];
+  // The numbers on the cards: season averages, or the career's when that is what is compared; the better of each pair is lit.
+  const { width: screen } = useWindowDimensions();
+  const cardW = Math.floor((screen - 32 - 10) / 2);
+  const lineOf = (season?: PlayerSeasonStats, career?: PlayerCareer) =>
+    scope === 'career'
+      ? { ppg: career?.career.PTS, rpg: career?.career.REB, apg: career?.career.AST }
+      : { ppg: season?.ppg?.toFixed(1), rpg: season?.rpg?.toFixed(1), apg: season?.apg?.toFixed(1) };
+  const cardH = Math.round(cardW * MINI_CARD_RATIO);
+  const slotsStyle = useSlotsStyle(scrollY, cardH);
+  // A player is his last name in the header, cut with an ellipsis when it does not fit: the same size for both, whatever they are called.
+  const barA = mode === 'teams' ? teamPicks.teamA : null;
+  const barB = mode === 'teams' ? teamPicks.teamB : null;
+  const bar =
+    mode === 'teams'
+      ? barA && barB
+        ? { a: { label: tricode(barA.abbreviation), image: barA.logoDark || barA.logo, kind: 'logo' as const, color: teamPicks.colors.away }, b: { label: tricode(barB.abbreviation), image: barB.logoDark || barB.logo, kind: 'logo' as const, color: teamPicks.colors.home } }
+        : null
+      : slotA && slotB
+        ? { a: { label: lastNameOf(slotA.name), image: slotA.headshot, kind: 'face' as const, color: colors.away }, b: { label: lastNameOf(slotB.name), image: slotB.headshot, kind: 'face' as const, color: colors.home } }
+        : null;
+  const lineA = lineOf(statsA, careerA);
+  const lineB = lineOf(statsB, careerB);
+  const beats = (x?: string, y?: string) => x != null && y != null && Number(x) > Number(y);
+  const better = {
+    a: { ppg: beats(lineA.ppg, lineB.ppg), rpg: beats(lineA.rpg, lineB.rpg), apg: beats(lineA.apg, lineB.apg) },
+    b: { ppg: beats(lineB.ppg, lineA.ppg), rpg: beats(lineB.rpg, lineA.rpg), apg: beats(lineB.apg, lineA.apg) },
+  };
+
   const winsA = rows.filter((r) => (r.a ?? -1) > (r.b ?? -1)).length;
   const winsB = rows.filter((r) => (r.b ?? -1) > (r.a ?? -1)).length;
 
@@ -152,9 +189,10 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
 
   return (
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
-      <ScreenHeader title="Compare" onBack={pushed ? goBack : undefined} />
+      {/* The title is "Compare" until the cards have scrolled away, then the two sides rise into the same row. */}
+      <ScreenHeader title={<CompareHeaderTitle a={bar?.a} b={bar?.b} scrollY={scrollY} cardH={cardH} scale={mode === 'teams' || !slotA || !slotB ? 1 : namesScale(slotA.name, slotB.name)} />} onBack={pushed ? goBack : undefined} />
       {/* Inside the scroll view, so it scrolls away with the page instead of taking room all the time. */}
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
         <Segmented
           style={{ marginBottom: 14 }}
           options={[...MODES]}
@@ -166,14 +204,17 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
         />
         <Animated.View key={mode} entering={slideIn(slide)}>
         {mode === 'teams' ? (
-          <TeamCompare />
+          <TeamCompare scrollY={scrollY} />
         ) : (
           <>
-        <View style={styles.slots}>
-          <PlayerSlot slot={slotA} color={colors.away} onPress={() => setPicking('a')} />
-          <Text style={styles.vs}>VS</Text>
-          <PlayerSlot slot={slotB} color={colors.home} onPress={() => setPicking('b')} />
-        </View>
+        {/* The two players as small trading cards (a seat to fill when one is missing), VS between them. */}
+        <Animated.View style={[styles.slots, slotsStyle]}>
+          <PlayerSlot key={slotA?.id ?? 'a'} slot={slotA} team={teamA} color={colors.away} width={cardW} line={lineA} better={better.a} loading={scope === 'career' ? loadingCareerA : loadingStatsA} entering={settled ? dealIn('left') : undefined} onPress={() => setPicking('a')} />
+          <PlayerSlot key={slotB?.id ?? 'b'} slot={slotB} team={teamB} color={colors.home} width={cardW} line={lineB} better={better.b} loading={scope === 'career' ? loadingCareerB : loadingStatsB} entering={settled ? dealIn('right', 100) : undefined} onPress={() => setPicking('b')} />
+          <View pointerEvents="none" style={[styles.vsBadge, { left: screen / 2 - 20, top: Math.round(cardW * MINI_CARD_RATIO) / 2 - 20 }]}>
+            <Text style={styles.vsText}>VS</Text>
+          </View>
+        </Animated.View>
 
         {slotA && slotB && (
           <View style={styles.scope}>
@@ -201,14 +242,17 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
           />
         )}
 
+        {slotA && slotB && <PlayerHeadToHead a={slotA} b={slotB} aColor={colors.away} bColor={colors.home} />}
         {slotA && slotB && <PlayerExtras a={slotA} b={slotB} aColor={colors.away} bColor={colors.home} />}
           </>
         )}
         </Animated.View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       <PickerModal
         visible={picking != null}
+        // The other seat's player cannot be picked again.
+        disabledId={picking === 'a' ? slotB?.id : slotA?.id}
         onClose={() => setPicking(null)}
         onPick={(p) => {
           if (picking === 'a') setPickedA(p);
@@ -220,28 +264,51 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
   );
 }
 
-function PlayerSlot({ slot, color, onPress }: { slot: Slot; color: string; onPress: () => void }) {
+function PlayerSlot({
+  slot,
+  team,
+  color,
+  width,
+  line,
+  better,
+  loading,
+  entering,
+  onPress,
+}: {
+  slot: Slot;
+  team?: Team;
+  color: string;
+  width: number;
+  line: { ppg?: string; rpg?: string; apg?: string };
+  better: { ppg: boolean; rpg: boolean; apg: boolean };
+  loading: boolean;
+  entering: ComponentProps<typeof MiniPlayerCard>['entering'];
+  onPress: () => void;
+}) {
+  if (!slot) return <MiniCardEmpty width={width} color={color} title="Choose player" hint="Tap to search" onPress={onPress} />;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.slot, { borderColor: withAlpha(color, 0.5) }, pressed && { opacity: 0.8 }]}>
-      <View style={[styles.avatar, { backgroundColor: withAlpha(color, 0.3) }]}>
-        {slot ? (
-          <Image source={slot.headshot} style={styles.avatarImg} contentFit="cover" />
-        ) : (
-          <Text style={styles.plus}>+</Text>
-        )}
-      </View>
-      <Text style={styles.slotName} numberOfLines={2}>{slot ? slot.name : 'Choose player'}</Text>
-      <Text style={styles.slotTeam}>{slot ? slot.teamAbbr ?? ' ' : 'Tap to search'}</Text>
-    </Pressable>
+    <MiniPlayerCard
+      team={team}
+      theme={teamTheme(team ?? null)}
+      star={{ athleteId: slot.id, name: slot.name, headshot: slot.headshot, ppg: line.ppg ?? '–', rpg: line.rpg ?? '–', apg: line.apg ?? '–' }}
+      width={width}
+      better={better}
+      loading={loading}
+      entering={entering}
+      onPress={onPress}
+    />
   );
 }
 
 function PickerModal({
   visible,
+  disabledId,
   onClose,
   onPick,
 }: {
   visible: boolean;
+  /** Already in the other seat: shown, but cannot be chosen. */
+  disabledId?: string;
   onClose: () => void;
   onPick: (p: PlayerSearchResult) => void;
 }) {
@@ -284,12 +351,15 @@ function PickerModal({
             query.trim().length >= 2 && !isFetching ? <Text style={styles.noResults}>No players found</Text> : undefined
           }
           renderItem={({ item }) => (
-            <Pressable onPress={() => onPick(item)} style={({ pressed }) => [styles.result, pressed && { backgroundColor: surfaces.card }]}>
+            <Pressable
+              onPress={() => onPick(item)}
+              disabled={item.id === disabledId}
+              style={({ pressed }) => [styles.result, item.id === disabledId && { opacity: 0.4 }, pressed && { backgroundColor: surfaces.card }]}>
               <View style={styles.resultAvatar}>
                 <Image source={item.headshot} style={styles.resultImg} contentFit="cover" />
               </View>
               <Text style={styles.resultName}>{item.name}</Text>
-              <Text style={styles.resultTeam}>{item.teamAbbr ?? ''}</Text>
+              <Text style={styles.resultTeam}>{item.id === disabledId ? 'Already picked' : (item.teamAbbr ?? '')}</Text>
             </Pressable>
           )}
         />
@@ -301,23 +371,10 @@ function PickerModal({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   scope: { alignItems: 'center', marginBottom: 12 },
-  slots: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 8, marginTop: 8, marginBottom: 16 },
-  vs: { fontFamily: fonts.display, fontSize: 20, color: palette.muted },
-  slot: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-    borderRadius: 22,
-    borderWidth: 1,
-    backgroundColor: surfaces.card,
-  },
-  avatar: { width: 92, height: 92, borderRadius: 46, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  avatarImg: { width: 106, height: 92 },
-  plus: { fontFamily: fonts.display, fontSize: 44, color: palette.chalk },
-  slotName: { fontFamily: fonts.displayBold, fontSize: 20, color: palette.chalk, textAlign: 'center', minHeight: 48 },
-  slotTeam: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted },
+  slots: { flexDirection: 'row', paddingHorizontal: 16, gap: 10, marginTop: 8, marginBottom: 16 },
+  // Above the cards, which flip in around it: they must never swing over it.
+  vsBadge: { position: 'absolute', zIndex: 10, elevation: 10, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.arena, borderWidth: 1.5, borderColor: withAlpha(palette.chalk, 0.5) },
+  vsText: { fontFamily: fonts.display, fontSize: 17, color: palette.chalk, letterSpacing: 0.5 },
   card: { marginHorizontal: 16, borderRadius: 22, padding: 16, backgroundColor: surfaces.card },
   tally: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   tallyNum: { fontFamily: fonts.display, fontSize: 44 },
@@ -333,7 +390,8 @@ const styles = StyleSheet.create({
   cancel: { fontFamily: fonts.bodySemi, fontSize: 15, color: palette.muted },
   noResults: { textAlign: 'center', marginTop: 32, fontFamily: fonts.body, fontSize: 15, color: palette.muted },
   result: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 14 },
-  resultAvatar: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: withAlpha(palette.chalk, 0.1) },
+  // The photo is wider than the circle: centered, so the face sits in the middle of it.
+  resultAvatar: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: withAlpha(palette.chalk, 0.1) },
   resultImg: { width: 52, height: 44 },
   resultName: { flex: 1, fontFamily: fonts.bodySemi, fontSize: 16, color: palette.chalk },
   resultTeam: { fontFamily: fonts.bodySemi, fontSize: 13, color: palette.muted },

@@ -80,9 +80,10 @@ export type GameLogEntry = {
   ft: string;
 };
 
-export async function fetchPlayerGameLog(athleteId: string): Promise<GameLogEntry[]> {
+/** A player's games (regular season and playoffs) of the current season, or of `season` (the year it ends in: 2026 is 2025-26). */
+export async function fetchPlayerGameLog(athleteId: string, season?: number): Promise<GameLogEntry[]> {
   const json = await getJson(
-    `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${athleteId}/gamelog`,
+    `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${athleteId}/gamelog${season ? `?season=${season}` : ''}`,
   );
   const names: string[] = json.names ?? [];
   const events: Record<string, Json> = json.events ?? {};
