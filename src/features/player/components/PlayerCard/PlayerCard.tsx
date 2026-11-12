@@ -9,6 +9,9 @@ import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, type Sh
 
 import {
   CardLights,
+  EdgeFade,
+  InjuryIcon,
+  LogoWatermark,
   Pill,
   ConferenceMvpTrophyIcon,
   CupIcon,
@@ -24,11 +27,9 @@ import {
 import { useTilt } from '@/hooks';
 
 import type { Honor, Player, PlayerSeasonStats, Team } from '@/lib/espn';
-import { fonts, logoOn, OUTLINE, OUTLINED_LOGO, OUTLINE_STEPS, palette, withAlpha, type TeamTheme } from '@/lib/theme';
+import { fonts, palette, withAlpha, type TeamTheme } from '@/lib/theme';
 
-import { EdgeFade } from './EdgeFade';
-
-import { CARD_RATIO, CARD_STATS, FOOTER_PAD, MAX_ROTATE, OUTLINED_OPACITY, OUTLINED_WATERMARK, PHOTO_BOTTOM, RADIUS, STATS_HEIGHT, STRONG_WATERMARK } from './constants';
+import { CARD_RATIO, CARD_STATS, FOOTER_PAD, MAX_ROTATE, PHOTO_BOTTOM, RADIUS, STATS_HEIGHT, WATERMARK_SIZE, WATERMARK_TOP } from './constants';
 import type { CardRanks } from './useLeagueRanks';
 
 type TrophyIcon = ComponentType<{ color: string; size?: number }>;
@@ -91,6 +92,7 @@ export function PlayerCard({
   titles = 0,
   cups = 0,
   status,
+  injury,
 }: {
   player: Pick<Player, 'name' | 'jersey' | 'position' | 'height' | 'age' | 'headshot'>;
   team?: Team | null;
@@ -110,6 +112,8 @@ export function PlayerCard({
   cups?: number;
   /** Why he has no team ("Retired", "Free agent"). */
   status?: string;
+  /** He is on the injury report: a red cross beside his tags ("Out"), a gold one when he is day-to-day, with what is wrong as its label. */
+  injury?: { status: string; detail?: string };
 }) {
   const height = Math.round(width * CARD_RATIO);
   const tilt = useTilt({ width, height }, { scrollSafe: true });
@@ -128,8 +132,7 @@ export function PlayerCard({
   const jerseyParallax = useAnimatedStyle(() => ({ transform: [{ translateX: tiltX.get() * 18 }, { translateY: tiltY.get() * 10 }] }));
   const headshotParallax = useAnimatedStyle(() => ({ transform: [{ translateX: tiltX.get() * 8 }, { translateY: tiltY.get() * 5 }] }));
 
-  const logo = team ? logoOn(team, theme.onPrimary) : undefined;
-  const outlined = OUTLINED_LOGO.has(team?.abbreviation ?? '') || OUTLINED_WATERMARK.has(team?.abbreviation ?? '');
+  const logoSize = width * WATERMARK_SIZE;
   const hasStats = stats != null || loading;
   // Until the averages arrive the numbers are skeleton blocks (breathing together), not dashes.
   const pending = loading && stats == null;
@@ -144,30 +147,8 @@ export function PlayerCard({
     <GestureDetector gesture={tilt.gesture}>
       <Animated.View style={[{ width, height }, wrapStyle]}>
         <Animated.View style={[styles.card, { width, height, backgroundColor: theme.primary }, tiltStyle]}>
-          {/* Team logo watermark; a logo the color of the card (Houston's red, and the mostly red Hawks and Bulls) gets the team card's white outline, stronger. */}
-          {logo && outlined ? (
-            <View style={[styles.watermark, { width: width * 0.75, height: width * 0.75, opacity: OUTLINED_OPACITY }]}>
-              {OUTLINE_STEPS.map(([dx, dy]) => (
-                <Image
-                  key={`${dx}${dy}`}
-                  source={logo}
-                  tintColor="#FFFFFF"
-                  contentFit="contain"
-                  style={{ position: 'absolute', width: '100%', height: '100%', left: dx * width * 0.75 * OUTLINE, top: dy * width * 0.75 * OUTLINE }}
-                />
-              ))}
-              <Image source={logo} style={StyleSheet.absoluteFill} contentFit="contain" allowDownscaling={false} priority="high" cachePolicy="memory-disk" />
-            </View>
-          ) : logo ? (
-            <Image
-              source={logo}
-              style={[styles.watermark, { width: width * 0.75, height: width * 0.75, opacity: STRONG_WATERMARK[team?.abbreviation ?? ''] ?? 0.12 }]}
-              contentFit="contain"
-              allowDownscaling={false}
-              priority="high"
-              cachePolicy="memory-disk"
-            />
-          ) : null}
+          {/* Team logo watermark, high so the face leaves most of it showing; outlined so it keeps its shape on any team color. */}
+          {team ? <LogoWatermark team={team} onColor={theme.onPrimary} size={logoSize} style={{ position: 'absolute', left: (width - logoSize) / 2, top: width * WATERMARK_TOP }} /> : null}
 
           <Animated.View style={[styles.photo, { bottom: PHOTO_BOTTOM }, headshotParallax]}>
             {player.headshot ? (
@@ -230,13 +211,20 @@ export function PlayerCard({
             <Text style={[styles.name, { color: theme.onPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
               {player.name}
             </Text>
-            {tags.length > 0 ? (
+            {tags.length > 0 || injury ? (
               <View style={styles.tags}>
                 {tags.map((t) => (
                   <Pill key={t} on={theme.onPrimary}>
                     {t}
                   </Pill>
                 ))}
+                {injury ? (
+                  <Animated.View entering={FadeIn.duration(260)} style={styles.injury} accessible accessibilityLabel={`${injury.status}${injury.detail ? `, ${injury.detail}` : ''}`}>
+                    <Pill tone={/^out/i.test(injury.status) ? 'loss' : 'gold'} style={styles.injuryPill} icon={<InjuryIcon size={12} color={/^out/i.test(injury.status) ? palette.loss : palette.gold} />}>
+                      {/^out/i.test(injury.status) ? 'OUT' : 'DTD'}
+                    </Pill>
+                  </Animated.View>
+                ) : null}
               </View>
             ) : null}
             {hasStats ? (
@@ -272,8 +260,6 @@ export function PlayerCard({
 
 const styles = StyleSheet.create({
   card: { borderRadius: RADIUS, overflow: 'hidden', alignItems: 'center', justifyContent: 'flex-end' },
-  // Centred behind the head, a touch lower than the top so a two-digit number above it stays clear.
-  watermark: { position: 'absolute', top: '14%', left: '12%', opacity: 0.12 },
   photo: { position: 'absolute', alignItems: 'center' },
   initials: { alignItems: 'center', justifyContent: 'center' },
   initialsText: { fontFamily: fonts.display },
@@ -285,7 +271,11 @@ const styles = StyleSheet.create({
   stripe: { width: 28, height: 4, borderRadius: 2 },
   statsLabel: { fontFamily: fonts.bodyBold, fontSize: 10, letterSpacing: 1 },
   name: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34 },
-  tags: { flexDirection: 'row', gap: 6, marginTop: 4 },
+  tags: { flexDirection: 'row', gap: 6, marginTop: 4, alignItems: 'center' },
+  // At the far end of the row, so it is the first thing the eye finds beside his name.
+  injury: { marginLeft: 'auto' },
+  // A dark base under the red or gold, so the marker reads on every team color.
+  injuryPill: { backgroundColor: 'rgba(10,10,10,0.66)' },
   stats: { flexDirection: 'row', alignItems: 'center', height: STATS_HEIGHT, marginTop: 8 },
   stat: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   statValue: { fontFamily: fonts.display, fontSize: 24, lineHeight: 26 },

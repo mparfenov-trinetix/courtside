@@ -244,3 +244,15 @@ export const OUTLINED_LOGO = new Set(['HOU']);
 export const OUTLINE = 0.012;
 /** The eight directions a white copy of the logo is nudged in to draw its outline. */
 export const OUTLINE_STEPS: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]];
+
+/**
+ * How a team's logo is drawn faint on a card in its color (the player card, the key matchup cards): crisp, at `WATERMARK_OPACITY`, as ESPN
+ * draws it. An outline of nudged white copies smears fine detail (the 76ers' ring of stars, the Jazz's mountain, the Raptors' claw, the
+ * Wizards' and Cavaliers' marks all came out broken), so it is only for the logos that need one: those the same color as their card (the
+ * Rockets' `OUTLINED_LOGO`, and the mostly red Hawks and Bulls: `OUTLINED_WATERMARK`), which are drawn outlined and stronger
+ * (`OUTLINED_OPACITY`). `STRONG_WATERMARK` lifts the opacity of the crisp logos that sit too close to their card's color to read.
+ */
+export const OUTLINED_WATERMARK = new Set(['ATL', 'CHI']);
+export const STRONG_WATERMARK: Record<string, number> = { TOR: 0.22, WSH: 0.3, CLE: 0.3 };
+export const OUTLINED_OPACITY = 0.34;
+export const WATERMARK_OPACITY = 0.18;

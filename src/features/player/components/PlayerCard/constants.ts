@@ -25,23 +25,15 @@ export const CARD_STATS = [
   { key: 'bpg', label: 'BPG', category: 'bpg' },
 ] as const;
 
-/**
- * Teams whose logo is the color of their card with only a few light parts (the Hawks and Bulls on red): at the watermark's faint opacity it
- * is barely there. They get the same white outline as the `OUTLINED_LOGO` teams, a little stronger, on the player card only (the team
- * card's big logo reads fine).
- */
-export const OUTLINED_WATERMARK = new Set(['ATL', 'CHI']);
-
-/**
- * Teams whose logo is detailed (the Raptors' claw, the Wizards' and Cavaliers' marks) and a little too close to the card's color: an
- * outline copy smears their fine edges, so they stay crisp and are just drawn stronger than the usual 0.12.
- */
-export const STRONG_WATERMARK: Record<string, number> = { TOR: 0.18, WSH: 0.3, CLE: 0.3 };
-/** The outlined watermark's opacity (the plain one is 0.12). */
-export const OUTLINED_OPACITY = 0.34;
-
 /** The champion badge's gold. */
 export const CHAMPION_GOLD = palette.gold;
 
 /** How many places down a rank is still worth showing (the leaders feed is cut at 50). */
 export const RANK_SHOWN = 50;
+
+/**
+ * The team logo watermark, a little smaller than it used to be (0.75) and higher (it sat 14% of the card's height down, right behind the
+ * face; 0.9 was tried and was far too big). A fraction of the card's width, and its top edge as a fraction of it.
+ */
+export const WATERMARK_SIZE = 0.62;
+export const WATERMARK_TOP = 0.08;

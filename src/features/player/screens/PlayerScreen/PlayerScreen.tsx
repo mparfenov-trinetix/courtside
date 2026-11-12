@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, Card, EmptyState, GlassButton } from '@/components';
 
-import { useAfterSettle, useAllStars, usePlayerBio, usePlayerCareer, usePlayerGameLog, usePlayerProfile, usePlayerStats, useRefresh, useRoster, useTeam } from '@/hooks';
+import { useAfterSettle, useAllStars, usePlayerBio, usePlayerCareer, usePlayerGameLog, usePlayerProfile, useInjuries, usePlayerStats, useRefresh, useRoster, useTeam } from '@/hooks';
 
 import { cupSeasons, nba2kRating, titleSeasons } from '@/lib/league';
 
@@ -62,6 +62,9 @@ export function PlayerScreen() {
   const [picked, setActiveTab] = useState<Tab | null>(null);
   const listed = linked.data?.players.find((p) => p.id === id);
   // Also read on the Info tab, for where he was born and his nationality (the roster doesn't carry them).
+  // The league-wide injury report (one cached read, the Wire screen's): is he on it, and how badly.
+  const injuries = useInjuries();
+  const injury = injuries.data?.flatMap((t) => t.injuries).find((p) => p.id === id);
   const bio = usePlayerBio(picked === 'info' || (!listed && (!linkedTeamId || linked.isSuccess || linked.isError)) ? id : undefined);
   const teamId = listed ? linkedTeamId : (bio.data?.teamId ?? undefined);
   const { data: currentRoster } = useRoster(!listed && bio.data?.active ? teamId : undefined);
@@ -198,6 +201,7 @@ export function PlayerScreen() {
           titles={career ? titleSeasons(career.seasons).length : 0}
           cups={career ? cupSeasons(career.seasons).length : 0}
           status={!onRoster && bio.data ? (bio.data.active ? 'Free agent' : 'Retired') : undefined}
+          injury={injury ? { status: injury.status, detail: injury.detail } : undefined}
         />
       </View>
 

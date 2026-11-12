@@ -70,6 +70,15 @@ export function StarIcon({ size = 22, color, filled }: IconProps) {
   );
 }
 
+/** A medical cross: a player on the injury report. */
+export function InjuryIcon({ size = 14, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M12 4v16M4 12h16" {...stroke(color)} strokeWidth={3.4} />
+    </Svg>
+  );
+}
+
 export function ChevronIcon({ size = 18, color }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
