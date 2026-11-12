@@ -20,6 +20,8 @@ export * from './PaneTitle';
 export * from './ListSkeleton';
 export * from './LiveFlash';
 export * from './LogoWatermark';
+export * from './MiniPlayerCard';
+export * from './MiniTeamCard';
 export * from './NbaLogo';
 export * from './Pill';
 export * from './RollingNumber';

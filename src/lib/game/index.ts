@@ -1,4 +1,5 @@
 export * from './clutch';
+export * from './duel';
 export * from './game-model';
 export * from './game-score';
 export * from './heat';

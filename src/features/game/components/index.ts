@@ -1,6 +1,7 @@
 export * from './BoxScoreTab';
 export * from './ClutchCard';
 export * from './GameBackdrop';
+export * from './GameDuel';
 export * from './GameFlow';
 export * from './GameHighlights';
 export * from './GameLogos';

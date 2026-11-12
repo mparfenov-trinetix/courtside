@@ -8,11 +8,11 @@ import type { Injury, Team } from '@/lib/espn';
 import { GROUP_LABEL, pickKeyMatchup, type PositionGroup } from '@/lib/league';
 import { fonts, palette, radius, teamTheme, textStyle, withAlpha } from '@/lib/theme';
 import { openDetail, pushOnce } from '@/navigation';
-import { DuelCard, type DuelStar } from './DuelCard';
-import { CARD_RATIO, GAP, MEET_DELAY_MS, SIDE } from './constants';
+import { MINI_CARD_RATIO, MiniPlayerCard, type MiniStar } from '@/components';
+import { GAP, MEET_DELAY_MS, SIDE } from './constants';
 
 /** One side of the duel: a team and the player it is represented by. */
-export type DuelSide = { team: Team; star: DuelStar };
+export type DuelSide = { team: Team; star: MiniStar };
 
 const num = (s: string) => {
   const n = Number(s);
@@ -46,11 +46,29 @@ export function KeyMatchup({ awayId, homeId, injuries }: { awayId: string; homeI
 }
 
 /** The duel with its two sides already known (the data-free half, so a story can show it). */
-export function KeyMatchupView({ away, home, group = null }: { away: DuelSide; home: DuelSide; /** The position they share, named beside the title. */ group?: PositionGroup | null }) {
+export function KeyMatchupView({
+  away,
+  home,
+  group = null,
+  title,
+  unit = 'season',
+  section = false,
+}: {
+  away: DuelSide;
+  home: DuelSide;
+  /** The position they share, named beside the title. */
+  group?: PositionGroup | null;
+  /** Replaces the title (a finished game's duel has its own). */
+  title?: string;
+  /** Whose numbers they are: season averages, or the game's line. */
+  unit?: 'season' | 'game';
+  /** On the game tabs, where sections are 14 apart, not 18. */
+  section?: boolean;
+}) {
   const { width: screen } = useWindowDimensions();
   const reduced = useReducedMotion();
   const cardW = Math.floor((screen - SIDE * 2 - GAP) / 2);
-  const cardH = Math.round(cardW * CARD_RATIO);
+  const cardH = Math.round(cardW * MINI_CARD_RATIO);
   const awayTheme = teamTheme(away.team);
   const homeTheme = teamTheme(home.team);
 
@@ -94,11 +112,11 @@ export function KeyMatchupView({ away, home, group = null }: { away: DuelSide; h
     );
 
   return (
-    <Animated.View entering={FadeIn.duration(320)} style={styles.wrap}>
-      <Text style={styles.title}>{group ? `Key matchup · ${GROUP_LABEL[group]}` : 'Key matchup'}</Text>
+    <Animated.View entering={FadeIn.duration(320)} style={[styles.wrap, section && styles.section]}>
+      <Text style={styles.title}>{title ?? (group ? `Key matchup · ${GROUP_LABEL[group]}` : 'Key matchup')}</Text>
       <View style={[styles.row, { height: cardH }]}>
-        <DuelCard team={away.team} theme={awayTheme} star={away.star} width={cardW} better={better(away, home)} style={awayStyle} onPress={() => open(away)} />
-        <DuelCard team={home.team} theme={homeTheme} star={home.star} width={cardW} better={better(home, away)} style={homeStyle} onPress={() => open(home)} />
+        <MiniPlayerCard team={away.team} theme={awayTheme} star={away.star} width={cardW} better={better(away, home)} unit={unit} style={awayStyle} onPress={() => open(away)} />
+        <MiniPlayerCard team={home.team} theme={homeTheme} star={home.star} width={cardW} better={better(home, away)} unit={unit} style={homeStyle} onPress={() => open(home)} />
         {/* Where they meet: a flash in white, then the VS badge. */}
         <Animated.View pointerEvents="none" style={[styles.flash, { left: SIDE + cardW + GAP / 2 - 26, height: cardH }, flashStyle]} />
         <Animated.View pointerEvents="none" style={[styles.vs, { left: screen / 2 - 20, top: cardH / 2 - 20 }, vsStyle]}>
@@ -106,7 +124,7 @@ export function KeyMatchupView({ away, home, group = null }: { away: DuelSide; h
         </Animated.View>
       </View>
       <Pressable onPress={compare} accessibilityRole="button" hitSlop={8} style={styles.compare}>
-        <Text style={styles.compareText}>Compare their season ›</Text>
+        <Text style={styles.compareText}>Compare their seasons ›</Text>
       </Pressable>
     </Animated.View>
   );
@@ -114,6 +132,8 @@ export function KeyMatchupView({ away, home, group = null }: { away: DuelSide; h
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 18 },
+  // The game tabs' rhythm: sections 14 apart.
+  section: { marginBottom: 14 },
   title: { ...textStyle.sectionLabel, paddingHorizontal: SIDE, marginBottom: 8 },
   row: { flexDirection: 'row', gap: GAP, paddingHorizontal: SIDE },
   flash: { position: 'absolute', top: 0, width: 52, backgroundColor: '#FFFFFF', borderRadius: radius.pill },

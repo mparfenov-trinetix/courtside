@@ -3,6 +3,7 @@ import Animated from "react-native-reanimated";
 
 import { Collapsible, HeadToHead, Highlights } from "@/components";
 import { ClutchCard } from "../ClutchCard";
+import { GameDuel } from "../GameDuel";
 import { GameFlow } from "../GameFlow";
 import { GameHighlights } from "../GameHighlights";
 import { GameInfoCard, GameLeaders, InjuryReport } from "../GameLeaders";
@@ -117,6 +118,14 @@ export function SummaryTab({
     </Animated.View>
   );
 
+  // A finished game that was a duel (two players matching each other, 30+ within 6 points, or 40+ all-round): the two cards face to face, under the
+  // leaders. For the whole game only, like the highlights: a quarter cannot be a duel.
+  const duel = completed && !selPeriods && (
+    <Animated.View key="duel">
+      <GameDuel away={away} home={home} awayPlayers={awayPlayers} homePlayers={homePlayers} />
+    </Animated.View>
+  );
+
   const flowChart = plays.length > 1 && (
     <Animated.View key="flow">
       <GameFlow
@@ -205,7 +214,7 @@ export function SummaryTab({
 
   // One order for every game, live or finished, so a section is always where you left it: the team numbers and the leaders first (the
   // period filter in the bar above applies to both), then the clips (the game's video once it is over), then the story of the game.
-  const ordered = [stats, leaders, completed ? media : highlights, flowChart, clutch, moments, timeouts];
+  const ordered = [stats, leaders, duel, completed ? media : highlights, flowChart, clutch, moments, timeouts];
 
   return (
     <View>

@@ -1,49 +1,63 @@
 import { Image } from 'expo-image';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { type AnimatedStyle } from 'react-native-reanimated';
-import type { StyleProp, ViewStyle } from 'react-native';
+import type { ComponentProps } from 'react';
 
-import { EdgeFade, LogoWatermark, Pill } from '@/components';
 import type { Team, TeamStar } from '@/lib/espn';
 import { fonts, withAlpha, type TeamTheme } from '@/lib/theme';
-import { CARD_RATIO, PHOTO_BOTTOM, PHOTO_H, PHOTO_W, RADIUS, STATS } from './constants';
+import { EdgeFade } from '../EdgeFade';
+import { LogoWatermark } from '../LogoWatermark';
+import { Pill } from '../Pill';
+import { Skeleton, SkeletonGroup } from '../Skeleton';
+import { MINI_CARD_RATIO, MINI_RADIUS, MINI_STATS, PHOTO_BOTTOM, PHOTO_H, PHOTO_W } from './constants';
 
-export type DuelStar = Pick<TeamStar, 'athleteId' | 'name' | 'headshot' | 'ppg' | 'rpg' | 'apg' | 'position' | 'jersey'> & { /** "Day-to-day": he is on the injury report but may play. */ status?: string };
+export type MiniStar = Pick<TeamStar, 'athleteId' | 'name' | 'headshot' | 'ppg' | 'rpg' | 'apg' | 'position' | 'jersey'> & { /** "Day-to-day": he is on the injury report but may play. */ status?: string };
 
 /**
- * One side of the key matchup: a small trading card, like the player page's (team color, its logo faint behind him, his photo melting
+ * A small player trading card (the key matchup, a finished game's duel, Compare), like the player page's (team color, its logo faint behind him, his photo melting
  * into the footer, his number big and faint, his name and PPG / RPG / APG). The number that beats the other player's is bold, in white;
- * the other is dimmed. Drawn with the team's `theme`; a tap opens his page.
+ * the other is dimmed. Drawn with the team's `theme` (and its logo, when the team is known); a tap does what `onPress` says.
  */
-export function DuelCard({
+export function MiniPlayerCard({
   team,
   theme,
   star,
   width,
   better,
+  unit = 'season',
+  loading = false,
+  entering,
   style,
   onPress,
 }: {
-  team: Team;
+  team?: Team;
   theme: TeamTheme;
-  star: DuelStar;
+  star: MiniStar;
   width: number;
   /** Which of his three numbers is higher than the other player's. */
-  better: Record<(typeof STATS)[number]['key'], boolean>;
+  better: Record<(typeof MINI_STATS)[number]['key'], boolean>;
+  /** Whose numbers they are: his season averages, or a game's line (points, rebounds, assists). */
+  unit?: 'season' | 'game';
+  /** His numbers are still coming: skeleton blocks in place of them (breathing together), never dashes. */
+  loading?: boolean;
+  /** How the card arrives (`dealIn` when it has just been chosen). */
+  entering?: ComponentProps<typeof Animated.View>['entering'];
   style?: StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>;
   onPress: () => void;
 }) {
-  const height = Math.round(width * CARD_RATIO);
+  const height = Math.round(width * MINI_CARD_RATIO);
   const photoW = width * PHOTO_W;
   const logoSize = width * 0.7;
+  const StatsRow = loading ? SkeletonGroup : View;
   return (
-    <Animated.View style={[{ width, height }, style]}>
+    <Animated.View entering={entering} style={[{ width, height }, style]}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={`${star.name}, ${team.abbreviation}, ${star.ppg} points, ${star.rpg} rebounds, ${star.apg} assists`}
+        accessibilityLabel={`${star.name}${team ? `, ${team.abbreviation}` : ''}, ${star.ppg} points, ${star.rpg} rebounds, ${star.apg} assists${unit === 'game' ? ' in the game' : ' a game'}`}
         style={({ pressed }) => [styles.card, { width, height, backgroundColor: theme.primary }, pressed && { opacity: 0.9 }]}>
-        <LogoWatermark team={team} onColor={theme.onPrimary} size={logoSize} style={{ position: 'absolute', left: (width - logoSize) / 2, top: width * 0.06 }} />
+        {team ? <LogoWatermark team={team} onColor={theme.onPrimary} size={logoSize} style={{ position: 'absolute', left: (width - logoSize) / 2, top: width * 0.06 }} /> : null}
 
         {star.jersey ? (
           <Text pointerEvents="none" style={[styles.number, { color: withAlpha(theme.onPrimary, 0.16), fontSize: width * (star.jersey.length < 2 ? 0.55 : 0.4), lineHeight: width * (star.jersey.length < 2 ? 0.55 : 0.4), right: width * 0.05 }]}>
@@ -69,14 +83,18 @@ export function DuelCard({
           <Text style={[styles.name, { color: theme.onPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
             {star.name}
           </Text>
-          <View style={styles.stats}>
-            {STATS.map((s, i) => (
+          <StatsRow style={styles.stats}>
+            {MINI_STATS.map((s, i) => (
               <View key={s.key} style={[styles.stat, i > 0 && { borderLeftWidth: 1, borderLeftColor: withAlpha(theme.onPrimary, 0.35) }]}>
-                <Text style={[styles.value, { color: withAlpha(theme.onPrimary, better[s.key] ? 1 : 0.62) }, better[s.key] && styles.valueBest]}>{star[s.key] || '–'}</Text>
-                <Text style={[styles.key, { color: withAlpha(theme.onPrimary, 0.6) }]}>{s.label}</Text>
+                {loading ? (
+                  <Skeleton width={30} height={17} radius={5} style={[styles.valueSkeleton, { backgroundColor: withAlpha(theme.onPrimary, 0.2) }]} />
+                ) : (
+                  <Text style={[styles.value, { color: withAlpha(theme.onPrimary, better[s.key] ? 1 : 0.62) }, better[s.key] && styles.valueBest]}>{star[s.key] || '–'}</Text>
+                )}
+                <Text style={[styles.key, { color: withAlpha(theme.onPrimary, 0.6) }]}>{s[unit]}</Text>
               </View>
             ))}
-          </View>
+          </StatsRow>
         </View>
 
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.edge, { borderColor: withAlpha(theme.edge, 0.5) }]} />
@@ -86,7 +104,7 @@ export function DuelCard({
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: RADIUS, overflow: 'hidden', justifyContent: 'flex-end' },
+  card: { borderRadius: MINI_RADIUS, overflow: 'hidden', justifyContent: 'flex-end' },
   number: { position: 'absolute', top: 6, fontFamily: fonts.display },
   photo: { position: 'absolute' },
   tags: { position: 'absolute', top: 10, left: 10, flexDirection: 'row', gap: 4 },
@@ -96,7 +114,9 @@ const styles = StyleSheet.create({
   stats: { flexDirection: 'row', marginTop: 6 },
   stat: { flex: 1, alignItems: 'center' },
   value: { fontFamily: fonts.display, fontSize: 19, lineHeight: 21 },
+  // The height of a number's line, so the card does not jump when the numbers arrive.
+  valueSkeleton: { marginVertical: 2 },
   valueBest: { textShadowColor: 'rgba(255,255,255,0.35)', textShadowRadius: 6 },
   key: { fontFamily: fonts.bodySemi, fontSize: 9, letterSpacing: 0.7 },
-  edge: { borderRadius: RADIUS, borderWidth: 1.5 },
+  edge: { borderRadius: MINI_RADIUS, borderWidth: 1.5 },
 });
