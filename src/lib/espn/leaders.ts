@@ -99,12 +99,21 @@ export async function fetchTeamStar(teamId: string): Promise<TeamStar | null> {
   return { ...who, ppg: star.ppg, rpg: star.rpg, apg: star.apg };
 }
 
-/** A team's best rated players, best first (`limit` of them, each with his position and number): who a game's key matchup is picked from. */
-export async function fetchTeamRated(teamId: string, limit = 8): Promise<TeamStar[]> {
+/**
+ * A team's best rated players, best first (`limit` of them): each with his points, rebounds and assists, and, for those who score `minPpg` or
+ * more, his name, position and number (one athlete record each). The rest are only places in the ranking, with no record read: a key matchup
+ * needs stars, so for most teams this is one request and a few records instead of the whole top of the roster.
+ */
+export async function fetchTeamRated(teamId: string, limit = 6, minPpg = 0): Promise<TeamStar[]> {
   const json = await getJson(`${CORE}/seasons/${currentSeason()}/types/2/teams/${teamId}/leaders?lang=en&region=us`);
   const rated = normalizeTeamLeaders(json, limit);
-  const people = await Promise.all(rated.map((r) => athleteOf(r.ref)));
-  return rated.map((r, i) => ({ ...people[i], ppg: r.ppg, rpg: r.rpg, apg: r.apg }));
+  return Promise.all(
+    rated.map(async (r): Promise<TeamStar> => {
+      const stats = { ppg: r.ppg, rpg: r.rpg, apg: r.apg };
+      if (Number(r.ppg) < minPpg) return { athleteId: r.ref.match(/athletes\/(\d+)/)?.[1] ?? '', name: '', shortName: '', ...stats };
+      return { ...(await athleteOf(r.ref)), ...stats };
+    }),
+  );
 }
 
 /** Minutes as a clock: 37.3636 -> "37:22". */

@@ -1,4 +1,5 @@
 import { View } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { HeadToHead, type H2HTeam } from '@/components';
 import type { GameInfo, GameKind, Pregame as PregameData } from '@/lib/espn';
@@ -7,6 +8,9 @@ import { KeyMatchup } from '../KeyMatchup';
 import { MatchupForm } from '../MatchupForm';
 import { MatchupPlace } from '../MatchupPlace';
 import { PregameOdds } from '../PregameOdds';
+
+/** How what sits below the key matchup moves when the matchup appears after the page is already up. */
+const GLIDE = LinearTransition.duration(340);
 
 /**
  * Everything about a game that hasn't started, most decisive first: who's favored (win probability and the book's
@@ -42,16 +46,16 @@ export function Pregame({
       <View style={{ marginTop: 18 }}>
         <KeyMatchup awayId={away.id} homeId={home.id} injuries={info.injuries} />
       </View>
-      {/* These two lay themselves out with their own side padding. */}
-      <View>
+      {/* These two lay themselves out with their own side padding. They (and what follows) glide down when the key matchup above turns up late. */}
+      <Animated.View layout={GLIDE}>
         <InjuryReport injuries={info.injuries} teams={teams} />
         <GameInfoCard info={info} />
-      </View>
-      <View style={{ paddingHorizontal: 16 }}>
+      </Animated.View>
+      <Animated.View layout={GLIDE} style={{ paddingHorizontal: 16 }}>
         <MatchupForm away={away} home={home} form={data.form} />
         <HeadToHead a={away} b={home} delay={140} />
         <MatchupPlace kind={kind} season={season} note={note} away={away} home={home} date={date} variant="card" />
-      </View>
+      </Animated.View>
     </View>
   );
 }

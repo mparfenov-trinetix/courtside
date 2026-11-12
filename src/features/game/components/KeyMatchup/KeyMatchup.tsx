@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import Animated, { Extrapolation, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
+import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 import type { Href } from 'expo-router';
 
-import { Skeleton, SkeletonGroup } from '@/components';
 import { useTeam, useTeamRated } from '@/hooks';
 import type { Injury, Team } from '@/lib/espn';
 import { GROUP_LABEL, pickKeyMatchup, type PositionGroup } from '@/lib/league';
@@ -21,10 +20,10 @@ const num = (s: string) => {
 };
 
 /**
- * The game before it is played, in one picture: the matchup that decides most of it, two players of the same position (guards, forwards or
- * centers, `pickKeyMatchup`) as high up their team's ESPN rating as they get, face to face. Nobody ruled out by an injury is shown (a
+ * The game before it is played, when it has a real matchup: two stars of the same position (guards, forwards or centers, `pickKeyMatchup`: both
+ * among their team's best three and scoring 20 or more) face to face. Most games have none and show nothing. Nobody ruled out by an injury is shown (a
  * day-to-day player is, flagged). The two cards fly in from the sides and meet, with a spring that overshoots a little, a flash and the VS badge
- * popping at the collision; whoever has the higher PPG, RPG or APG has it lit. Hidden when either team has nobody rated yet (the start of a
+ * popping at the meeting, without the cards crossing; whoever has the higher PPG, RPG or APG has it lit. Hidden when either team has nobody rated yet (the start of a
  * season). A tap on a card opens the player, "Compare" opens them side by side.
  */
 export function KeyMatchup({ awayId, homeId, injuries }: { awayId: string; homeId: string; injuries: Injury[] }) {
@@ -32,7 +31,9 @@ export function KeyMatchup({ awayId, homeId, injuries }: { awayId: string; homeI
   const homeTeam = useTeam(homeId);
   const awayRated = useTeamRated(awayId);
   const homeRated = useTeamRated(homeId);
-  if (awayRated.isPending || homeRated.isPending || !awayTeam || !homeTeam) return <KeyMatchupSkeleton />;
+  // Nothing while the two lists load (most games turn out to have no matchup, so a placeholder would flash on every one of them): the section
+  // appears, with its entrance, only once there is a real matchup to show.
+  if (awayRated.isPending || homeRated.isPending || !awayTeam || !homeTeam) return null;
   const pick = pickKeyMatchup(awayRated.data ?? [], homeRated.data ?? [], injuries);
   if (!pick) return null;
   return (
@@ -57,7 +58,8 @@ export function KeyMatchupView({ away, home, group = null }: { away: DuelSide; h
   const meet = useSharedValue(reduced ? 1 : 0);
   useEffect(() => {
     if (reduced) return;
-    meet.set(withDelay(MEET_DELAY_MS, withSpring(1, { damping: 11, stiffness: 120, mass: 0.9 })));
+    // No overshoot: past 1 the two cards would cross each other for a moment.
+    meet.set(withDelay(MEET_DELAY_MS, withSpring(1, { damping: 20, stiffness: 130, mass: 0.9, overshootClamping: true })));
   }, [reduced, meet]);
 
   const slide = cardW * 0.62;
@@ -92,8 +94,8 @@ export function KeyMatchupView({ away, home, group = null }: { away: DuelSide; h
     );
 
   return (
-    <View style={styles.wrap}>
-      <Text style={styles.title}>{group ? `Key matchup · ${GROUP_LABEL[group]}` : 'Top players'}</Text>
+    <Animated.View entering={FadeIn.duration(320)} style={styles.wrap}>
+      <Text style={styles.title}>{group ? `Key matchup · ${GROUP_LABEL[group]}` : 'Key matchup'}</Text>
       <View style={[styles.row, { height: cardH }]}>
         <DuelCard team={away.team} theme={awayTheme} star={away.star} width={cardW} better={better(away, home)} style={awayStyle} onPress={() => open(away)} />
         <DuelCard team={home.team} theme={homeTheme} star={home.star} width={cardW} better={better(home, away)} style={homeStyle} onPress={() => open(home)} />
@@ -106,22 +108,7 @@ export function KeyMatchupView({ away, home, group = null }: { away: DuelSide; h
       <Pressable onPress={compare} accessibilityRole="button" hitSlop={8} style={styles.compare}>
         <Text style={styles.compareText}>Compare their season ›</Text>
       </Pressable>
-    </View>
-  );
-}
-
-function KeyMatchupSkeleton() {
-  const { width: screen } = useWindowDimensions();
-  const cardW = Math.floor((screen - SIDE * 2 - GAP) / 2);
-  const cardH = Math.round(cardW * CARD_RATIO);
-  return (
-    <SkeletonGroup style={styles.wrap}>
-      <Skeleton width={110} height={12} style={{ marginLeft: SIDE, marginBottom: 6 }} />
-      <View style={[styles.row, { height: cardH }]}>
-        <Skeleton width={cardW} height={cardH} radius={22} />
-        <Skeleton width={cardW} height={cardH} radius={22} />
-      </View>
-    </SkeletonGroup>
+    </Animated.View>
   );
 }
 

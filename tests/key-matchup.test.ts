@@ -12,18 +12,18 @@ test('positions fall into guards, forwards and centers', () => {
 
 test('key matchup: the best pair of the same position, not the two best players', () => {
   // Away's best is a guard and home's best a center: they do not match, so the pair is the highest of one position (forwards).
-  const away = [p('a-guard', 'G', '30'), p('a-fwd', 'F', '22'), p('a-c', 'C', '10')];
-  const home = [p('h-c', 'C', '28'), p('h-fwd', 'F', '21'), p('h-guard', 'G', '12')];
+  const away = [p('a-guard', 'G', '30'), p('a-fwd', 'F', '22'), p('a-c', 'C', '21')];
+  const home = [p('h-c', 'C', '28'), p('h-fwd', 'F', '23'), p('h-guard', 'G', '20')];
   const m = pickKeyMatchup(away, home)!;
-  // Guard pair costs 0 + 2, forward pair 1 + 1, center pair 2 + 0: all equal, so the pair that scores more wins (forwards 22 + 21 = 43, guards 42).
-  assert.deepEqual([m.away.athleteId, m.home.athleteId, m.group], ['a-fwd', 'h-fwd', 'F']);
-  // Make one pair clearly higher up both rankings.
-  const m2 = pickKeyMatchup([p('a1', 'F', '25'), p('a2', 'G', '20')], [p('h1', 'G', '27'), p('h2', 'F', '26')])!;
+  // Guard pair costs 0 + 2, forward pair 1 + 1, center pair 2 + 0: all equal, so the pair that scores more wins (guards 30 + 20 = 50, centers 49, forwards 45).
+  assert.deepEqual([m.away.athleteId, m.home.athleteId, m.group], ['a-guard', 'h-guard', 'G']);
+  // One pair clearly higher up both rankings.
+  const m2 = pickKeyMatchup([p('a1', 'F', '25'), p('a2', 'G', '20')], [p('h1', 'G', '27'), p('h2', 'F', '26'), p('h3', 'C', '21')])!;
   assert.deepEqual([m2.away.athleteId, m2.home.athleteId], ['a1', 'h2']);
 });
 
 test('key matchup: a player who is out is never shown, a day-to-day one is, flagged', () => {
-  const away = [p('star', 'F', '28'), p('next', 'F', '20')];
+  const away = [p('star', 'F', '28'), p('next', 'F', '21')];
   const home = [p('rival', 'F', '27')];
   assert.equal(pickKeyMatchup(away, home, [out('star')])!.away.athleteId, 'next');
   const dtd = pickKeyMatchup(away, home, [out('star', 'Day-To-Day')])!;
@@ -32,8 +32,15 @@ test('key matchup: a player who is out is never shown, a day-to-day one is, flag
   assert.equal(dtd.homeStatus, undefined);
 });
 
-test('key matchup: with no shared position the two best are matched, and with nobody left there is none', () => {
-  const m = pickKeyMatchup([p('a', 'G', '20')], [p('h', 'C', '20')])!;
-  assert.deepEqual([m.away.athleteId, m.home.athleteId, m.group], ['a', 'h', null]);
-  assert.equal(pickKeyMatchup([p('a', 'G', '20')], [p('h', 'C', '20')], [out('h')]), null);
+test('key matchup: only a real one: two stars (20+ a game, top three of their team) of one position, else none', () => {
+  // Same position but a role player (18.6) across from a star.
+  assert.equal(pickKeyMatchup([p('a', 'F', '18.6')], [p('h', 'F', '25.7')]), null);
+  // Two scorers, but not of one position.
+  assert.equal(pickKeyMatchup([p('a', 'G', '25')], [p('h', 'C', '25')]), null);
+  // A star who is out leaves no one good enough behind him.
+  assert.equal(pickKeyMatchup([p('a', 'F', '25'), p('b', 'F', '12')], [p('h', 'F', '25')], [out('a')]), null);
+  // Fourth on his team's list does not count, however much he scores.
+  assert.equal(pickKeyMatchup([p('x', 'G', '30'), p('y', 'G', '29'), p('z', 'G', '28'), p('w', 'F', '27')], [p('h', 'F', '25')]), null);
+  // Nobody on a team.
+  assert.equal(pickKeyMatchup([], [p('h', 'F', '25')]), null);
 });
