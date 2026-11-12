@@ -42,7 +42,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
   const { currentTeamId, favoriteTeamId, viewTeam } = useScreenTeamStore();
   const [switching, setSwitching] = useState(false);
   const team = useTeam(teamId);
-  const { data: detail } = useTeamDetail(teamId);
+  const { data: detail, isLoading: detailLoading } = useTeamDetail(teamId);
   const { data: schedule } = useTeamSchedule(teamId);
   const { data: standings } = useStandings();
   const standing = conferenceStanding(standings, teamId);
@@ -199,7 +199,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         {/* Team card */}
         <View style={styles.cardArea}>
           {pushed ? (
-            <TeamCard key={team.id} team={team} detail={detail} standing={standing} streak={streak} width={cardWidth} tilt={tilt} refresh={refreshAnimation} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
+            <TeamCard key={team.id} team={team} detail={detail} standing={standing} streak={streak} loading={detailLoading && !standing} width={cardWidth} tilt={tilt} refresh={refreshAnimation} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
           ) : (
             // Hold the card to switch team. A drag tilts it instead (the gesture takes over before the hold completes).
             <Pressable
@@ -209,7 +209,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
               }}
               delayLongPress={420}
               accessibilityHint="Hold to switch team">
-              <TeamCard key={team.id} team={team} detail={detail} standing={standing} streak={streak} width={cardWidth} tilt={tilt} refresh={refreshAnimation} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
+              <TeamCard key={team.id} team={team} detail={detail} standing={standing} streak={streak} loading={detailLoading && !standing} width={cardWidth} tilt={tilt} refresh={refreshAnimation} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
             </Pressable>
           )}
         </View>

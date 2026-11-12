@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Line, Rect } from 'react-native-svg';
 
-import { CardLights } from '@/components';
+import { CardLights, Skeleton, SkeletonGroup } from '@/components';
 import type { Tilt } from '@/hooks';
 import type { Team, TeamDetail } from '@/lib/espn';
 import { fonts, logoOn, mix, OUTLINE, OUTLINED_LOGO, OUTLINE_STEPS, palette, teamTheme, withAlpha } from '@/lib/theme';
@@ -43,11 +43,13 @@ type Props = {
   standing?: string;
   /** The run it is on ("W5", "L9"): a bubble at the card's bottom right, at the end of the record row. */
   streak?: string;
+  /** The record and place are still coming: skeleton blocks in their place, never dashes. */
+  loading?: boolean;
   /** The page's pull-to-refresh: the logo plays the team's own motion and a glint sweeps across the card. */
   refresh?: RefreshAnimation;
 };
 
-export function TeamCard({ team, detail, width, tilt, logoTag, standing, streak, refresh }: Props) {
+export function TeamCard({ team, detail, width, tilt, logoTag, standing, streak, loading = false, refresh }: Props) {
   const height = cardHeight(width);
   const theme = teamTheme(team);
   const { x, y } = tilt;
@@ -58,6 +60,7 @@ export function TeamCard({ team, detail, width, tilt, logoTag, standing, streak,
   const busy = refresh?.busy ?? idle;
   const punch = refresh?.punch ?? idle;
   const logoMove = refresh?.motion.logo;
+  const StatsRow = loading ? SkeletonGroup : View;
 
   const cardStyle = useAnimatedStyle(() => ({
     transform: [
@@ -184,9 +187,10 @@ export function TeamCard({ team, detail, width, tilt, logoTag, standing, streak,
               adjustsFontSizeToFit>
               {team.name.toUpperCase()}
             </Text>
-            <View style={styles.statsRow}>
-              <Stat label="Record" value={detail?.record ?? '–'} color={theme.onPrimary} />
-              <Stat label="Standing" value={standing ?? detail?.standing ?? '–'} color={theme.onPrimary} grow />
+            {/* Until the numbers arrive they are skeleton blocks (breathing together), not dashes. */}
+            <StatsRow style={styles.statsRow}>
+              <Stat label="Record" value={detail?.record ?? '–'} color={theme.onPrimary} loading={loading} />
+              <Stat label="Standing" value={standing ?? detail?.standing ?? '–'} color={theme.onPrimary} grow loading={loading} />
               {/* The streak, bottom right on a dark bubble so its green or red reads on every team color. */}
               {streak ? (
                 <View
@@ -196,7 +200,7 @@ export function TeamCard({ team, detail, width, tilt, logoTag, standing, streak,
                   <Text style={[styles.streakText, { color: streak.startsWith('W') ? palette.win : palette.loss }]}>{streak}</Text>
                 </View>
               ) : null}
-            </View>
+            </StatsRow>
           </View>
 
           {/* Light layers on top */}
@@ -232,13 +236,17 @@ export function TeamCard({ team, detail, width, tilt, logoTag, standing, streak,
   );
 }
 
-function Stat({ label, value, color, grow }: { label: string; value: string; color: string; grow?: boolean }) {
+function Stat({ label, value, color, grow, loading }: { label: string; value: string; color: string; grow?: boolean; loading?: boolean }) {
   return (
     <View style={grow ? { flex: 1 } : { marginRight: 22 }}>
       <Text style={[styles.statLabel, { color: withAlpha(color, 0.6) }]}>{label}</Text>
-      <Text style={[styles.statValue, { color }]} numberOfLines={1}>
-        {value}
-      </Text>
+      {loading ? (
+        <Skeleton width={grow ? 110 : 52} height={22} radius={6} style={{ marginVertical: 2, backgroundColor: withAlpha(color, 0.2) }} />
+      ) : (
+        <Text style={[styles.statValue, { color }]} numberOfLines={1}>
+          {value}
+        </Text>
+      )}
     </View>
   );
 }
