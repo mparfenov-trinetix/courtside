@@ -64,7 +64,9 @@ export function Chip({
       accessibilityState={{ selected: active }}
       accessibilityLabel={accessibilityLabel}>
       {glass ? (
-        <Glass interactive tint={withAlpha(color ?? palette.chalk, color ? 0.45 : 0.22)} style={[shape, style]}>
+        // Not `interactive`: the system's press effect grows the glass while it is held (no way to tune the size), and in a strip of
+        // chips that pushed the chosen one out over the edge of its row.
+        <Glass tint={withAlpha(color ?? palette.chalk, color ? 0.45 : 0.22)} style={[shape, style]}>
           {content}
         </Glass>
       ) : (
