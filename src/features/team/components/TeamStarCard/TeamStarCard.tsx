@@ -1,21 +1,22 @@
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
-import { Card, Pill } from '@/components';
+import { ARRIVE, Card, Pill } from '@/components';
 import { useTeamStar } from '@/hooks';
 import { fontSize, fonts, radius, space, withAlpha, type TeamTheme } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
 /**
- * The team's best player by ESPN's own rating, the same one the Team form widget shows: his photo, name and per-game points, rebounds and
+ * The team's best player by ESPN's own rating (this season's, or that of a past `season`), the same one the Team form widget shows: his photo, name and per-game points, rebounds and
  * assists, on the team's color. A tap opens his page. Nothing shows before anyone is rated (the first days of a season).
  */
-export function TeamStarCard({ teamId, theme }: { teamId: string; theme: TeamTheme }) {
-  const { data: star } = useTeamStar(teamId);
+export function TeamStarCard({ teamId, theme, season }: { teamId: string; theme: TeamTheme; /** A past season: that year's best player. */ season?: number }) {
+  const { data: star } = useTeamStar(teamId, season);
   if (!star) return null;
   const text = theme.onPrimary;
   return (
-    <View style={styles.wrap}>
+    <Animated.View entering={ARRIVE} style={styles.wrap}>
       <Pressable
         onPress={() => openDetail({ pathname: '/player/[id]', params: { id: star.athleteId, teamId } })}
         accessibilityRole="button"
@@ -36,7 +37,7 @@ export function TeamStarCard({ teamId, theme }: { teamId: string; theme: TeamThe
           </View>
         </Card>
       </Pressable>
-    </View>
+    </Animated.View>
   );
 }
 

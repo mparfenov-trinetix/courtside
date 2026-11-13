@@ -1,6 +1,7 @@
 export * from './CatchUp';
 export * from './NextGame';
 export * from './ScoresStrip';
+export * from './SeasonResultCard';
 export * from './SeasonSeries';
 export * from './TeamCard';
 export * from './TeamHighlights';
@@ -8,6 +9,7 @@ export * from './TeamHome';
 export * from './TeamPills';
 export * from './TeamRefresh';
 export * from './TeamRoster';
+export * from './TeamSeasonHome';
 export * from './TeamSeasonStats';
 export * from './TeamStarCard';
 export * from './TeamSwitcher';

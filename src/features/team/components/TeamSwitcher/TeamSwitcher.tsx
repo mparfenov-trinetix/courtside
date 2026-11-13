@@ -1,10 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ListSkeleton, StarIcon } from '@/components';
+import { ListSkeleton, PageSheet, StarIcon } from '@/components';
 import { useTeams } from '@/hooks';
 import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { useTeamStore } from '@/state';
@@ -22,11 +22,11 @@ export function TeamSwitcher({ visible, onClose }: { visible: boolean; onClose: 
   const sorted = [...(teams ?? [])].sort((a, b) => a.displayName.localeCompare(b.displayName));
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <PageSheet visible={visible} onClose={onClose}>
       <View style={styles.sheet}>
         <View style={styles.head}>
           <Text style={styles.title}>Switch team</Text>
-          <Pressable onPress={onClose} hitSlop={12}>
+          <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button">
             <Text style={styles.done}>Done</Text>
           </Pressable>
         </View>
@@ -78,7 +78,7 @@ export function TeamSwitcher({ visible, onClose }: { visible: boolean; onClose: 
           />
         )}
       </View>
-    </Modal>
+    </PageSheet>
   );
 }
 

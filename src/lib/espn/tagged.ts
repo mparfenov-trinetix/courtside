@@ -1,4 +1,5 @@
 import { currentSeason } from './common';
+import { teamInSeason } from './franchise';
 import { fetchTeamSchedule } from './schedule';
 import type { Game } from './schedule';
 import { fetchStandings } from './standings';
@@ -33,11 +34,14 @@ async function fetchTaggedGames(
 ): Promise<CupGame[]> {
   const schedules = await Promise.all(teams.map((t) => fetchTeamSchedule(t.id, opts).catch(() => [] as Game[])));
   const byId = new Map<string, CupGame>();
-  teams.forEach((team, i) => {
+  const season = opts.season ?? currentSeason();
+  teams.forEach((current, i) => {
+    // The team as it was called in that season (the Sonics in 2007), not as it is called now.
+    const team = teamInSeason(current, season);
     for (const g of schedules[i]) {
       const stage = stageOf(g);
       if (!stage || byId.has(g.id)) continue;
-      const mine: CupSide = { teamId: team.id, abbr: team.abbreviation, logo: team.logoDark || team.logo, score: g.teamScore };
+      const mine: CupSide = { teamId: current.id, abbr: team.abbreviation, logo: team.logoDark || team.logo, score: g.teamScore };
       const theirs: CupSide = { teamId: g.opponentId, abbr: g.opponentAbbr, logo: g.opponentLogo, score: g.opponentScore };
       byId.set(g.id, { id: g.id, date: g.date, stage, completed: g.completed, home: g.home ? mine : theirs, away: g.home ? theirs : mine });
     }

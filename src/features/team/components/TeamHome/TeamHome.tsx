@@ -7,7 +7,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { TeamMark , CalendarIcon, CompareIcon, PeopleIcon, SearchIcon, StarIcon , IconButton, ScreenHeader, Skeleton, SkeletonGroup, TITLE_INSET, headerHeight } from '@/components';
+import { TeamMark , CalendarIcon, CompareIcon, PeopleIcon, SearchIcon, StarIcon , IconButton, ScreenHeader, SeasonSheet, Skeleton, SkeletonGroup, TITLE_INSET, Glide, GLIDE, availableSeasons, headerHeight } from '@/components';
 import { MyCupCard } from '@/features/cup';
 import { NextGame } from '../NextGame';
 import { ScoresStrip } from '../ScoresStrip';
@@ -41,6 +41,8 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
   const insets = useSafeAreaInsets();
   const { currentTeamId, favoriteTeamId, viewTeam } = useScreenTeamStore();
   const [switching, setSwitching] = useState(false);
+  // "Past seasons": the team's card in any earlier year.
+  const [pastOpen, setPastOpen] = useState(false);
   const team = useTeam(teamId);
   const { data: detail, isLoading: detailLoading } = useTeamDetail(teamId);
   const { data: schedule } = useTeamSchedule(teamId);
@@ -202,7 +204,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
             <TeamCard key={team.id} team={team} detail={detail} standing={standing} streak={streak} loading={detailLoading && !standing} width={cardWidth} tilt={tilt} refresh={refreshAnimation} logoTag={sharedTag(origin, 'team', team.id, 'logo')} />
           ) : (
             // Hold the card to switch team. A drag tilts it instead (the gesture takes over before the hold completes).
-            <Pressable
+            <Pressable accessibilityRole="button"
               onLongPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 setSwitching(true);
@@ -217,10 +219,14 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         {lower && (
           <>
         {/* What happened while the app was closed (own team only). */}
-        {team.id === favoriteTeamId && <CatchUp teamId={team.id} schedule={schedule} accent={theme.accent} />}
+        {team.id === favoriteTeamId && (
+          <Glide>
+            <CatchUp teamId={team.id} schedule={schedule} accent={theme.accent} />
+          </Glide>
+        )}
 
         {/* Team stats row */}
-        <Animated.View style={styles.splits}>
+        <Animated.View layout={GLIDE} style={styles.splits}>
           <Split label="Home" value={detail?.homeRecord} />
           <Split label="Away" value={detail?.awayRecord} />
           <Split label="Arena" value={detail?.venue} wide />
@@ -229,48 +235,78 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         {/* The page reads top down in two zones. What is on now: what is coming (and, on a rival's page, how it has gone against you), today's
             scores, the Cup while it is on. Then the team itself: how good it is (the season numbers with league ranks), who carries it, how it has been doing,
             the clips, the odds, your own lists. */}
-        {schedule && schedule.length > 0 && <NextGame schedule={schedule} theme={theme} />}
+        {schedule && schedule.length > 0 && (
+          <Glide>
+            <NextGame schedule={schedule} theme={theme} />
+          </Glide>
+        )}
 
-        {pushed && rival && schedule && <SeasonSeries schedule={schedule} team={team} rival={rival} accent={theme.accent} />}
+        {pushed && rival && schedule && (
+          <Glide>
+            <SeasonSeries schedule={schedule} team={team} rival={rival} accent={theme.accent} />
+          </Glide>
+        )}
 
-        <ScoresStrip accent={theme.accent} highlightTeamId={team.id} />
+        {/* Each block is a Glide: a section above that turns up late (the Cup, the numbers, the best player, the odds) fades in and these glide down instead of jumping. */}
+        <Glide>
+          <ScoresStrip accent={theme.accent} highlightTeamId={team.id} />
+        </Glide>
 
-        <MyCupCard teamId={team.id} schedule={schedule} />
+        <Glide>
+          <MyCupCard teamId={team.id} schedule={schedule} />
+        </Glide>
 
-        <TeamSeasonStats teamId={team.id} accent={theme.accent} />
+        <Glide>
+          <TeamSeasonStats teamId={team.id} accent={theme.accent} />
+        </Glide>
 
-        <TeamStarCard teamId={team.id} theme={theme} />
+        <Glide>
+          <TeamStarCard teamId={team.id} theme={theme} />
+        </Glide>
 
         {/* Recent games */}
         {completedGames.length > 0 && (
-          <Animated.View style={styles.gamesSection}>
+          <Animated.View layout={GLIDE} style={styles.gamesSection}>
             <Text style={[styles.gamesSectionTitle, { color: withAlpha(palette.chalk, 0.55) }]}>
               Recent Games
             </Text>
-            {completedGames.map((game, i) => (
-              <GameRow key={game.id} game={game} index={i} />
+            {completedGames.map((game) => (
+              <GameRow key={game.id} game={game} />
             ))}
-            <Pressable
-              onPress={() => {
-                // The calendar follows the "current" team, so make this one current first (as the roster button does).
-                if (team.id !== currentTeamId) viewTeam(team.id);
-                // The whole season of this team is the Agenda, not the day-by-day league board the calendar opens on.
-                router.navigate({ pathname: '/calendar', params: { view: 'agenda', at: String(Date.now()) } } as never);
-              }}
-              accessibilityRole="button"
-              hitSlop={8}>
-              <Text style={[styles.fullSchedule, { color: theme.accent }]}>Full schedule ›</Text>
-            </Pressable>
+            {/* Two ways further back in time, small and side by side: this season's whole schedule, and the team in an earlier season. */}
+            <View style={styles.moreLinks}>
+              <Pressable onPress={() => setPastOpen(true)} accessibilityRole="button" hitSlop={8}>
+                <Text style={[styles.fullSchedule, { color: theme.accent }]}>Past seasons ›</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  // The calendar follows the "current" team, so make this one current first (as the roster button does).
+                  if (team.id !== currentTeamId) viewTeam(team.id);
+                  // The whole season of this team is the Agenda, not the day-by-day league board the calendar opens on.
+                  router.navigate({ pathname: '/calendar', params: { view: 'agenda', at: String(Date.now()) } } as never);
+                }}
+                accessibilityRole="button"
+                hitSlop={8}>
+                <Text style={[styles.fullSchedule, { color: theme.accent }]}>Full schedule ›</Text>
+              </Pressable>
+            </View>
           </Animated.View>
         )}
 
-        <TeamHighlights games={completedGames} accent={theme.accent} />
+        <Glide>
+          <TeamHighlights games={completedGames} accent={theme.accent} />
+        </Glide>
 
-        <TitleOdds teamId={team.id} accent={theme.accent} />
+        <Glide>
+          <TitleOdds teamId={team.id} accent={theme.accent} />
+        </Glide>
 
-        <Watchlist accent={theme.accent} teamId={team.id} teamAbbr={team.abbreviation} />
+        <Glide>
+          <Watchlist accent={theme.accent} teamId={team.id} teamAbbr={team.abbreviation} />
+        </Glide>
 
         {/* Roster button */}
+        <Glide>
         <Pressable
           onPress={() => {
             // The Teams screen follows the "current" team, so make this one current first.
@@ -285,6 +321,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
           <PeopleIcon color={palette.chalk} />
           <Text style={styles.rosterText}>See the roster</Text>
         </Pressable>
+        </Glide>
 
         {!tilt.sensorAvailable && (
           <Text style={styles.hint}>No motion sensor found. Drag the card to tilt it.</Text>
@@ -293,6 +330,15 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         )}
       </Animated.ScrollView>
       <TeamSwitcher visible={switching} onClose={() => setSwitching(false)} />
+      <SeasonSheet
+        visible={pastOpen}
+        // None is ticked: the sheet is a way into a past year, not a setting.
+        season={0}
+        seasons={availableSeasons().slice(1)}
+        onPick={(year) => openDetail(`/team/${team.id}?season=${year}` as never)}
+        onClose={() => setPastOpen(false)}
+        title={`${team.name}, by season`}
+      />
     </Animated.View>
   );
 }
@@ -308,7 +354,7 @@ function Split({ label, value, wide }: { label: string; value?: string; wide?: b
   );
 }
 
-function GameRow({ game, index }: { game: Game; index: number }) {
+function GameRow({ game }: { game: Game }) {
   const date = new Date(game.date);
   const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const isWin = game.result === 'W';
@@ -356,6 +402,7 @@ function GameRow({ game, index }: { game: Game; index: number }) {
 
 const styles = StyleSheet.create({
   fullSchedule: { fontFamily: fonts.bodySemi, fontSize: 14, textAlign: 'right', paddingTop: 4 },
+  moreLinks: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   root: {
     flex: 1,
     overflow: 'hidden',

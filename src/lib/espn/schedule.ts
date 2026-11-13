@@ -1,6 +1,7 @@
 import { BASE, getJson } from './client';
 import type { Json } from './client';
-import { cupStage, currentSeason, parseScore, teamLogo } from './common';
+import { cupStage, currentSeason, parseScore, seasonOfDate, teamLogo } from './common';
+import { eraLogoFor } from './franchise';
 
 export type Game = {
   id: string;
@@ -48,7 +49,7 @@ export async function fetchTeamSchedule(
       home: us?.homeAway === 'home',
       opponent: them?.team?.displayName ?? them?.team?.name ?? 'Unknown',
       opponentAbbr: them?.team?.abbreviation ?? '???',
-      opponentLogo: teamLogo(them?.team?.abbreviation, theirLogos[0]?.href),
+      opponentLogo: (e.date && eraLogoFor(String(them?.team?.id ?? ''), seasonOfDate(e.date))) || teamLogo(them?.team?.abbreviation, theirLogos[0]?.href),
       opponentId: String(them?.team?.id ?? ''),
       cup: cupStage(comp.notes?.[0]?.headline),
       note: typeof comp.notes?.[0]?.headline === 'string' ? comp.notes[0].headline : undefined,

@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { FlashOverlay, HeatBadge, Tick } from '@/components';
+import { ARRIVE, FlashOverlay, HeatBadge, Tick } from '@/components';
 import { useGamesOnDay } from '@/hooks';
 import { localToday } from '@/lib/date';
 import { gameHeat } from '@/lib/game';
@@ -25,7 +25,7 @@ export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highl
   const anyLive = games.some((g) => g.inProgress);
 
   return (
-    <Animated.View style={styles.wrap}>
+    <Animated.View entering={ARRIVE} style={styles.wrap}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Around the league</Text>
         {anyLive && (

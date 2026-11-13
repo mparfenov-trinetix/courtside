@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Card, SectionLabel } from '@/components';
+import Animated from 'react-native-reanimated';
+
+import { ARRIVE, Card, SectionLabel } from '@/components';
 import { useFutures } from '@/hooks';
 import { marketLabel, type FuturesMarket, type MarketKey } from '@/lib/espn';
 import { ordinal } from '@/lib/league';
@@ -22,7 +24,7 @@ export function TitleOdds({ teamId, accent }: { teamId: string; accent: string }
   });
   if (rows.length === 0) return null;
   return (
-    <View style={styles.wrap}>
+    <Animated.View entering={ARRIVE} style={styles.wrap}>
       <SectionLabel>Odds</SectionLabel>
       <Card padded={false}>
         {rows.map(({ market, entry, rank }, i) => (
@@ -30,7 +32,7 @@ export function TitleOdds({ teamId, accent }: { teamId: string; accent: string }
         ))}
       </Card>
       <Text style={styles.note}>Sportsbook odds (DraftKings, via ESPN), as a chance with the margin removed.</Text>
-    </View>
+    </Animated.View>
   );
 }
 

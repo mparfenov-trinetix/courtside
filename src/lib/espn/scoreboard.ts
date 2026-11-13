@@ -1,6 +1,7 @@
 import { BASE, getJson } from './client';
 import type { Json } from './client';
-import { classifyGame, cupStage, seriesLine, teamLogo, type GameKind } from './common';
+import { classifyGame, cupStage, seasonOfDate, seriesLine, teamLogo, type GameKind } from './common';
+import { eraLogoFor } from './franchise';
 
 export type ScoreboardTeam = {
   teamId: string;
@@ -44,7 +45,8 @@ export async function fetchScoreboardByDate(date: string): Promise<ScoreboardGam
       teamId: String(c.team?.id ?? ''),
       name: c.team?.displayName ?? c.team?.name ?? '',
       abbreviation: c.team?.abbreviation ?? '',
-      logo: teamLogo(c.team?.abbreviation, c.team?.logo ?? c.team?.logos?.[0]?.href),
+      // A game from before a team's last name change shows the logo the team wore then, where the app has it.
+      logo: (ev.date && eraLogoFor(String(c.team?.id ?? ''), seasonOfDate(ev.date))) || teamLogo(c.team?.abbreviation, c.team?.logo ?? c.team?.logos?.[0]?.href),
       score: c.score != null ? parseFloat(String(c.score)) || undefined : undefined,
       winner: c.winner === true,
       record: ((c.records as Json[] | undefined)?.find((r) => r.type === 'total') ?? (c.records as Json[] | undefined)?.[0])?.summary || undefined,

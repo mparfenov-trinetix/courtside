@@ -14,7 +14,7 @@ const LOOP = 1700;
  * Rockets launch, the Jazz bop...). Keyed by ESPN's abbreviation. A loop is `period` ms and every wave is at rest at
  * the start and end of it, so the logo settles back where it began.
  */
-export const MOTIONS: Record<string, TeamMotion> = {
+const MOTIONS: Record<string, TeamMotion> = {
   // Hawks: soars and glides.
   ATL: { period: LOOP, logo: { y: sine(5), r: sine(9, 1) } },
   // Celtics: hoists itself up like a banner, growing as it goes.
@@ -78,6 +78,6 @@ export const MOTIONS: Record<string, TeamMotion> = {
 };
 
 /** A team ESPN adds later still gets a motion: a gentle bounce. */
-export const DEFAULT_MOTION: TeamMotion = { period: LOOP, logo: { y: hop(-6, 2) } };
+const DEFAULT_MOTION: TeamMotion = { period: LOOP, logo: { y: hop(-6, 2) } };
 
 export const motionOf = (abbreviation: string): TeamMotion => MOTIONS[abbreviation] ?? DEFAULT_MOTION;

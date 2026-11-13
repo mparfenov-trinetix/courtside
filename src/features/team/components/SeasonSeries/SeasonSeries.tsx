@@ -4,6 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import Animated from 'react-native-reanimated';
 
+import { ARRIVE } from '@/components';
+
 import type { Game, Team } from '@/lib/espn';
 import { fonts, palette, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
@@ -43,7 +45,7 @@ export function SeasonSeries({
         : `${wins > losses ? team.abbreviation : rival.abbreviation} leads ${Math.max(wins, losses)}–${Math.min(wins, losses)}`;
 
   return (
-    <Animated.View style={styles.wrap}>
+    <Animated.View entering={ARRIVE} style={styles.wrap}>
       <Text style={styles.title}>Season series vs {rival.abbreviation}</Text>
       <View style={styles.card}>
         <View style={styles.top}>

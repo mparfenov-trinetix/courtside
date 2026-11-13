@@ -1,7 +1,8 @@
 import { headshotUrl, legendPhoto } from './legend-photos';
 import { CORE, getJson } from './client';
 import type { Json } from './client';
-import { currentSeason, teamLogo } from './common';
+import { currentSeason, seasonOfDate, teamLogo } from './common';
+import { eraLogoFor } from './franchise';
 import type { Player } from './teams';
 
 export type PlayerSeasonStats = {
@@ -113,7 +114,7 @@ export async function fetchPlayerGameLog(athleteId: string, season?: number): Pr
         home: !away,
         opponentId: String(opp.id ?? ''),
         opponent: opp.abbreviation ?? '',
-        opponentLogo: opp.logoDark ?? opp.logo ?? '',
+        opponentLogo: (meta.gameDate && eraLogoFor(String(opp.id ?? ''), seasonOfDate(String(meta.gameDate)))) || (opp.logoDark ?? opp.logo ?? ''),
         result: meta.gameResult === 'W' || meta.gameResult === 'L' ? meta.gameResult : undefined,
         teamScore: away ? awayScore : homeScore,
         opponentScore: away ? homeScore : awayScore,
@@ -217,7 +218,7 @@ export async function fetchPlayerCareer(athleteId: string): Promise<PlayerCareer
       year: Number(s.season?.year ?? 0),
       season: String(s.season?.displayName ?? ''),
       abbr: team?.abbreviation ?? (/total/i.test(String(s.teamSlug)) ? 'TOT' : ''),
-      logo: team?.abbreviation ? teamLogo(team.abbreviation, team?.logos?.[0]?.href) : team?.logos?.[0]?.href,
+      logo: eraLogoFor(String(team?.id ?? ''), Number(s.season?.year)) || (team?.abbreviation ? teamLogo(team.abbreviation, team?.logos?.[0]?.href) : team?.logos?.[0]?.href),
       stats,
     };
   });
