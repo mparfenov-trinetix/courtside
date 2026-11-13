@@ -19,7 +19,7 @@ const ordinal = (n: number) => {
 };
 
 /** Opens the Standings screen with both teams lit up (and the right season) so you can see where the game sits. */
-export function openStandings(teamIds: string[], date?: string) {
+function openStandings(teamIds: string[], date?: string) {
   Haptics.selectionAsync();
   // Pushed, not navigated: Standings lives in the menu, and going there would leave the game behind the menu.
   pushOnce({

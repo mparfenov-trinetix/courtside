@@ -17,7 +17,11 @@ import { WIN, LOSS, DOW } from './constants';
 
 type Row = { type: 'month'; label: string } | { type: 'game'; game: Game };
 
-const monthLabel = (d: Date) => d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+// One formatter each, made once: a season of games used to make one per row.
+const MONTH_FORMAT = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
+const WEEKDAY_FORMAT = new Intl.DateTimeFormat('en-US', { weekday: 'long' });
+const TIME_FORMAT = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+const monthLabel = (d: Date) => MONTH_FORMAT.format(d);
 
 function withMonths(games: Game[]): Row[] {
   const rows: Row[] = [];
@@ -87,12 +91,12 @@ export function AgendaView({
       ListEmptyComponent={
         <Text style={styles.empty}>{tab === 'upcoming' ? `No upcoming ${teamAbbr} games.` : `${teamAbbr} haven't played yet.`}</Text>
       }
-      renderItem={({ item, index }) =>
+      renderItem={({ item }) =>
         item.type === 'month' ? (
           <Text style={styles.month}>{item.label}</Text>
         ) : (
           <Animated.View>
-            <GameRow game={item.game} accent={accent} look={opponentLook(teams, item.game.opponentId, item.game.opponentLogo)} />
+            <GameRow game={item.game} accent={accent} look={opponentLook(teams, item.game.opponentId, item.game.opponentLogo, item.game.date)} />
           </Animated.View>
         )
       }
@@ -148,7 +152,7 @@ function GameRow({ game, accent, look }: { game: Game; accent: string; look: Opp
           {game.opponent}
         </Text>
         <View style={styles.subRow}>
-          <Text style={styles.sub}>{isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'long' })}</Text>
+          <Text style={styles.sub}>{isToday ? 'Today' : WEEKDAY_FORMAT.format(d)}</Text>
           {game.cup ? <CupBadge stage={game.cup} /> : null}
           <PlayoffBadge note={game.note} />
         </View>
@@ -161,7 +165,7 @@ function GameRow({ game, accent, look }: { game: Game; accent: string; look: Opp
           </Text>
         </View>
       ) : (
-        <Text style={styles.time}>{d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</Text>
+        <Text style={styles.time}>{TIME_FORMAT.format(d)}</Text>
       )}
     </Pressable>
   );

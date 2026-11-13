@@ -1,4 +1,3 @@
-import { palette } from '@/lib/theme';
 export const MAX_ROTATE = 10;
 export const RADIUS = 28;
 
@@ -24,9 +23,6 @@ export const CARD_STATS = [
   { key: 'spg', label: 'SPG', category: 'stpg' },
   { key: 'bpg', label: 'BPG', category: 'bpg' },
 ] as const;
-
-/** The champion badge's gold. */
-export const CHAMPION_GOLD = palette.gold;
 
 /** How many places down a rank is still worth showing (the leaders feed is cut at 50). */
 export const RANK_SHOWN = 50;

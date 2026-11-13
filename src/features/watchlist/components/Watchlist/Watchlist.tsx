@@ -3,7 +3,7 @@ import { router, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { StarIcon } from '@/components';
+import { ARRIVE, StarIcon } from '@/components';
 import { usePlayerGameLog, usePlayerStats } from '@/hooks';
 import { headshotUrl } from '@/lib/espn';
 import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
@@ -18,10 +18,10 @@ export function Watchlist({ accent, teamId, teamAbbr }: { accent: string; teamId
   if (mine.length === 0) return null;
 
   return (
-    <Animated.View style={styles.wrap}>
+    <Animated.View entering={ARRIVE} style={styles.wrap}>
       <View style={styles.titleRow}>
         <Text style={styles.title}>Watchlist{teamAbbr ? ` · ${teamAbbr}` : ''}</Text>
-        <Pressable onPress={() => router.navigate('/watchlist' as Href)} hitSlop={8}>
+        <Pressable accessibilityRole="button" onPress={() => router.navigate('/watchlist' as Href)} hitSlop={8}>
           <Text style={[styles.viewAll, { color: accent }]}>All watched · {players.length}</Text>
         </Pressable>
       </View>

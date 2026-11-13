@@ -9,8 +9,8 @@ export const GOLD = palette.gold;
 export const RATING_BOX = 23;
 
 /** Detailed view: the pinned player column (photo, name, rating) is this wide at rest and shrinks to the second width as the stats scroll. */
-export const DETAIL_COL_FULL = 192;
-export const DETAIL_COL_SHRUNK = 150;
+const DETAIL_COL_FULL = 192;
+const DETAIL_COL_SHRUNK = 150;
 /** Without the rating (a period's lines) the column has no square to hold and gives its room to the stats. */
 export const detailColWidths = (rated: boolean): { full: number; shrunk: number } => {
   const room = rated ? 0 : RATING_BOX + 8;

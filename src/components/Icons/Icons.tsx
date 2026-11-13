@@ -227,15 +227,6 @@ export function MedalIcon({ size = 22, color }: IconProps) {
   );
 }
 
-/** A pulse line: the league's wire (injuries and moves). */
-export function WireIcon({ size = 22, color }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d="M3 12h4l2.5-6 4 12 2.5-6H21" {...stroke(color)} />
-    </Svg>
-  );
-}
-
 export function BracketIcon({ size = 22, color }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -299,6 +290,35 @@ export function ViewMonthIcon({ size = 22, color }: IconProps) {
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Rect x={4} y={4} width={16} height={16} rx={3} {...stroke(color)} />
       <Path d="M4 9.5h16M4 14.8h16M9.4 4v16M14.7 4v16" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+/** A tick: a right call, a chosen side. */
+export function CheckIcon({ size = 16, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M5 12.5l4.5 4.5L19 7.5" {...stroke(color)} strokeWidth={3} />
+    </Svg>
+  );
+}
+
+/** A cross: a wrong call. */
+export function CrossIcon({ size = 16, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M6.5 6.5l11 11M17.5 6.5l-11 11" {...stroke(color)} strokeWidth={3} />
+    </Svg>
+  );
+}
+
+/** Pick'em: a ballot with a tick on it. */
+export function PickemIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Rect x={4} y={3.5} width={16} height={17} rx={3} {...stroke(color)} />
+      <Path d="M8.5 11.5l2.4 2.4 4.6-4.8" {...stroke(color)} />
+      <Path d="M8.5 17.5h7" {...stroke(color)} />
     </Svg>
   );
 }

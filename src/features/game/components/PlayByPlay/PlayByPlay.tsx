@@ -60,7 +60,7 @@ export function PlayByPlay({
           const isHome = play.teamId === home.team.id;
           const newPeriod = !prev || prev.period !== play.period;
           return (
-            <Animated.View key={play.id || String(i)} layout={i < 30 ? LinearTransition.duration(220) : undefined}>
+            <Animated.View key={play.id || String(i)} layout={i < 4 ? LinearTransition.duration(220) : undefined}>
               {newPeriod && <Text style={styles.periodHeader}>{periodName(play.period)}</Text>}
               <Animated.View
                 style={[styles.row, play.scoring && { backgroundColor: withAlpha(entry?.color ?? palette.chalk, 0.14) }]}>
@@ -92,7 +92,7 @@ export function PlayByPlay({
       )}
 
       {filtered.length > limit && (
-        <Pressable onPress={() => setLimit((n) => n + PAGE)} style={styles.more}>
+        <Pressable accessibilityRole="button" onPress={() => setLimit((n) => n + PAGE)} style={styles.more}>
           <Text style={styles.moreText}>Show {Math.min(PAGE, filtered.length - limit)} more</Text>
         </Pressable>
       )}

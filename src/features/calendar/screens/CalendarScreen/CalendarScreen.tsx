@@ -117,7 +117,7 @@ export function CalendarScreen() {
     <View style={styles.headerRight}>
       {/* The day view has its floating Today pill, and the agenda opens on what is next. */}
       {mode !== 'month' ? null : (
-        <Pressable onPress={goToday} hitSlop={8}>
+        <Pressable accessibilityRole="button" onPress={goToday} hitSlop={8}>
           <Text style={styles.todayBtn}>Today</Text>
         </Pressable>
       )}

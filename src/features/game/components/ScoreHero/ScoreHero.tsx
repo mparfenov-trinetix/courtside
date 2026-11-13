@@ -1,5 +1,4 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import type { Href } from 'expo-router';
 import { useEffect, useRef, type RefObject } from 'react';
 import { Pressable, StyleSheet, Text, View, type HostInstance, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, type AnimatedStyle, type SharedValue } from 'react-native-reanimated';
@@ -9,7 +8,7 @@ import { ArrowLeftIcon, GlassButton, HeatBadge, StarIcon, Tick, RollingNumber } 
 import type { BoxScoreTeam } from '@/lib/espn';
 import { gameHeat, periodLabel, TIMEOUTS_PER_GAME } from '@/lib/game';
 import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
-import { goBack, openDetail, sharedTag } from '@/navigation';
+import { goBack, openDetail, sharedTag, teamHref } from '@/navigation';
 import { BAR_LOGO, HERO_LOGO } from '../GameLogos';
 
 // ─── Big header ───────────────────────────────────────────────────────────────
@@ -30,6 +29,7 @@ export function ScoreHero({
   timeout,
   seeds,
   series,
+  season,
 }: {
   away: BoxScoreTeam;
   home: BoxScoreTeam;
@@ -52,6 +52,8 @@ export function ScoreHero({
   seeds?: { away?: number; home?: number };
   /** A playoff game: its series as it stands after this game (or now, if it is still to come): "ORL leads 3-2". */
   series?: string;
+  /** The game's season (the year it ends in): tapping a team that went by another name then opens that name's card. */
+  season?: number;
 }) {
   const filtered = selPeriods != null;
   const bars = useAnimatedStyle(() => ({ opacity: scrollY ? Math.max(0, 1 - scrollY.get() / 36) : 1 }));
@@ -73,7 +75,7 @@ export function ScoreHero({
   return (
     <View ref={rootRef} collapsable={false}>
       <Animated.View onLayout={measure} style={styles.scoreHeader}>
-        <TeamScore team={away} seed={seeds?.away} slot={awaySlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
+        <TeamScore team={away} season={season} seed={seeds?.away} slot={awaySlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
         <View
           style={styles.scoreCenter}
           accessible
@@ -103,7 +105,7 @@ export function ScoreHero({
             {series ? <Text style={styles.series}>{series}</Text> : null}
           </Animated.View>
         </View>
-        <TeamScore team={home} seed={seeds?.home} right slot={homeSlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
+        <TeamScore team={home} season={season} seed={seeds?.home} right slot={homeSlot} onLayout={measure} showTimeouts={live} barsStyle={bars} />
       </Animated.View>
 
       {periodCount > 0 && (
@@ -143,7 +145,7 @@ export function ScoreHero({
 }
 
 /** "NOP TO": a timeout is on. Sits under the clock, which has stopped. */
-export function TimeoutPill({ label }: { label: string }) {
+function TimeoutPill({ label }: { label: string }) {
   return (
     <View style={styles.timeoutPill}>
       <Text style={styles.timeoutPillText}>{label}</Text>
@@ -167,6 +169,7 @@ export function LivePill({ label }: { label: string }) {
 
 function TeamScore({
   team,
+  season,
   seed,
   right,
   slot,
@@ -175,6 +178,8 @@ function TeamScore({
   barsStyle,
 }: {
   team: BoxScoreTeam;
+  /** The game's season: a team that went by another name then opens as that name's card. */
+  season?: number;
   seed?: number;
   right?: boolean;
   slot: RefObject<HostInstance | null>;
@@ -185,7 +190,7 @@ function TeamScore({
 }) {
   return (
     <Pressable
-      onPress={() => openDetail(`/team/${team.team.id}` as Href)}
+      onPress={() => openDetail(teamHref(team.team.id, season))}
       accessibilityRole="button"
       accessibilityLabel={`Open ${team.team.abbreviation}`}
       style={({ pressed }) => [styles.teamBlock, right && styles.teamBlockRight, pressed && { opacity: 0.7 }]}>

@@ -63,7 +63,7 @@ function Leader({
   const { player, value } = entry;
   const right = align === 'right';
   return (
-    <Pressable
+    <Pressable accessibilityRole="button"
       onPress={() => player.id && openDetail({ pathname: '/player/[id]', params: { id: player.id, teamId: side.teamId } })}
       style={({ pressed }) => [styles.leader, right && styles.leaderRight, pressed && { opacity: 0.7 }]}>
       {!right && <Headshot player={player} color={side.color} />}

@@ -67,7 +67,7 @@ export function FormCard({ log, accent }: { log: GameLogEntry[]; accent: string 
           <View style={[styles.avgLine, { bottom: BAR_BASE + seasonY }]}>
             <View style={styles.avgDash} />
           </View>
-          {recent.map((g, i) => (
+          {recent.map((g) => (
             <View key={g.gameId} style={styles.col}>
               <Text style={styles.barValue}>{g.pts}</Text>
               <Animated.View

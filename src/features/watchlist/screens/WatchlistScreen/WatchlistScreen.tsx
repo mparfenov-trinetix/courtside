@@ -72,7 +72,7 @@ export function WatchlistScreen() {
               <Text style={styles.sectionTitle}>{section.team?.displayName ?? 'Team'}</Text>
             </View>
           )}
-          renderItem={({ item, index, section }) => {
+          renderItem={({ item, section }) => {
             const accent = teamTheme(section.team).accent;
             return (
               <Animated.View style={styles.rowWrap}>

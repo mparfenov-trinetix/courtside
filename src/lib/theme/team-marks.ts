@@ -5,7 +5,7 @@
  */
 export const WORDMARK_TEAMS = new Set(['PHI', 'PHX', 'POR', 'CLE', 'BKN']);
 
-export const MARK_FILL: Record<string, [w: number, h: number]> = {
+const MARK_FILL: Record<string, [w: number, h: number]> = {
   ATL: [0.925, 0.783], BOS: [0.925, 0.925], BKN: [0.925, 0.617], CHA: [0.892, 0.921], CHI: [0.917, 0.925],
   CLE: [0.925, 0.55], DAL: [0.925, 0.917], DEN: [0.925, 0.725], DET: [0.925, 0.925], GS: [0.925, 0.558],
   HOU: [0.625, 0.925], IND: [0.642, 0.925], LAC: [0.925, 0.696], LAL: [0.925, 0.775], MEM: [0.925, 0.9],

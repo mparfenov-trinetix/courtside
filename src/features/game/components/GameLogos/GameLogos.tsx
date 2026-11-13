@@ -1,12 +1,11 @@
 import { Image } from 'expo-image';
-import type { Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { BoxScoreTeam } from '@/lib/espn';
 import { fonts } from '@/lib/theme';
-import { openDetail, sharedTag } from '@/navigation';
+import { openDetail, sharedTag, teamHref } from '@/navigation';
 import { BAR_LOGO, BAR_ROW, BAR_TOP, HERO_LOGO } from './constants';
 
 /** Where a logo sits in the big header, measured on screen at scroll 0 (its center). */
@@ -28,6 +27,7 @@ export function GameLogos({
   homeBonus,
   gameId,
   origin,
+  season,
 }: {
   away: BoxScoreTeam;
   home: BoxScoreTeam;
@@ -41,17 +41,20 @@ export function GameLogos({
   /** With `origin`, names the logos that fly in from the list this game was opened from. */
   gameId?: string;
   origin?: string;
+  /** The game's season: tapping a team that went by another name then opens that name's card. */
+  season?: number;
 }) {
   return (
     <Animated.View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-      <Logo team={away} side={-1} scrollY={scrollY} slot={awaySlot} hasStarted={hasStarted} bonus={awayBonus} tag={sharedTag(origin, 'game', gameId ?? '', 'away', 'logo')} />
-      <Logo team={home} side={1} scrollY={scrollY} slot={homeSlot} hasStarted={hasStarted} bonus={homeBonus} tag={sharedTag(origin, 'game', gameId ?? '', 'home', 'logo')} />
+      <Logo team={away} season={season} side={-1} scrollY={scrollY} slot={awaySlot} hasStarted={hasStarted} bonus={awayBonus} tag={sharedTag(origin, 'game', gameId ?? '', 'away', 'logo')} />
+      <Logo team={home} season={season} side={1} scrollY={scrollY} slot={homeSlot} hasStarted={hasStarted} bonus={homeBonus} tag={sharedTag(origin, 'game', gameId ?? '', 'home', 'logo')} />
     </Animated.View>
   );
 }
 
 function Logo({
   team,
+  season,
   side,
   scrollY,
   slot,
@@ -60,6 +63,7 @@ function Logo({
   tag,
 }: {
   team: BoxScoreTeam;
+  season?: number;
   side: -1 | 1;
   scrollY: SharedValue<number>;
   slot: SharedValue<LogoSlot>;
@@ -96,7 +100,7 @@ function Logo({
   return (
     <Animated.View style={[styles.logo, style]}>
       <Pressable
-        onPress={() => openDetail(`/team/${team.team.id}` as Href)}
+        onPress={() => openDetail(teamHref(team.team.id, season))}
         accessibilityRole="button"
         accessibilityLabel={`Open ${team.team.abbreviation}`}
         hitSlop={6}

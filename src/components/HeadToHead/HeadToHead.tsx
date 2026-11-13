@@ -14,7 +14,7 @@ import { COLLAPSED } from './constants';
 export type H2HTeam = { id: string; abbr: string; logo: string; color: string };
 
 /** Last meetings between two teams. Loads its own data; `a` is the team whose side the results are read from. */
-export function HeadToHead({ a, b, delay = 100, flush = false }: { a: H2HTeam; b: H2HTeam; delay?: number; /** No room above: the page puts its own gap between sections. */ flush?: boolean }) {
+export function HeadToHead({ a, b, flush = false }: { a: H2HTeam; b: H2HTeam; /** No room above: the page puts its own gap between sections. */ flush?: boolean }) {
   const { data, isPending, error } = useHeadToHead(a.id, b.id);
   return (
     <Animated.View style={[styles.wrap, flush && styles.flush]}>

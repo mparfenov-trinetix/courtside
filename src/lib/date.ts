@@ -6,15 +6,6 @@ export function toDateKey(d: Date): string {
   return `${y}${m}${day}`;
 }
 
-/**
- * Today's date on ESPN's clock (US Eastern), as a local-midnight Date. Scoreboards are keyed by
- * Eastern date, so for someone in Europe a late game belongs to "yesterday" until the early morning.
- */
-export function nbaToday(): Date {
-  const { year, month, day } = easternParts(new Date());
-  return new Date(year, month - 1, day);
-}
-
 /** The ESPN scoreboard key (YYYYMMDD, Eastern) a game starting at `d` belongs to. */
 export function toNbaDateKey(d: Date): string {
   const { year, month, day } = easternParts(d);

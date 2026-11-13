@@ -46,7 +46,7 @@ export type TeamStar = { athleteId: string; name: string; shortName: string; hea
  * A team's `rating` leaders (ESPN's ranking of its players, the whole roster, best first): each athlete's record link and the per-game numbers
  * its display value carries ("23.4 PPG, 9.7 RPG, 9.3 APG, ..."). Empty when the team has no rated player yet (the start of a season).
  */
-export function normalizeTeamLeaders(json: Json, limit = 8): { ref: string; ppg: string; rpg: string; apg: string }[] {
+function normalizeTeamLeaders(json: Json, limit = 8): { ref: string; ppg: string; rpg: string; apg: string }[] {
   const leaders: Json[] = ((json.categories ?? []) as Json[]).find((c) => c.name === 'rating')?.leaders ?? [];
   return leaders.slice(0, limit).flatMap((lead) => {
     const ref = String(lead?.athlete?.$ref ?? '').replace(/^http:\/\//, 'https://');
@@ -91,8 +91,8 @@ function athleteOf(ref: string): Promise<AthleteInfo> {
 }
 
 /** The best player of one team this season, or null before ESPN has rated anyone. */
-export async function fetchTeamStar(teamId: string): Promise<TeamStar | null> {
-  const json = await getJson(`${CORE}/seasons/${currentSeason()}/types/2/teams/${teamId}/leaders?lang=en&region=us`);
+export async function fetchTeamStar(teamId: string, season: number = currentSeason()): Promise<TeamStar | null> {
+  const json = await getJson(`${CORE}/seasons/${season}/types/2/teams/${teamId}/leaders?lang=en&region=us`);
   const star = normalizeTeamStar(json);
   if (!star) return null;
   const who = await athleteOf(star.ref);

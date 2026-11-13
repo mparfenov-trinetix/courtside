@@ -76,7 +76,7 @@ export function scoutingText(html: unknown): string | undefined {
 }
 
 /** One pick: its slot and team from `draft/rounds`, the player from his own record and the college's name from the college's. */
-export function normalizeDraftPick(pick: Json, athlete?: Json, collegeName?: string): NbaDraftPick {
+function normalizeDraftPick(pick: Json, athlete?: Json, collegeName?: string): NbaDraftPick {
   const out: NbaDraftPick = {
     overall: Number(pick.overall ?? 0),
     round: Number(pick.round ?? 0),

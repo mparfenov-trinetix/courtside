@@ -29,7 +29,7 @@ export function TeamLeadersScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
-      <ScreenHeader title="Team Leaders" color={palette.chalk} />
+      <ScreenHeader title="Team leaders" color={palette.chalk} />
       <StatPager
         pages={PAGES}
         defaultKey="ppg"

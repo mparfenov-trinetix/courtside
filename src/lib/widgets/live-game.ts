@@ -36,30 +36,6 @@ export type LiveGameProps = {
   homeBonus: boolean;
 };
 
-/** What the activity shows before the first update (and in previews). */
-export const SAMPLE_LIVE_GAME: LiveGameProps = {
-  gameId: '',
-  awayAbbr: 'PHI',
-  homeAbbr: 'DET',
-  awayScore: '53',
-  homeScore: '42',
-  awayLogo: '',
-  homeLogo: '',
-  status: '1:05 - 2nd',
-  timeout: '',
-  final: false,
-  awayLeads: true,
-  homeLeads: false,
-  awayColor: '#ED174C',
-  homeColor: '#1D42BA',
-  awayBg: '#5A1426',
-  homeBg: '#14285E',
-  awayText: '#F5738F',
-  homeText: '#6B8DE0',
-  awayBonus: false,
-  homeBonus: false,
-};
-
 /** Pure: a game summary (live or just ended) as the activity's props. `logos` maps a logo URL to its shared file. */
 export function buildLiveGameProps(game: GameSummary, logos: Record<string, string> = {}): LiveGameProps {
   const { away, home } = game;
@@ -91,7 +67,7 @@ export function buildLiveGameProps(game: GameSummary, logos: Record<string, stri
 }
 
 /** Whether the activity should be running for this game: on now (not paused for a postponement, not yet over). */
-export const isTrackable = (game: Pick<GameSummary, 'live' | 'completed'>) => game.live && !game.completed;
+const isTrackable = (game: Pick<GameSummary, 'live' | 'completed'>) => game.live && !game.completed;
 
 /**
  * Which game the Live Activity should follow: your team's game while it is on, else a starred game that is on; once

@@ -40,7 +40,7 @@ export const emptyLine = (): Line => ({
   oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, pm: 0,
 });
 
-export function addLines(a: Line, b: Line): Line {
+function addLines(a: Line, b: Line): Line {
   const out = emptyLine();
   (Object.keys(out) as (keyof Line)[]).forEach((k) => { out[k] = a[k] + b[k]; });
   return out;
@@ -48,7 +48,7 @@ export function addLines(a: Line, b: Line): Line {
 
 const periodLength = (period: number) => (period <= 4 ? 720 : 300);
 
-export function parseClock(text: string): number {
+function parseClock(text: string): number {
   if (text.includes(':')) {
     const [m, s] = text.split(':');
     return parseInt(m, 10) * 60 + parseFloat(s);

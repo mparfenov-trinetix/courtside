@@ -16,8 +16,3 @@ export function useSpotlight(): (teamId: string) => boolean {
   const teams = useContext(SpotlightContext);
   return (teamId) => teams.includes(teamId);
 }
-
-/** Whether any team is in the spotlight. */
-export function useHasSpotlight(): boolean {
-  return useContext(SpotlightContext).length > 0;
-}

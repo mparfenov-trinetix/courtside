@@ -114,7 +114,8 @@ export function GameScreen() {
   const { data: allTeams } = useTeams();
   // A playoff game shows each team's seed.
   const seeds = usePlayoffSeeds(data?.season, data?.kind === 'playoffs');
-  const pair = useGameTeams(id);
+  // Only while the game itself has not arrived: after that its own data says who plays, and the scan of the cached boards and schedules is not needed on every render.
+  const pair = useGameTeams(data ? null : id);
   // The head-to-head card reads a long history: start it as soon as the teams are known (often before the game itself has
   // arrived), under the same key the card uses. It is the away team's side, as the card reads it.
   useHeadToHead(pair?.awayId, pair?.homeId);
@@ -253,6 +254,7 @@ export function GameScreen() {
           timeout={onTimeout}
           seeds={seeds ? { away: seeds[away.team.id], home: seeds[home.team.id] } : undefined}
           series={data.series}
+          season={data.season}
         />
 
         {/* A plain View: ScrollView replaces the style of a sticky child, so the bar styles itself. */}
@@ -288,6 +290,7 @@ export function GameScreen() {
               info={info}
               pregame={data.pregame}
               videos={data.videos}
+              recap={data.recap}
               gameId={id}
               completed={completed}
               kind={data.kind}
@@ -354,6 +357,7 @@ export function GameScreen() {
         homeBonus={live && !!home.fouls?.bonus}
         gameId={id}
         origin={o}
+        season={data.season}
       />
     </View>
   );

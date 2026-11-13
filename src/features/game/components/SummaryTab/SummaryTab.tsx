@@ -2,10 +2,12 @@ import { View } from "react-native";
 import Animated from "react-native-reanimated";
 
 import { Collapsible, HeadToHead, Highlights } from "@/components";
+import { PickCard } from "@/features/pickem";
 import { ClutchCard } from "../ClutchCard";
 import { GameDuel } from "../GameDuel";
 import { GameFlow } from "../GameFlow";
 import { GameHighlights } from "../GameHighlights";
+import { GameRecap } from "../GameRecap";
 import { GameInfoCard, GameLeaders, InjuryReport } from "../GameLeaders";
 import { KeyMoments } from "../KeyMoments";
 import { MatchupPlace } from "../MatchupPlace";
@@ -17,6 +19,7 @@ import type {
   BoxScoreTeam,
   GameInfo,
   GameKind,
+  GameRecap as RecapData,
   GameVideo,
   Play,
   Pregame as PregameData,
@@ -49,6 +52,7 @@ export function SummaryTab({
   info,
   pregame,
   videos,
+  recap,
   gameId,
   completed = false,
   kind,
@@ -73,6 +77,8 @@ export function SummaryTab({
   info: GameInfo;
   pregame: PregameData;
   videos: GameVideo[];
+  /** ESPN's recap article of a finished game. */
+  recap?: RecapData;
   gameId: string;
   /** The game is over: its video is looked for on YouTube. */
   completed?: boolean;
@@ -194,6 +200,13 @@ export function SummaryTab({
     </Animated.View>
   );
 
+  // The written recap, right under the video of the game: whole game only, like the video.
+  const recapCard = completed && !selPeriods && !!recap && (
+    <View key="recap" style={{ paddingHorizontal: 16, marginBottom: 14 }}>
+      <GameRecap recap={recap} />
+    </View>
+  );
+
   // While a game is on there is no video: the clips come after the numbers.
   const highlights = !completed && clips.length > 0 && (
     <Animated.View key="highlights">
@@ -214,13 +227,30 @@ export function SummaryTab({
 
   // One order for every game, live or finished, so a section is always where you left it: the team numbers and the leaders first (the
   // period filter in the bar above applies to both), then the clips (the game's video once it is over), then the story of the game.
-  const ordered = [stats, leaders, duel, completed ? media : highlights, flowChart, clutch, moments, timeouts];
+  // A game you picked a side of keeps your call at the top once it is on or over, with how it went.
+  const pickCard = hasStarted && (
+    <View key="pick" style={{ paddingHorizontal: 16, marginBottom: 14 }}>
+      <PickCard
+        gameId={gameId}
+        date={info.date}
+        away={awaySide}
+        home={homeSide}
+        kind={kind}
+        scores={{ away: away.score, home: home.score }}
+        completed={!!completed}
+        started
+      />
+    </View>
+  );
+
+  const ordered = [pickCard, stats, leaders, duel, completed ? media : highlights, recapCard, flowChart, clutch, moments, timeouts];
 
   return (
     <View>
       {ordered}
       {!hasStarted && (
         <Pregame
+          gameId={gameId}
           away={awaySide}
           home={homeSide}
           data={pregame}

@@ -61,7 +61,7 @@ function LeaderRow({ entry, rank }: { entry: LeaderEntry; rank: number }) {
   const canNavigate = !!entry.athleteId && !!entry.teamId;
 
   return (
-    <Pressable
+    <Pressable accessibilityRole="button"
       onPress={() => canNavigate && openDetail({ pathname: '/player/[id]', params: { id: entry.athleteId, teamId: entry.teamId } })}
       style={({ pressed }) => [styles.row, pressed && canNavigate && { opacity: 0.7 }]}>
       <Text style={[styles.rank, rank <= 3 && styles.rankTop]}>{rank}</Text>

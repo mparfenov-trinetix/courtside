@@ -17,7 +17,7 @@ export function LeagueLeadersScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
-      <ScreenHeader title="League Leaders" color={palette.chalk} />
+      <ScreenHeader title="Player leaders" color={palette.chalk} />
       <StatPager
         pages={PAGES}
         defaultKey="ppg"

@@ -4,7 +4,7 @@ import type { BoxScorePlayer } from '@/lib/espn';
 import { gameFraction, minutesOf, projectedRating } from '@/lib/game';
 
 /** Both teams' minutes between two refreshes: 40 is four minutes of the game (ten players), three or four refreshes a quarter. */
-export const REFRESH_TEAM_MINUTES = 40;
+const REFRESH_TEAM_MINUTES = 40;
 
 type Snapshot = { minutes: number; ratings: Map<string, number> };
 

@@ -120,7 +120,7 @@ export function ShotChart({
           const t = k === 'home' ? home : away;
           const active = side === k;
           return (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={k}
               onPress={() => { setSide(k); setPlayerId(null); setSelectedId(null); }}
               style={[styles.teamTab, active && { backgroundColor: withAlpha(palette.chalk, 0.12), borderColor: withAlpha(palette.chalk, 0.3) }]}>
@@ -168,7 +168,7 @@ export function ShotChart({
         accessibilityRole="image"
         accessibilityLabel={`Shot chart for ${activeId ? 'the selected player' : team.team.displayName}: ${fgm} of ${shots.length} shots made, ${tpm} of ${tpa} from three.`}>
         {width > 0 && (
-          <Pressable onPress={(e) => pickShot(e.nativeEvent.locationX, e.nativeEvent.locationY)} disabled={view !== 'shots'}>
+          <Pressable accessibilityRole="button" onPress={(e) => pickShot(e.nativeEvent.locationX, e.nativeEvent.locationY)} disabled={view !== 'shots'}>
           <Svg width={width} height={height}>
             <CourtMarkings width={width} height={height} />
 
@@ -237,11 +237,11 @@ export function ShotChart({
         />
         {view === 'shots' ? (
           <View style={styles.legendRight}>
-            <Pressable onPress={() => setShowMakes((v) => !v)} style={[styles.legendItem, !showMakes && { opacity: 0.4 }]}>
+            <Pressable accessibilityRole="button" onPress={() => setShowMakes((v) => !v)} style={[styles.legendItem, !showMakes && { opacity: 0.4 }]}>
               <View style={[styles.legendDot, { backgroundColor: color }]} />
               <Text style={styles.legendText}>Made</Text>
             </Pressable>
-            <Pressable onPress={() => setShowMisses((v) => !v)} style={[styles.legendItem, !showMisses && { opacity: 0.4 }]}>
+            <Pressable accessibilityRole="button" onPress={() => setShowMisses((v) => !v)} style={[styles.legendItem, !showMisses && { opacity: 0.4 }]}>
               <Text style={styles.legendX}>✕</Text>
               <Text style={styles.legendText}>Missed</Text>
             </Pressable>

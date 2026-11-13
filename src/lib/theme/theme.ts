@@ -51,7 +51,7 @@ function saturation(hex: string) {
   return max === 0 ? 0 : (max - Math.min(r, g, b)) / max;
 }
 
-export function luminance(hex: string) {
+function luminance(hex: string) {
   const [r, g, b] = toRgb(hex).map((v) => {
     const c = v / 255;
     return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -130,7 +130,7 @@ const TEAM_PALETTE: Record<string, { color: string; alternateColor: string }> = 
 };
 
 /** The two colors a team is drawn in: its entry in `TEAM_PALETTE`, else ESPN's own. */
-export function teamColors(team: Pick<Team, 'color' | 'alternateColor'>): { color: string; alternateColor: string } {
+function teamColors(team: Pick<Team, 'color' | 'alternateColor'>): { color: string; alternateColor: string } {
   return TEAM_PALETTE[`${team.color}|${team.alternateColor}`.toLowerCase()] ?? { color: team.color, alternateColor: team.alternateColor };
 }
 
@@ -230,7 +230,7 @@ export function matchupColors(
  * Teams whose card is dark and neutral enough for their own full-color logo to read on it: the Raptors' card is charcoal, so their logo is
  * the red one (the white one it would otherwise get is for a card in ESPN's red).
  */
-export const COLOR_LOGO = new Set(['TOR']);
+const COLOR_LOGO = new Set(['TOR']);
 
 /** Pick the logo variant that reads on a background with the given text color. */
 export function logoOn(team: Pick<Team, 'logo' | 'logoDark' | 'logoOnPrimary'> & { abbreviation?: string }, onColor: string) {

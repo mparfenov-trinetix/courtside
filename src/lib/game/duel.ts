@@ -1,11 +1,11 @@
 import type { BoxScorePlayer } from '../espn';
 
 /** A scoring duel: both players scored at least this many... */
-export const DUEL_MIN_POINTS = 30;
+const DUEL_MIN_POINTS = 30;
 /** ...and no more than this many points apart (35 against 32, 44 against 39). */
-export const DUEL_MAX_GAP = 6;
+const DUEL_MAX_GAP = 6;
 /** An all-round duel: both players' points, rebounds and assists together at least this much (20 + 10 + 10, 22 + 10 + 8)... */
-export const DUEL_MIN_COMBINED = 40;
+const DUEL_MIN_COMBINED = 40;
 // ...and no more than the same gap apart.
 
 export type GameDuel = { away: BoxScorePlayer; home: BoxScorePlayer; kind: 'points' | 'allround' };

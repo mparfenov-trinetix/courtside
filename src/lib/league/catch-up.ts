@@ -21,7 +21,7 @@ export type CatchUpItem =
     };
 
 /** Away for less than this and there is nothing worth a card. */
-export const MIN_AWAY_MS = 3 * 60 * 60 * 1000;
+const MIN_AWAY_MS = 3 * 60 * 60 * 1000;
 
 const after = (iso: string, since: number) => Date.parse(iso) > since;
 

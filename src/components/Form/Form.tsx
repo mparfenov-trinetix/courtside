@@ -1,19 +1,33 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
-import { fonts, palette, withAlpha } from '@/lib/theme';
+import { fonts, motion, palette, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { LOSS, WIN } from './constants';
 
 type Result = { id: string; result: 'W' | 'L' };
 
-/** Last results as small W / L circles, oldest to newest. */
+const SLIDE = LinearTransition.duration(motion.base);
+
+/**
+ * Last results as small W / L circles, oldest to newest. The row is drawn from a schedule that may have been kept on disk, so a game that
+ * ended since can arrive a moment after the card opens: the circles then slide along and the new one fades in at the end, instead of the
+ * row jumping. What is there when the row first appears is drawn as it is, with no entrance.
+ */
 export function FormDots({ games }: { games: Result[] }) {
+  const [first] = useState(() => new Set(games.map((g) => g.id)));
   return (
     <>
       {games.map((g) => (
-        <View key={g.id} style={[styles.dot, { backgroundColor: withAlpha(g.result === 'W' ? WIN : LOSS, 0.2) }]}>
+        <Animated.View
+          key={g.id}
+          layout={SLIDE}
+          entering={first.has(g.id) ? undefined : FadeIn.duration(motion.base)}
+          exiting={FadeOut.duration(motion.fast)}
+          style={[styles.dot, { backgroundColor: withAlpha(g.result === 'W' ? WIN : LOSS, 0.2) }]}>
           <Text style={[styles.dotText, { color: g.result === 'W' ? WIN : LOSS }]}>{g.result}</Text>
-        </View>
+        </Animated.View>
       ))}
     </>
   );

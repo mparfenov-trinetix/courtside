@@ -6,6 +6,7 @@ export * from './GameFlow';
 export * from './GameHighlights';
 export * from './GameLogos';
 export * from './GameLeaders';
+export * from './GameRecap';
 export * from './GameSkeleton';
 export * from './KeyMatchup';
 export * from './KeyMoments';

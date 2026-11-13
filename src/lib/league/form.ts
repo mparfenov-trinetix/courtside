@@ -1,7 +1,7 @@
 import type { GameLogEntry } from '../espn';
 
 /** One game's worth of production in a number: points, boards, passes and stops, less the turnovers. */
-export const gameImpact = (g: Pick<GameLogEntry, 'pts' | 'reb' | 'ast' | 'stl' | 'blk' | 'to'>) =>
+const gameImpact = (g: Pick<GameLogEntry, 'pts' | 'reb' | 'ast' | 'stl' | 'blk' | 'to'>) =>
   g.pts + 1.1 * g.reb + 1.6 * g.ast + 2.2 * g.stl + 1.8 * g.blk - 1.2 * g.to;
 
 export type Form = {

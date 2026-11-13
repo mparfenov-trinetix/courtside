@@ -38,7 +38,7 @@ export const formatGameScore = (score?: number): string => (score === undefined 
  * 0 (a few points on bad shooting) is already a 5, a typical rotation game (about 10) a 7, a very good one (16) an 8, 25 (a big night) a 9
  * and 38 (40 points, 10 rebounds and 10 assists on good shooting works out at about that) a 10.
  */
-export const RATING_POINTS: [score: number, rating: number][] = [
+const RATING_POINTS: [score: number, rating: number][] = [
   [-10, 1],
   [-3, 3.5],
   [0, 5],
@@ -66,7 +66,7 @@ export function ratingOf(score: number): number {
 }
 
 /** A player with fewer minutes than this has no rating: a few minutes of garbage time say nothing (and read as a bad game). */
-export const MIN_RATED_MINUTES = 5;
+const MIN_RATED_MINUTES = 5;
 
 /** The 1-10 rating of a player's whole game, or undefined for someone who did not play (or played under `MIN_RATED_MINUTES`). */
 export function gameRating(stats: Record<string, string>): number | undefined {
@@ -84,13 +84,13 @@ export function formatRating(rating?: number): string {
 }
 
 /** A typical Game Score per minute (10 over a 30-minute game): what a live rating leans on until a player has played enough to show his own. */
-export const PRIOR_RATE = 1 / 3;
+const PRIOR_RATE = 1 / 3;
 /** How many minutes of that typical player weigh against a player's own, so a hot first quarter moves his rating without throwing it. */
-export const PRIOR_MINUTES = 8;
+const PRIOR_MINUTES = 8;
 /** The most a regulation game's team minutes can be: five players for 48 minutes. */
-export const TEAM_MINUTES = 240;
+const TEAM_MINUTES = 240;
 /** The most a player is counted on to play in a game that is on. */
-export const MAX_PLAYER_MINUTES = 40;
+const MAX_PLAYER_MINUTES = 40;
 
 /** Minutes a player's line says he played ("23"; "–" or nothing for someone who did not). */
 export const minutesOf = (stats: Record<string, string>): number => {

@@ -6,7 +6,7 @@
  * serves that silhouette for any id it has no photo of, so a blind fallback would put silhouettes on the unknowns. Add a player by finding his
  * two ids and opening both URLs. A practice app, not for distribution: these are NBA.com's images.
  */
-export const LEGEND_PHOTOS: Record<string, number> = {
+const LEGEND_PHOTOS: Record<string, number> = {
   '4777': 76504, // Adrian Dantley (1976-1990)
   '366': 947, // Allen Iverson (1996-2009)
   '580': 297, // Alonzo Mourning (1992-2007)

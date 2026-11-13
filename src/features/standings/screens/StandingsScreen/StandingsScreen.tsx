@@ -3,16 +3,16 @@ import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Segmented, ErrorState, ListSkeleton, ScreenHeader , SeasonButton, SeasonSheet } from '@/components';
 import { useRefresh, useStandings, useTeams } from '@/hooks';
-import { currentSeason, type StandingEntry } from '@/lib/espn';
+import { currentSeason, teamInSeason, type StandingEntry } from '@/lib/espn';
 import { hasPlayIn } from '@/lib/league';
 import { fonts, matchupColors, palette, teamTheme, withAlpha, surfaces } from '@/lib/theme';
 import { useTeamStore } from '@/state';
-import { goBack, openDetail, sharedTag } from '@/navigation';
+import { goBack, openDetail, sharedTag, teamHref } from '@/navigation';
 
 type Conference = 'league' | 'east' | 'west';
 
@@ -81,6 +81,8 @@ function StandingsTable({
   const suggested: Conference = highlight.length === 0 ? 'east' : confs.size === 1 ? [...confs][0] : 'league';
   const conf = chosen && chosen.key === highlightKey ? chosen.conf : suggested;
   const setConf = (c: Conference) => setChosen({ key: highlightKey, conf: c });
+  // The nickname each row shows: the team's name in that season (SuperSonics for 2005-06), the code when the list has not arrived.
+  const nameOf = (entry: StandingEntry) => teamInSeason(teams?.find((t) => t.id === entry.teamId), season)?.name || entry.teamAbbr || entry.teamName;
   const colors: Record<string, string> = {};
   const picks = highlight.map((id) => teams?.find((t) => t.id === id)).filter((t) => t != null);
   if (picks.length === 2) {
@@ -104,33 +106,9 @@ function StandingsTable({
   if (playIn.length) sections.push({ title: 'Play-In', data: playIn });
   if (eliminated.length) sections.push({ title: 'Out', data: eliminated });
 
-  // How far each team is from the line that matters to it: the 6th seed (straight into the
-  // playoffs) and the 10th (last play-in spot). Positive = cushion, negative = ground to make up.
-  const gamesFrom = (a: StandingEntry, b?: StandingEntry) => (b ? (a.wins - b.wins + (b.losses - a.losses)) / 2 : 0);
-  const bySeed = (n: number) => entries.find((e) => e.seed === n);
-  const cutLabel = (e: StandingEntry): string | null => {
-    // The cut-line notes are about a race still being run, so they only make sense for the current season.
-    if (past || isLeague || entries.length < 11 || e.wins + e.losses === 0) return null;
-    const fmt = (n: number) => Math.abs(n).toFixed(1).replace(/\.0$/, '');
-    if (e.seed <= 6) {
-      const cushion = gamesFrom(e, bySeed(7));
-      return cushion > 0 ? `${fmt(cushion)} clear of play-in` : null;
-    }
-    if (e.seed <= 10) {
-      const back = gamesFrom(bySeed(6)!, e);
-      return back > 0 ? `${fmt(back)} back of top 6` : 'level with top 6';
-    }
-    const back = gamesFrom(bySeed(10)!, e);
-    return back > 0 ? `${fmt(back)} back of play-in` : 'level with play-in';
-  };
-
   const flat: (StandingEntry | { sectionTitle: string })[] = isLeague
     ? entries
     : sections.flatMap((s) => [{ sectionTitle: s.title }, ...s.data]);
-
-  // Position among the team rows only (for the staggered entrance); worked out once, not per row.
-  const rowIndexOf = new Map<object, number>();
-  for (const f of flat) if (!('sectionTitle' in f)) rowIndexOf.set(f, rowIndexOf.size);
 
   return (
     <View style={styles.root}>
@@ -165,8 +143,7 @@ function StandingsTable({
             if ('sectionTitle' in item) {
               return <SectionDivider title={item.sectionTitle} />;
             }
-            const rowIndex = rowIndexOf.get(item) ?? 0;
-            return <TeamRow entry={item} index={rowIndex} cut={cutLabel(item)} highlight={colors[item.teamId]} />;
+            return <TeamRow entry={item} season={season} name={nameOf(item)} highlight={colors[item.teamId]} />;
           }}
         />
       )}
@@ -199,23 +176,21 @@ function SectionDivider({ title }: { title: string }) {
   );
 }
 
-function TeamRow({ entry, index, cut, highlight }: { entry: StandingEntry; index: number; cut: string | null; highlight?: string }) {
+function TeamRow({ entry, season, name, highlight }: { entry: StandingEntry; season: number; name: string; highlight?: string }) {
   const favoriteTeamId = useTeamStore((s) => s.favoriteTeamId);
   const gbText = entry.gamesBehind === 0 ? '—' : entry.gamesBehind.toFixed(1);
   const pctText = entry.winPct.toFixed(3).replace(/^0/, '');
   const streakColor = entry.streak.startsWith('W') ? palette.win : entry.streak.startsWith('L') ? palette.loss : palette.muted;
-  const diff = `${entry.diff > 0 ? '+' : ''}${entry.diff.toFixed(1)}`;
-  const details = [entry.lastTen && entry.wins + entry.losses >= 10 ? `Last 10: ${entry.lastTen}` : null, entry.diff !== 0 ? `${diff} pts/g` : null]
-    .filter(Boolean)
-    .join(' · ');
 
   return (
-    <Animated.View
-      entering={FadeInDown.delay(Math.min(index, 14) * 20).duration(260).easing(Easing.out(Easing.cubic))}>
+    // No entrance per row: thirty animated views built in the frames of the drawer's own slide-in (and again at every conference or season switch).
+    <View>
       <Pressable
         onPress={() => {
           Haptics.selectionAsync();
-          openDetail({ pathname: '/team/[id]', params: { id: entry.teamId, o: 'standings' } });
+          // A past season in which the team went by another name opens that name's card (the SuperSonics of 2005-06).
+          const era = teamHref(entry.teamId, season);
+          openDetail(typeof era === 'string' && era.includes('season=') ? era : { pathname: '/team/[id]', params: { id: entry.teamId, o: 'standings' } });
         }}
         accessibilityRole="button"
         accessibilityLabel={`Open ${entry.teamName}`}
@@ -233,12 +208,11 @@ function TeamRow({ entry, index, cut, highlight }: { entry: StandingEntry; index
           <View style={[styles.logo, { backgroundColor: surfaces.raised, borderRadius: 14 }]} />
         )}
         <View style={{ flex: 1 }}>
-          <Text style={styles.teamName} numberOfLines={1}>
-            {entry.teamAbbr || entry.teamName}
+          {/* The nickname, as the team was called that season; the longest (Timberwolves, Trail Blazers) shrink a little to fit the row. */}
+          <Text style={styles.teamName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            {name}
             {entry.teamId === favoriteTeamId ? '  ★' : ''}
           </Text>
-          {details ? <Text style={styles.teamDetail} numberOfLines={1}>{details}</Text> : null}
-          {cut ? <Text style={styles.teamCut} numberOfLines={1}>{cut}</Text> : null}
         </View>
         <Text style={[styles.stat, { width: COL.w }]}>{entry.wins}</Text>
         <Text style={[styles.stat, { width: COL.l }]}>{entry.losses}</Text>
@@ -246,7 +220,7 @@ function TeamRow({ entry, index, cut, highlight }: { entry: StandingEntry; index
         <Text style={[styles.stat, { width: COL.gb, color: palette.muted }]}>{gbText}</Text>
         <Text style={[styles.stat, { width: COL.strk, color: streakColor, fontFamily: fonts.bodyBold }]}>{entry.streak || '–'}</Text>
       </Pressable>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -331,18 +305,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: 15,
     color: palette.chalk,
-  },
-  teamDetail: {
-    fontFamily: fonts.body,
-    fontSize: 11,
-    color: palette.muted,
-    marginTop: 1,
-  },
-  teamCut: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 11,
-    color: withAlpha(palette.chalk, 0.55),
-    marginTop: 1,
   },
   stat: {
     fontFamily: fonts.bodySemi,

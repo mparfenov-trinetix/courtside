@@ -32,7 +32,7 @@ export function LineupsCard({
   return (
     <Collapsible title="Lineups" hint={`${lineups.length} most-used five-man groups`}>
       <View style={styles.list}>
-        {lineups.map((l, i) => {
+        {lineups.map((l) => {
           const net = l.pf - l.pa;
           return (
             <Animated.View key={l.ids.join('|')} style={styles.row}>

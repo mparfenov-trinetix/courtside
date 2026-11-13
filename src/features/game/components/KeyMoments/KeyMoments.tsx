@@ -70,7 +70,7 @@ export function KeyMoments({
     <View style={styles.wrap}>
       <Text style={styles.title}>Key moments</Text>
       <View style={styles.grid}>
-        {tiles.map((t, i) => (
+        {tiles.map((t) => (
           <Animated.View key={t.key} style={[styles.tile, t.wide && styles.tileWide]}>
             <Text style={styles.label}>{t.label}</Text>
             <Text style={[styles.value, t.wide && styles.valueWide, { color: t.color }]}>{t.value}</Text>

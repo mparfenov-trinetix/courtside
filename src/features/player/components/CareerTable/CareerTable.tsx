@@ -120,7 +120,7 @@ export function CareerTable({ career, accent, background = palette.arena }: { ca
               {cols.map((col) => {
                 const active = sortCol === col;
                 return (
-                  <Pressable key={col} onPress={() => handleSort(col)} hitSlop={{ top: 6, bottom: 6 }} style={{ width: COL_W[col], alignItems: 'flex-end' }}>
+                  <Pressable accessibilityRole="button" key={col} onPress={() => handleSort(col)} hitSlop={{ top: 6, bottom: 6 }} style={{ width: COL_W[col], alignItems: 'flex-end' }}>
                     <Text style={[styles.colHeader, active && styles.colHeaderActive]}>
                       {col}
                       {active ? (sortDir === 'desc' ? ' ▾' : ' ▴') : ''}

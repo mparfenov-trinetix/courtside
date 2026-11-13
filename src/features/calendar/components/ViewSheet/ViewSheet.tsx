@@ -56,7 +56,7 @@ export function ViewSheet({
     <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.root}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, dim]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
+          <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
         </Animated.View>
         <Animated.View onLayout={(e) => height.set(e.nativeEvent.layout.height)} style={sheet}>
           <Glass tint={withAlpha(palette.arena, 0.55)} style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]} fallbackStyle={styles.sheetPlain}>

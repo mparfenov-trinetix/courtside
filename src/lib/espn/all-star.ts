@@ -98,7 +98,7 @@ export function parseAllStarNote(headline: string | undefined): { round: string;
 }
 
 /** One event of the All-Star day's scoreboard as a game. */
-export function normalizeAllStarGame(event: Json): AllStarGame {
+function normalizeAllStarGame(event: Json): AllStarGame {
   const comp = (event.competitions?.[0] ?? {}) as Json;
   const { round, rule } = parseAllStarNote(comp.notes?.[0]?.headline);
   const side = (c: Json): AllStarTeam => ({
@@ -150,7 +150,7 @@ export function allStarCountsFromPlays(plays: Json[]): Map<string, Counts> {
 }
 
 /** Everyone who played, from the games' box scores, one line each (summed over the games he played), the top scorers first. */
-export function normalizeAllStarPlayers(summaries: Json[]): AllStarPlayer[] {
+function normalizeAllStarPlayers(summaries: Json[]): AllStarPlayer[] {
   const byId = new Map<string, AllStarPlayer>();
   for (const summary of summaries) {
     const blocks = ((summary.boxscore?.players ?? []) as Json[]).map((team) => ({ team, block: (team.statistics?.[0] ?? {}) as Json }));
@@ -197,7 +197,7 @@ export function normalizeAllStarPlayers(summaries: Json[]): AllStarPlayer[] {
 }
 
 /** The All-Star MVP from the core API's award record: the athlete and the team he played for that day. */
-export function normalizeAllStarMvp(athlete: Json | undefined, team: Json | undefined): AllStarMvp | undefined {
+function normalizeAllStarMvp(athlete: Json | undefined, team: Json | undefined): AllStarMvp | undefined {
   if (!athlete?.displayName) return undefined;
   return {
     id: String(athlete.id ?? ''),

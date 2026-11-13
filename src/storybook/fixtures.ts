@@ -1,10 +1,8 @@
 // Real data for stories: the same recorded ESPN responses the unit tests use, run through the app's
 // own normalizers, so stories show what the components look like with genuine numbers.
 import gameJson from '../../tests/fixtures/game-final.json';
-import teamStatsJson from '../../tests/fixtures/league-team-stats.json';
 import {
   normalizeGameSummary,
-  normalizeLeagueTeamStats,
   type CareerRow,
   type Game,
   type GameLogEntry,
@@ -26,8 +24,6 @@ export const derived = deriveQuarterStats(
   ],
   home.team.id,
 );
-
-export const teamRows = normalizeLeagueTeamStats(teamStatsJson as never);
 
 /** The same game as if it were in progress: ESPN's live timeout and foul fields, and a "live" status. */
 export const liveHome = {

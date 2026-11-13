@@ -1,27 +1,5 @@
 import type { NextGameProps } from '@/lib/widgets';
 
-export const EMPTY_PROPS: NextGameProps = {
-  teamAbbr: 'NBA',
-  teamName: 'Courtside',
-  record: '',
-  bg: '#0D1B2E',
-  bg2: '#16273F',
-  accent: '#F2F4F7',
-  logo: '',
-  oppLogo: '',
-  oppAbbr: '',
-  oppName: '',
-  home: true,
-  iso: '',
-  day: '',
-  live: false,
-  gameId: '',
-  tag: '',
-  myScore: '',
-  oppScore: '',
-  clock: '',
-};
-
 /**
  * What the widget gallery and a freshly installed (never opened) widget show: a plausible fixture instead of an empty card.
  * The app replaces it with the real timeline as soon as it runs.

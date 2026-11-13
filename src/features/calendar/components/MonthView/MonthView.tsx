@@ -111,7 +111,7 @@ export function MonthView({
     <GestureDetector gesture={swipe}>
     <View style={styles.wrap}>
       <View style={styles.monthBar}>
-        <Pressable onPress={() => shift(-1)} hitSlop={12} accessibilityLabel="Previous month" style={styles.navBtn}>
+        <Pressable accessibilityRole="button" onPress={() => shift(-1)} hitSlop={12} accessibilityLabel="Previous month" style={styles.navBtn}>
           <ArrowLeftIcon size={18} color={palette.chalk} />
         </Pressable>
         <View style={styles.monthTitleWrap}>
@@ -127,7 +127,7 @@ export function MonthView({
                 (wins + losses > 0 ? ` · ${wins}–${losses}` : '')}
           </Text>
         </View>
-        <Pressable onPress={() => shift(1)} hitSlop={12} accessibilityLabel="Next month" style={styles.navBtn}>
+        <Pressable accessibilityRole="button" onPress={() => shift(1)} hitSlop={12} accessibilityLabel="Next month" style={styles.navBtn}>
           <View style={{ transform: [{ scaleX: -1 }] }}>
             <ArrowLeftIcon size={18} color={palette.chalk} />
           </View>
@@ -152,7 +152,7 @@ export function MonthView({
               const tint = game?.result === 'W' ? WIN : game?.result === 'L' ? LOSS : accent;
               // What is still to come is dressed in the opponent's colors, so the month reads as a run of matchups; what has been
               // played is dressed in the result (green win, red loss), so how the season went shows at a glance.
-              const look = game ? opponentLook(teams, game.opponentId, game.opponentLogo) : null;
+              const look = game ? opponentLook(teams, game.opponentId, game.opponentLogo, game.date) : null;
               const played = !!game?.result;
               const wash = played ? tint : look?.color ?? tint;
               return (

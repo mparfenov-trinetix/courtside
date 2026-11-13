@@ -3,6 +3,8 @@ import type { Json } from './client';
 import { headshotUrl } from './legend-photos';
 import { normalizeVideos, type GameVideo } from './video';
 import { classifyGame, cupStage, seriesLine, type GameKind } from './common';
+import { withEraLogo } from './franchise';
+import { normalizeGameRecap, type GameRecap } from './news';
 import { normalizeTeam } from './teams';
 import type { Team } from './teams';
 
@@ -126,6 +128,8 @@ export type GameSummary = {
   pregame: Pregame;
   /** The game's highlight clips (empty until ESPN has cut them). */
   videos: GameVideo[];
+  /** ESPN's recap article of a finished game, when it has written one. */
+  recap?: GameRecap;
   /** NBA Cup stage when the game is part of the Cup. */
   cup?: string;
   /** Regular season, playoffs, play-in, Cup, All-Star or preseason: decides which table the page links to. */
@@ -190,7 +194,8 @@ export function normalizeGameSummary(json: Json, gameId: string): GameSummary {
     const totalsRaw: string[] = (stats.totals ?? []) as string[];
 
     return {
-      team: normalizeTeam(c.team ?? {}),
+      // The feed says the name of the day (New Jersey Nets) but files today's emblem under it: the app's own logo of that time is put in its place.
+      team: withEraLogo(normalizeTeam(c.team ?? {}), Number(json.header?.season?.year) || undefined),
       homeAway: c.homeAway === 'home' ? 'home' : 'away',
       score: parseFloat(String(c.score ?? '0')) || 0,
       linescores: ((c.linescores ?? []) as Json[]).map((l) => {
@@ -295,6 +300,7 @@ export function normalizeGameSummary(json: Json, gameId: string): GameSummary {
     info,
     pregame: normalizePregame(json, String(homeC?.team?.id ?? ''), String(awayC?.team?.id ?? '')),
     videos: normalizeVideos(json),
+    recap: normalizeGameRecap(json.article),
   };
 }
 

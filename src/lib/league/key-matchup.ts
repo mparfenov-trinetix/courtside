@@ -19,10 +19,10 @@ export type KeyMatchup = { away: TeamStar; home: TeamStar; group: PositionGroup 
 const isOut = (status: string) => /^out/i.test(status.trim());
 
 /** A player makes a key matchup only if he is among his team's best three (by ESPN's rating, once the injured are out) and is a star by the numbers: scores 20 or more... */
-export const MATCHUP_RANKS = 3;
-export const MATCHUP_MIN_PPG = 20;
+const MATCHUP_RANKS = 3;
+const MATCHUP_MIN_PPG = 20;
 /** ...or, under 20, makes it up elsewhere: points, rebounds and assists together adding up to 28 or more (15 points, 6 rebounds and 7 assists). This is the rule that does the work; 18.6 points with 1.8 rebounds and 2.3 assists (22.7) is not a star's line. */
-export const MATCHUP_MIN_COMBINED = 28;
+const MATCHUP_MIN_COMBINED = 28;
 
 /** Is this season line a star's: 20+ points a game, or under that, 28+ points, rebounds and assists together? Lines are ESPN's strings ("18.6"). */
 export function isMatchupStar(line: { ppg: string; rpg: string; apg: string }): boolean {

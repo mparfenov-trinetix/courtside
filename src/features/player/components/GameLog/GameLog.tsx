@@ -78,7 +78,7 @@ export function GameLog({ entries, accent }: { entries: GameLogEntry[]; accent: 
       <View style={styles.list}>
         {entries.slice(0, 20).map((e, i) => (
           <Animated.View key={e.gameId}>
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={() => openDetail({ pathname: '/game/[id]', params: { id: e.gameId } })}
               style={({ pressed }) => [styles.row, i > 0 && styles.rowBorder, pressed && { opacity: 0.7 }]}>
               <View style={styles.rowLeft}>
