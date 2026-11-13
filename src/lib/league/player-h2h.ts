@@ -13,10 +13,19 @@ export type PlayerMeeting = {
   b: { pts: number; reb: number; ast: number; min: number };
 };
 
+/**
+ * Whether an opponent is one of the league's franchises (ESPN ids 1 to 30). An All-Star Game sits in a player's regular-season log with the
+ * other conference's (or captain's) team as its opponent, under an id past 30 (EAST is 31), and is no meeting of two clubs.
+ */
+export const isLeagueTeamId = (id: string) => {
+  const n = Number(id);
+  return Number.isInteger(n) && n >= 1 && n <= 30;
+};
+
 const line = (g: GameLogEntry) => ({ pts: g.pts, reb: g.reb, ast: g.ast, min: g.min });
 
 /**
- * The games two players both played in for opposite teams, newest first: the same game in both their logs, with each log naming a different
+ * The games two players both played in for opposite teams, newest first (All-Star Games left out): the same game in both their logs, with each log naming a different
  * opponent (the same opponent means they were teammates that night). Each player's team that night is the other's `opponent` in the log.
  */
 export function playerHeadToHead(a: GameLogEntry[], b: GameLogEntry[]): PlayerMeeting[] {
@@ -25,6 +34,8 @@ export function playerHeadToHead(a: GameLogEntry[], b: GameLogEntry[]): PlayerMe
     .flatMap((ga): PlayerMeeting[] => {
       const gb = theirs.get(ga.gameId);
       if (!gb || gb.opponentId === ga.opponentId) return [];
+      // The All-Star Game puts players of the same league on opposite sides, which is not a meeting of their teams.
+      if (!isLeagueTeamId(ga.opponentId) || !isLeagueTeamId(gb.opponentId)) return [];
       return [
         {
           gameId: ga.gameId,

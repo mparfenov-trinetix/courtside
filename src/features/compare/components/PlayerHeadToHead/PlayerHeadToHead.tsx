@@ -3,6 +3,7 @@ import Animated from 'react-native-reanimated';
 
 import { Skeleton, SkeletonGroup } from '@/components';
 import { usePlayerSeasonLogs } from '@/hooks';
+import { seasonLabel } from '@/lib/espn';
 import { meetingsSummary, playerHeadToHead, type PlayerMeeting } from '@/lib/league';
 import { fonts, palette, radius, surfaces, textStyle, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
@@ -19,13 +20,14 @@ const day = (iso: string) => {
 const last = (name: string) => name.trim().split(/\s+/).slice(-1)[0];
 
 /**
- * The two players against each other: their last games in which both played for opposite teams (over the last three seasons, regular season
- * and playoffs), each with the two players' points, rebounds and assists and the game's score, the higher scorer lit. A line on top says who
+ * The two players against each other: their last games in which both played for opposite teams (over the last three seasons, or the three that end at `season`, regular
+ * season and playoffs, All-Star Games left out), each with the two players' points, rebounds and assists and the game's score, the higher scorer lit. A line on top says who
  * won more of them and what each averaged. Nothing to list is said in words, not hidden: it is an answer too.
  */
-export function PlayerHeadToHead({ a, b, aColor, bColor }: { a: Who; b: Who; aColor: string; bColor: string }) {
-  const logsA = usePlayerSeasonLogs(a.id);
-  const logsB = usePlayerSeasonLogs(b.id);
+export function PlayerHeadToHead({ a, b, aColor, bColor, season }: { a: Who; b: Who; aColor: string; bColor: string; /** A past season the comparison is about: the three seasons end there, not now. */ season?: number }) {
+  const logsA = usePlayerSeasonLogs(a.id, 3, season);
+  const logsB = usePlayerSeasonLogs(b.id, 3, season);
+  const window = season ? `the three seasons to ${seasonLabel(season)}` : 'the last three seasons';
   const loading = [...logsA, ...logsB].some((q) => q.isLoading);
   const all = playerHeadToHead(
     logsA.flatMap((q) => q.data ?? []),
@@ -46,7 +48,7 @@ export function PlayerHeadToHead({ a, b, aColor, bColor }: { a: Who; b: Who; aCo
             ))}
           </SkeletonGroup>
         ) : shown.length === 0 ? (
-          <Text style={styles.empty}>They have not played against each other in the last three seasons.</Text>
+          <Text style={styles.empty}>They have not played against each other in {window}.</Text>
         ) : (
           <>
             <View style={styles.summary}>
@@ -62,7 +64,7 @@ export function PlayerHeadToHead({ a, b, aColor, bColor }: { a: Who; b: Who; aCo
             {shown.map((m, i) => (
               <Meeting key={m.gameId} m={m} aColor={aColor} bColor={bColor} aName={last(a.name)} bName={last(b.name)} first={i === 0} />
             ))}
-            {all.length > SHOWN && <Text style={styles.more}>Latest {SHOWN} of {all.length} games in the last three seasons</Text>}
+            {all.length > SHOWN && <Text style={styles.more}>Latest {SHOWN} of {all.length} games in {window}</Text>}
           </>
         )}
       </View>

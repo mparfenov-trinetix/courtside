@@ -369,9 +369,10 @@ export function usePlayerGameLog(athleteId?: string | null) {
  * A player's games over the last `count` seasons (the current one first), each season its own cached read: a finished season never changes. The
  * current season shares the key of `usePlayerGameLog`.
  */
-export function usePlayerSeasonLogs(athleteId: string | null | undefined, count = 3) {
+/** A player's game logs for `count` seasons, newest first, ending at `endSeason` (the season in progress by default: a past game's head to head ends at its own season). */
+export function usePlayerSeasonLogs(athleteId: string | null | undefined, count = 3, endSeason?: number) {
   const current = currentSeason();
-  const seasons = Array.from({ length: count }, (_, i) => current - i);
+  const seasons = Array.from({ length: count }, (_, i) => Math.min(endSeason ?? current, current) - i);
   return useQueries({
     queries: seasons.map((season) => ({
       queryKey: season === current ? ['playerGameLog', athleteId] : ['playerGameLog', athleteId, season],

@@ -12,12 +12,12 @@ const side = (t: BoxScoreTeam, p: BoxScorePlayer) => ({
  * and assists together within 6): the same two face-to-face cards as the key matchup before tip-off, showing the game's own line, with the
  * same entrance. Nothing otherwise, which is most games.
  */
-export function GameDuel({ away, home, awayPlayers, homePlayers }: { away: BoxScoreTeam; home: BoxScoreTeam; awayPlayers: BoxScorePlayer[]; homePlayers: BoxScorePlayer[] }) {
+export function GameDuel({ away, home, awayPlayers, homePlayers, season }: { away: BoxScoreTeam; home: BoxScoreTeam; awayPlayers: BoxScorePlayer[]; homePlayers: BoxScorePlayer[]; season?: number }) {
   const duel = pickGameDuel(awayPlayers, homePlayers);
   if (!duel) return null;
   const title =
     duel.kind === 'points'
       ? `Scoring duel · ${pointsOf(duel.away)} vs ${pointsOf(duel.home)}`
       : `All-round duel · ${combinedOf(duel.away)} vs ${combinedOf(duel.home)}`;
-  return <KeyMatchupView title={title} unit="game" section away={side(away, duel.away)} home={side(home, duel.home)} />;
+  return <KeyMatchupView title={title} unit="game" section season={season} away={side(away, duel.away)} home={side(home, duel.home)} />;
 }

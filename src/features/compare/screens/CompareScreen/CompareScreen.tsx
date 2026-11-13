@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CompareHeaderTitle, CompareRow, PlayerExtras, PlayerHeadToHead, type Row, Radar, type RadarAxis, TeamCompare, useSlotsStyle, useTeamPicks } from '../../components';
 import { Button, MINI_CARD_RATIO, MiniCardEmpty, MiniPlayerCard, PageSheet, Segmented, dealIn, slideIn, ScreenHeader, SearchInput, EmptyState } from '@/components';
 import { usePlayerCareer, usePlayerSearch, usePlayerStats, useSceneSettled, useTeams } from '@/hooks';
-import { headshotUrl, tricode, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
+import { currentSeason, headshotUrl, seasonLabel, teamAsItWas, tricode, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
 import { lastNameOf, nba2kRating, namesScale } from '@/lib/league';
 import { goBack } from '@/navigation';
 import { fonts, matchupColors, palette, teamTheme, withAlpha, surfaces, textStyle } from '@/lib/theme';
@@ -53,11 +53,18 @@ const num = (v?: string) => {
   return isNaN(n) ? undefined : n;
 };
 
-function buildCareerRows(a: PlayerCareer, b: PlayerCareer): Row[] {
+/** One season's line from a player's career table (a traded season's combined line when it has one), by ESPN's column labels. */
+function seasonLine(career: PlayerCareer | undefined, year: number): Record<string, string> | undefined {
+  const rows = career?.seasons.filter((r) => r.year === year) ?? [];
+  return (rows.find((r) => r.abbr === 'TOT') ?? rows[0])?.stats;
+}
+
+/** Rows from two lines of ESPN's career columns: a career's totals row, or one season of the career table. */
+function buildCareerRows(a: Record<string, string>, b: Record<string, string>): Row[] {
   const row = (label: string, stat: string, pct = false): Row => ({
     label,
-    a: num(a.career[stat]),
-    b: num(b.career[stat]),
+    a: num(a[stat]),
+    b: num(b[stat]),
     fmt: pct ? (v) => `${v.toFixed(1)}%` : one,
   });
   return [
@@ -70,7 +77,7 @@ function buildCareerRows(a: PlayerCareer, b: PlayerCareer): Row[] {
     row('Field goal %', 'FG%', true),
     row('3-point %', '3P%', true),
     row('Free throw %', 'FT%', true),
-    { label: 'Games played', a: num(a.career.GP), b: num(b.career.GP), fmt: whole },
+    { label: 'Games played', a: num(a.GP), b: num(b.GP), fmt: whole },
   ].filter((r) => r.a != null || r.b != null);
 }
 function playerAxes(a: { pts?: number; reb?: number; ast?: number; stl?: number; blk?: number; fg?: number }, b: typeof a): RadarAxis[] {
@@ -88,10 +95,14 @@ function playerAxes(a: { pts?: number; reb?: number; ast?: number; stl?: number;
 /** `pushed`: opened on top of a player or team page, so the header's button goes back instead of opening the menu. */
 export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id?: string; name?: string; teamId?: string; teamAbbr?: string; mode?: string; id2?: string; name2?: string; teamId2?: string; teamAbbr2?: string }>();
+  const params = useLocalSearchParams<{ id?: string; name?: string; teamId?: string; teamAbbr?: string; mode?: string; id2?: string; name2?: string; teamId2?: string; teamAbbr2?: string; season?: string }>();
+  // A game or series of the past opens the comparison of ITS season (from the career table), not of the season in progress: the players it was
+  // about may be retired, on another team, or not yet the player they were. Career stays one tap away.
+  const asked = Number(params.season) || 0;
+  const pastSeason = asked > 0 && asked < currentSeason() ? asked : null;
   const mode = params.mode === 'teams' ? 'teams' : 'players';
   const [slide, setSlide] = useState<1 | -1>(1);
-  const [scope, setScope] = useState<Scope>('season');
+  const [chosen, setScope] = useState<Scope | null>(null);
   const { data: teams } = useTeams();
 
   const fromParams: Slot = params.id
@@ -113,10 +124,18 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
   const [picking, setPicking] = useState<'a' | 'b' | null>(null);
   const slotA = pickedA !== undefined ? pickedA : fromParams;
 
-  const { data: statsA, isLoading: loadingStatsA, isError: failedStatsA, refetch: retryStatsA } = usePlayerStats(slotA?.id);
-  const { data: statsB, isLoading: loadingStatsB, isError: failedStatsB, refetch: retryStatsB } = usePlayerStats(slotB?.id);
-  const { data: careerA, isLoading: loadingCareerA } = usePlayerCareer(scope === 'career' ? slotA?.id : undefined);
-  const { data: careerB, isLoading: loadingCareerB } = usePlayerCareer(scope === 'career' ? slotB?.id : undefined);
+  const { data: statsA, isLoading: loadingStatsA, isError: failedStatsA, refetch: retryStatsA } = usePlayerStats(pastSeason ? undefined : slotA?.id);
+  const { data: statsB, isLoading: loadingStatsB, isError: failedStatsB, refetch: retryStatsB } = usePlayerStats(pastSeason ? undefined : slotB?.id);
+  // A retired player has no season in progress: the career is what they can be compared on, so it is what opens (the toggle still goes back).
+  const retired = pastSeason == null && !!statsA && !!statsB && buildRows(statsA, statsB).length === 0;
+  const scope: Scope = chosen ?? (retired ? 'career' : 'season');
+  // Season averages of the season in progress come from their own feed; a past season and the career both come from the career table.
+  const viaCareer = scope === 'career' || pastSeason != null;
+  const { data: careerA, isLoading: loadingCareerA, isError: failedCareerA, refetch: retryCareerA } = usePlayerCareer(viaCareer ? slotA?.id : undefined);
+  const { data: careerB, isLoading: loadingCareerB, isError: failedCareerB, refetch: retryCareerB } = usePlayerCareer(viaCareer ? slotB?.id : undefined);
+  const lineIn = (career?: PlayerCareer) => (scope === 'career' ? career?.career : pastSeason ? seasonLine(career, pastSeason) : undefined);
+  const recA = lineIn(careerA);
+  const recB = lineIn(careerB);
   // A card chosen after the screen has settled is dealt in with a flip (not on the screen's own first draw, which is inside the slide in from the menu).
   const settled = useSceneSettled(0);
   // The page's scroll: the cards thin out as it goes and a compact bar with both sides takes their place at the top.
@@ -126,16 +145,20 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
   });
   const teamPicks = useTeamPicks();
 
-  const teamOf = (s: Slot): Team | undefined => teams?.find((t) => t.id === s?.teamId);
+  // A past season's team as it was then (the SuperSonics' colors, not the Thunder's).
+  const teamOf = (s: Slot): Team | undefined => {
+    const t = teams?.find((x) => x.id === s?.teamId);
+    return t && pastSeason ? teamAsItWas(t, pastSeason) : t;
+  };
   const teamA = teamOf(slotA);
   const teamB = teamOf(slotB);
   const fallback = { color: '#8A96A8', alternateColor: '#F2F4F7' };
   const colors = matchupColors(teamA ?? fallback, teamB ?? { color: '#E2B077', alternateColor: '#F2F4F7' });
 
   const rows =
-    scope === 'career'
-      ? careerA && careerB
-        ? buildCareerRows(careerA, careerB)
+    viaCareer
+      ? recA && recB
+        ? buildCareerRows(recA, recB)
         : []
       : statsA && statsB
         ? buildRows(statsA, statsB, { a: slotA?.name, b: slotB?.name })
@@ -143,9 +166,9 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
   // The numbers on the cards: season averages, or the career's when that is what is compared; the better of each pair is lit.
   const { width: screen } = useWindowDimensions();
   const cardW = Math.floor((screen - 32 - 10) / 2);
-  const lineOf = (season?: PlayerSeasonStats, career?: PlayerCareer) =>
-    scope === 'career'
-      ? { ppg: career?.career.PTS, rpg: career?.career.REB, apg: career?.career.AST }
+  const lineOf = (season?: PlayerSeasonStats, rec?: Record<string, string>) =>
+    viaCareer
+      ? { ppg: rec?.PTS, rpg: rec?.REB, apg: rec?.AST }
       : { ppg: season?.ppg?.toFixed(1), rpg: season?.rpg?.toFixed(1), apg: season?.apg?.toFixed(1) };
   const cardH = Math.round(cardW * MINI_CARD_RATIO);
   const slotsStyle = useSlotsStyle(scrollY, cardH);
@@ -160,23 +183,26 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
       : slotA && slotB
         ? { a: { label: lastNameOf(slotA.name), image: slotA.headshot, kind: 'face' as const, color: colors.away }, b: { label: lastNameOf(slotB.name), image: slotB.headshot, kind: 'face' as const, color: colors.home } }
         : null;
-  const lineA = lineOf(statsA, careerA);
-  const lineB = lineOf(statsB, careerB);
+  const lineA = lineOf(statsA, recA);
+  const lineB = lineOf(statsB, recB);
   const beats = (x?: string, y?: string) => x != null && y != null && Number(x) > Number(y);
   const better = {
     a: { ppg: beats(lineA.ppg, lineB.ppg), rpg: beats(lineA.rpg, lineB.rpg), apg: beats(lineA.apg, lineB.apg) },
     b: { ppg: beats(lineB.ppg, lineA.ppg), rpg: beats(lineB.rpg, lineA.rpg), apg: beats(lineB.apg, lineA.apg) },
   };
 
+  const failed = viaCareer ? failedCareerA || failedCareerB : failedStatsA || failedStatsB;
+  // The numbers for both loaded and there is nothing to compare: one of them did not play that season (or is retired, for the season in progress).
+  const noSeason = scope === 'season' && (pastSeason != null ? !!careerA && !!careerB : !!statsA && !!statsB) && rows.length === 0;
   const winsA = rows.filter((r) => (r.a ?? -1) > (r.b ?? -1)).length;
   const winsB = rows.filter((r) => (r.b ?? -1) > (r.a ?? -1)).length;
 
   const axes: RadarAxis[] | null =
-    scope === 'career'
-      ? careerA && careerB
+    viaCareer
+      ? recA && recB
         ? playerAxes(
-            { pts: num(careerA.career.PTS), reb: num(careerA.career.REB), ast: num(careerA.career.AST), stl: num(careerA.career.STL), blk: num(careerA.career.BLK), fg: (num(careerA.career['FG%']) ?? 0) / 100 },
-            { pts: num(careerB.career.PTS), reb: num(careerB.career.REB), ast: num(careerB.career.AST), stl: num(careerB.career.STL), blk: num(careerB.career.BLK), fg: (num(careerB.career['FG%']) ?? 0) / 100 },
+            { pts: num(recA.PTS), reb: num(recA.REB), ast: num(recA.AST), stl: num(recA.STL), blk: num(recA.BLK), fg: (num(recA['FG%']) ?? 0) / 100 },
+            { pts: num(recB.PTS), reb: num(recB.REB), ast: num(recB.AST), stl: num(recB.STL), blk: num(recB.BLK), fg: (num(recB['FG%']) ?? 0) / 100 },
           )
         : null
       : statsA && statsB
@@ -208,8 +234,8 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
           <>
         {/* The two players as small trading cards (a seat to fill when one is missing), VS between them. */}
         <Animated.View style={[styles.slots, slotsStyle]}>
-          <PlayerSlot key={slotA?.id ?? 'a'} slot={slotA} team={teamA} color={colors.away} width={cardW} line={lineA} better={better.a} loading={scope === 'career' ? loadingCareerA : loadingStatsA} entering={settled ? dealIn('left') : undefined} onPress={() => setPicking('a')} />
-          <PlayerSlot key={slotB?.id ?? 'b'} slot={slotB} team={teamB} color={colors.home} width={cardW} line={lineB} better={better.b} loading={scope === 'career' ? loadingCareerB : loadingStatsB} entering={settled ? dealIn('right', 100) : undefined} onPress={() => setPicking('b')} />
+          <PlayerSlot key={slotA?.id ?? 'a'} slot={slotA} team={teamA} color={colors.away} width={cardW} line={lineA} better={better.a} loading={viaCareer ? loadingCareerA : loadingStatsA} entering={settled ? dealIn('left') : undefined} onPress={() => setPicking('a')} />
+          <PlayerSlot key={slotB?.id ?? 'b'} slot={slotB} team={teamB} color={colors.home} width={cardW} line={lineB} better={better.b} loading={viaCareer ? loadingCareerB : loadingStatsB} entering={settled ? dealIn('right', 100) : undefined} onPress={() => setPicking('b')} />
           <View pointerEvents="none" style={[styles.vsBadge, { left: screen / 2 - 20, top: Math.round(cardW * MINI_CARD_RATIO) / 2 - 20 }]}>
             <Text style={styles.vsText}>VS</Text>
           </View>
@@ -217,7 +243,7 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
 
         {slotA && slotB && (
           <View style={styles.scope}>
-            <Segmented options={[...SCOPES]} value={scope} onChange={(key) => setScope(key)} segmentWidth={120} />
+            <Segmented options={SCOPES.map((o) => (o.key === 'season' && pastSeason ? { ...o, label: seasonLabel(pastSeason) } : o))} value={scope} onChange={(key) => setScope(key)} segmentWidth={120} />
           </View>
         )}
 
@@ -235,12 +261,14 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
           </Animated.View>
         ) : (
           <EmptyState
-            title={slotA && slotB ? (failedStatsA || failedStatsB ? 'Couldn’t load the stats' : 'Loading stats') : 'Pick two players'}
-            text={slotA && slotB ? (failedStatsA || failedStatsB ? 'Check your connection and try again.' : 'Fetching season averages.') : 'Search any NBA player and see their season averages head to head.'}
+            title={slotA && slotB ? (failed ? 'Couldn’t load the stats' : noSeason ? `No stats for ${seasonLabel(pastSeason ?? currentSeason())}` : 'Loading stats') : 'Pick two players'}
+            text={slotA && slotB ? (failed ? 'Check your connection and try again.' : noSeason ? 'One of them has no numbers for that season. Career still compares them.' : viaCareer ? 'Fetching the stats.' : 'Fetching season averages.') : 'Search any NBA player and see their season averages head to head.'}
             action={
               slotA && slotB ? (
-                failedStatsA || failedStatsB ? (
-                  <Button label="Try again" onPress={() => { retryStatsA(); retryStatsB(); }} style={{ marginTop: 12 }} />
+                failed ? (
+                  <Button label="Try again" onPress={() => { if (viaCareer) { retryCareerA(); retryCareerB(); } else { retryStatsA(); retryStatsB(); } }} style={{ marginTop: 12 }} />
+                ) : noSeason ? (
+                  <Button label="Show career" tone="secondary" onPress={() => setScope('career')} style={{ marginTop: 12 }} />
                 ) : (
                   <ActivityIndicator color={palette.muted} style={{ marginTop: 12 }} />
                 )
@@ -249,7 +277,7 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
           />
         )}
 
-        {slotA && slotB && <PlayerHeadToHead a={slotA} b={slotB} aColor={colors.away} bColor={colors.home} />}
+        {slotA && slotB && <PlayerHeadToHead a={slotA} b={slotB} aColor={colors.away} bColor={colors.home} season={pastSeason ?? undefined} />}
         {slotA && slotB && <PlayerExtras a={slotA} b={slotB} aColor={colors.away} bColor={colors.home} />}
           </>
         )}

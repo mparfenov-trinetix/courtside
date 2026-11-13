@@ -128,7 +128,7 @@ export function SummaryTab({
   // leaders. For the whole game only, like the highlights: a quarter cannot be a duel.
   const duel = completed && !selPeriods && (
     <Animated.View key="duel">
-      <GameDuel away={away} home={home} awayPlayers={awayPlayers} homePlayers={homePlayers} />
+      <GameDuel away={away} home={home} awayPlayers={awayPlayers} homePlayers={homePlayers} season={season} />
     </Animated.View>
   );
 

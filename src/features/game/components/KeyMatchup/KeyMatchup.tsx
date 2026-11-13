@@ -4,7 +4,7 @@ import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, useRedu
 import type { Href } from 'expo-router';
 
 import { useTeam, useTeamRated } from '@/hooks';
-import type { Injury, Team } from '@/lib/espn';
+import { currentSeason, seasonLabel, type Injury, type Team } from '@/lib/espn';
 import { GROUP_LABEL, pickKeyMatchup, type PositionGroup } from '@/lib/league';
 import { fonts, palette, radius, teamTheme, textStyle, withAlpha } from '@/lib/theme';
 import { openDetail, pushOnce } from '@/navigation';
@@ -53,6 +53,7 @@ export function KeyMatchupView({
   title,
   unit = 'season',
   section = false,
+  season,
 }: {
   away: DuelSide;
   home: DuelSide;
@@ -64,6 +65,8 @@ export function KeyMatchupView({
   unit?: 'season' | 'game';
   /** On the game tabs, where sections are 14 apart, not 18. */
   section?: boolean;
+  /** The season these two played in, for a game or series of the past: "Compare their seasons" then compares that season, not the one in progress. */
+  season?: number;
 }) {
   const { width: screen } = useWindowDimensions();
   const reduced = useReducedMotion();
@@ -95,6 +98,7 @@ export function KeyMatchupView({
   }));
   const flashStyle = useAnimatedStyle(() => ({ opacity: interpolate(meet.get(), [0.6, 0.82, 1], [0, 0.55, 0], Extrapolation.CLAMP) }));
 
+  const past = season != null && season < currentSeason();
   const better = (a: DuelSide, b: DuelSide) => ({ ppg: num(a.star.ppg) > num(b.star.ppg), rpg: num(a.star.rpg) > num(b.star.rpg), apg: num(a.star.apg) > num(b.star.apg) });
   const open = (s: DuelSide) => openDetail({ pathname: '/player/[id]', params: { id: s.star.athleteId, teamId: s.team.id } });
   const compare = () =>
@@ -108,6 +112,7 @@ export function KeyMatchupView({
         name2: home.star.name,
         teamId2: home.team.id,
         teamAbbr2: home.team.abbreviation,
+        ...(past ? { season: String(season) } : {}),
       }).toString()}` as Href,
     );
 
@@ -124,7 +129,7 @@ export function KeyMatchupView({
         </Animated.View>
       </View>
       <Pressable onPress={compare} accessibilityRole="button" hitSlop={8} style={styles.compare}>
-        <Text style={styles.compareText}>Compare their seasons ›</Text>
+        <Text style={styles.compareText}>{past ? `Compare their ${seasonLabel(season)} seasons ›` : 'Compare their seasons ›'}</Text>
       </Pressable>
     </Animated.View>
   );

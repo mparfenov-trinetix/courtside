@@ -26,3 +26,10 @@ test('player head to head: teammates in a game are not a meeting', () => {
   assert.deepEqual(playerHeadToHead(a, b), []);
   assert.deepEqual(meetingsSummary([]), { games: 0, winsA: 0, winsB: 0, a: { pts: 0, reb: 0, ast: 0 }, b: { pts: 0, reb: 0, ast: 0 } });
 });
+
+test('player head to head: an All-Star Game is not a meeting', () => {
+  // On opposite All-Star teams (EAST 31, WEST 32 in ESPN's ids), the game is in both logs with different opponents.
+  const a = [g('1', '2026-02-15', '32', 'WEST', 150, 140, 30), g('2', '2026-03-10', '20', 'PHI', 99, 104, 22)];
+  const b = [g('1', '2026-02-15', '31', 'EAST', 140, 150, 28), g('2', '2026-03-10', '2', 'BOS', 104, 99, 31)];
+  assert.deepEqual(playerHeadToHead(a, b).map((x) => x.gameId), ['2']);
+});

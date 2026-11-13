@@ -73,7 +73,7 @@ export function SeriesScreen() {
         <Glide>
           {topLeader && bottomLeader && topTeam && bottomTeam ? (
             <Animated.View entering={ARRIVE}>
-              <KeyMatchupView title="Series leaders" section away={{ team: topTeam, star: starOf(topLeader) }} home={{ team: bottomTeam, star: starOf(bottomLeader) }} />
+              <KeyMatchupView title="Series leaders" section season={season} away={{ team: topTeam, star: starOf(topLeader) }} home={{ team: bottomTeam, star: starOf(bottomLeader) }} />
             </Animated.View>
           ) : null}
         </Glide>
