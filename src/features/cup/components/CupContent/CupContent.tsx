@@ -119,8 +119,8 @@ function Groups({ cup, favoriteTeamId }: { cup: Cup; favoriteTeamId: string | nu
       {sections.map((s) => (
         <View key={s.title}>
           <Text style={styles.section}>{s.title}</Text>
-          {s.groups.map((g, i) => (
-            <GroupCard key={g.id} group={g} favoriteTeamId={favoriteTeamId} index={i} />
+          {s.groups.map((g) => (
+            <GroupCard key={g.id} group={g} favoriteTeamId={favoriteTeamId} />
           ))}
         </View>
       ))}
@@ -195,6 +195,7 @@ function Knockout({
         rounds={rounds}
         sections={[{ title: 'NBA Cup knockout', rounds }]}
         favoriteTeamId={favoriteTeamId}
+        onOpen={(s) => s.games[0] && openDetail({ pathname: '/game/[id]', params: { id: s.games[0].id } })}
         emptyText="The knockout round isn't set yet. When group play ends, the eight qualifiers play single-game quarterfinals and semifinals, then a championship game; the bracket appears here as ESPN schedules them."
       />
     </View>

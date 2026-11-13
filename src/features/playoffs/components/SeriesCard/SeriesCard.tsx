@@ -8,7 +8,7 @@ import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 const GOLD = palette.gold;
 
 /** What to show next to each team: games won for a series, the score for a single game. */
-export function sideScores(s: Series): { top?: number; bottom?: number; played: boolean } {
+function sideScores(s: Series): { top?: number; bottom?: number; played: boolean } {
   const g = s.games[0];
   if (s.bestOf === 1) {
     if (!g?.completed || g.home.score == null || g.away.score == null) return { played: false };

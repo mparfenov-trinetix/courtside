@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import type { Href } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +10,7 @@ import { buildPlayIn, buildPlayoffs, seedMap, type Series } from '@/lib/league';
 import { currentSeason, seasonLabel } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
-import { openDetail } from '@/navigation';
+import { openDetail, pushOnce, teamHref } from '@/navigation';
 
 const GOLD = palette.gold;
 
@@ -49,7 +48,7 @@ function PostseasonPane({ season, kind }: { season: number; kind: 'playoffs' | '
       {champion && finals && (
         <Animated.View>
           <Pressable
-            onPress={() => openDetail(`/team/${champion.teamId}` as Href)}
+            onPress={() => openDetail(teamHref(champion.teamId, season))}
             accessibilityRole="button"
             accessibilityLabel={`${seasonLabel(season)} NBA champions: ${champion.abbr}`}
             style={styles.champion}>
@@ -68,6 +67,11 @@ function PostseasonPane({ season, kind }: { season: number; kind: 'playoffs' | '
         rounds={playoffs ? playoffs.rounds : (playIn?.rounds ?? [])}
         sections={playoffs ? playoffs.sections : (playIn?.sections ?? [])}
         favoriteTeamId={favoriteTeamId}
+        onOpen={(s) => {
+          // A playoff series has a page of its own; a play-in game is one game, which opens itself.
+          if (kind === 'playoffs') pushOnce({ pathname: '/series', params: { season: String(season), id: s.id } } as never);
+          else if (s.games[0]) openDetail({ pathname: '/game/[id]', params: { id: s.games[0].id } });
+        }}
         emptyText={
           upcoming
             ? kind === 'playoffs'

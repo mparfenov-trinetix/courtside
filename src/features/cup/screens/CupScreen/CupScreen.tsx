@@ -8,6 +8,7 @@ import { currentSeason } from '@/lib/espn';
 import { palette } from '@/lib/theme';
 import { goBack } from '@/navigation';
 import { CUP_FROM } from './constants';
+import { EventsBack } from '@/features/events';
 
 /**
  * The NBA Cup for a season. `pushed`: opened from a game (route `matchup-cup`), on top of it, for that game's season only (no season
@@ -24,6 +25,7 @@ export function CupScreen({ pushed = false }: { pushed?: boolean }) {
         title="NBA Cup"
         color={palette.chalk}
         onBack={pushed ? goBack : undefined}
+        afterMenu={pushed ? undefined : <EventsBack />}
         right={pushed ? undefined : <SeasonButton season={season} onPress={() => setPicking(true)} />}
       />
       <Spotlight teams={spot}>

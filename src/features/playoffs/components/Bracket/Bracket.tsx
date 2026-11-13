@@ -4,7 +4,6 @@ import Animated from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
 import { MiniSeries, MINI_H, MINI_W, SeriesCard } from '../SeriesCard';
-import { SeriesSheet } from '../SeriesSheet';
 import { Chip, ChipText, Segmented, slideIn, useSpotlight } from '@/components';
 import { layoutTree, type BracketSection, type Round, type Series } from '@/lib/league';
 import { fonts, palette, withAlpha, textStyle } from '@/lib/theme';
@@ -14,17 +13,20 @@ export type { BracketSection };
 
 /**
  * A knockout bracket with two ways in. "Rounds" steps through the stages one at a time with big series
- * cards; "Bracket" draws the whole tree left to right. Either way, tap a series for its game-by-game results.
+ * cards; "Bracket" draws the whole tree left to right. Either way, a tap on a series calls `onOpen` (the screens open the series page, which is
+ * pushed over the bracket, so back from a game in it lands on that page, and back from that page on the bracket).
  */
 export function Bracket({
   rounds,
   sections,
   favoriteTeamId,
+  onOpen,
   emptyText = 'Nothing has been scheduled yet.',
 }: {
   rounds: Round[];
   sections: BracketSection[];
   favoriteTeamId?: string | null;
+  onOpen: (series: Series) => void;
   emptyText?: string;
 }) {
   const lit = useSpotlight();
@@ -33,7 +35,6 @@ export function Bracket({
   const [mode, setMode] = useState<'rounds' | 'tree'>(() => (rounds.some((r) => r.series.some(spotted)) ? 'tree' : 'rounds'));
   const [roundKey, setRoundKey] = useState<string | null>(null);
   const [direction, setDirection] = useState<1 | -1>(1);
-  const [open, setOpen] = useState<Series | null>(null);
 
   if (rounds.length === 0) return <Text style={styles.empty}>{emptyText}</Text>;
 
@@ -80,14 +81,13 @@ export function Bracket({
           </ScrollView>
 
           <Animated.View key={active.key} entering={slideIn(direction)}>
-            <RoundList round={active} favoriteTeamId={favoriteTeamId} onOpen={setOpen} />
+            <RoundList round={active} favoriteTeamId={favoriteTeamId} onOpen={onOpen} />
           </Animated.View>
         </View>
       ) : (
-        <Tree sections={sections} favoriteTeamId={favoriteTeamId} onOpen={setOpen} />
+        <Tree sections={sections} favoriteTeamId={favoriteTeamId} onOpen={onOpen} />
       )}
 
-      <SeriesSheet series={open} onClose={() => setOpen(null)} />
     </View>
   );
 }
@@ -103,7 +103,7 @@ function RoundList({ round, favoriteTeamId, onOpen }: { round: Round; favoriteTe
       {groups.map((g) => (
         <View key={String(g.conf)}>
           {labelled && g.conf ? <Text style={styles.confLabel}>{g.conf === 'east' ? 'Eastern Conference' : 'Western Conference'}</Text> : null}
-          {g.series.map((s, i) => (
+          {g.series.map((s) => (
             <Animated.View key={s.id}>
               <SeriesCard series={s} favoriteTeamId={favoriteTeamId} onPress={() => onOpen(s)} />
             </Animated.View>

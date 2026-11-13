@@ -2,7 +2,7 @@ import { router, type Href } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { CupIcon } from '@/components';
+import { ARRIVE, CupIcon } from '@/components';
 import { useCup } from '@/hooks';
 import type { Game } from '@/lib/espn';
 import { cupIsOn } from '@/lib/league';
@@ -29,7 +29,7 @@ function CupStanding({ teamId }: { teamId: string }) {
   const left = row.left === 0 ? 'Group play done' : `${row.left} group game${row.left === 1 ? '' : 's'} left`;
 
   return (
-    <Animated.View style={styles.wrap}>
+    <Animated.View entering={ARRIVE} style={styles.wrap}>
       <Pressable
         onPress={() => router.navigate('/cup' as Href)}
         accessibilityRole="button"

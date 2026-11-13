@@ -10,7 +10,7 @@ import { openDetail } from '@/navigation';
 import { GREEN, GOLD } from './constants';
 
 /** One Cup group: five teams ranked, with who would advance if the group ended now. */
-export function GroupCard({ group, favoriteTeamId, index = 0 }: { group: CupGroup; favoriteTeamId?: string | null; index?: number }) {
+export function GroupCard({ group, favoriteTeamId }: { group: CupGroup; favoriteTeamId?: string | null }) {
   return (
     <Animated.View style={styles.card}>
       <View style={styles.header}>

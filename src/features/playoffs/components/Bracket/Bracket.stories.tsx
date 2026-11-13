@@ -43,13 +43,13 @@ const playoffs = buildPlayoffs(games, { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6 });
 export const Full: Story = {
   render: () => (
     <ScrollView contentContainerStyle={{ padding: 16 }}>
-      <Bracket rounds={playoffs.rounds} sections={playoffs.sections} favoriteTeamId="3" />
+      <Bracket rounds={playoffs.rounds} sections={playoffs.sections} favoriteTeamId="3" onOpen={() => {}} />
     </ScrollView>
   ),
 };
 
 export const Empty: Story = {
-  render: () => <Bracket rounds={[]} sections={[]} emptyText="The playoffs start in April." />,
+  render: () => <Bracket rounds={[]} sections={[]} onOpen={() => {}} emptyText="The playoffs start in April." />,
 };
 
 export const MiniCards: Story = {

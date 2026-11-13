@@ -57,7 +57,7 @@ export const ROUND_NAMES: Record<RoundKey, string> = {
 // ─── Parsing ESPN's notes ─────────────────────────────────────────────────────
 
 /** The play-in tournament began in 2020-21 (season 2021). The 2019-20 bubble had one play-in game, which isn't a tournament. */
-export const PLAY_IN_FROM = 2021;
+const PLAY_IN_FROM = 2021;
 /** ESPN's notes name each playoff game's round from the 2009-10 season on (named 2010); before that the rounds are worked out (`inferPlayoffNotes`). */
 export const NOTED_FROM = 2010;
 /**
