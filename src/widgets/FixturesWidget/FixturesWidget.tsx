@@ -40,7 +40,7 @@ const FixturesLayout = (props: FixturesProps, environment: WidgetEnvironment) =>
     );
 
   const row = (g: FixtureProps, i: number) => (
-    <HStack key={i} spacing={10} modifiers={[widgetURL(g.gameId !== '' ? 'courtside://game/' + g.gameId : 'courtside://')]}>
+    <HStack key={i} spacing={10} modifiers={[widgetURL(g.gameId !== '' ? 'courtside://game/' + g.gameId : 'courtside://home')]}>
       {crest(g.oppLogo, g.oppAbbr, large ? 32 : 28)}
       <VStack alignment="leading" spacing={1}>
         <Text modifiers={[font({ size: 14, weight: 'heavy' }), foregroundStyle(white), lineLimit(1)]}>{(g.home ? 'vs ' : '@ ') + g.oppName}</Text>
@@ -55,7 +55,7 @@ const FixturesLayout = (props: FixturesProps, environment: WidgetEnvironment) =>
   );
 
   return (
-    <VStack alignment="leading" spacing={gap} modifiers={[padding({ all: 2 }), surface, widgetURL('courtside://')]}>
+    <VStack alignment="leading" spacing={gap} modifiers={[padding({ all: 2 }), surface, widgetURL('courtside://home')]}>
       <HStack spacing={6}>
         <Text modifiers={[font({ size: 10, weight: 'heavy' }), kerning(1.2), foregroundStyle(props.accent)]}>UPCOMING</Text>
         <Spacer />

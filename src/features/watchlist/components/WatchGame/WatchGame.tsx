@@ -1,73 +1,61 @@
-import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { StarIcon } from '@/components';
+import { GameCard } from '@/features/calendar';
 import { useGameSummary } from '@/hooks';
-import { kickoffLabel } from '@/lib/date';
-import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
-import { openDetail } from '@/navigation';
+import type { ScoreboardGame, Team } from '@/lib/espn';
+import { fonts, palette, withAlpha } from '@/lib/theme';
 import type { WatchedGame } from '@/state';
 
-const GOLD = palette.gold;
-
 /**
- * A starred game: the two teams and, once there is something to say, the score and where it stands (live, final), or
- * when it starts. Shows what was saved at once, and fills in from the game itself (kept offline once it is final).
+ * A starred game as the Calendar's scoreboard row (the same card Pick'em uses): the two teams in their colors with the score and where it
+ * stands, or the tip-off time. It shows what was saved at once and fills in from the game itself (kept offline once it is final). The game's
+ * day and the star that takes it off the list sit on the tags row of the card, where the Calendar puts a game's tags.
  */
-export function WatchGame({ game, onRemove }: { game: WatchedGame; onRemove: () => void }) {
+export function WatchGame({ game, teams, onRemove }: { game: WatchedGame; teams?: Team[]; onRemove: () => void }) {
   const { data } = useGameSummary(game.id);
-  const started = !!data && (data.completed || data.live);
-  const away = data?.away.score;
-  const home = data?.home.score;
+  const awayScore = data?.away.score;
+  const homeScore = data?.home.score;
+  const completed = !!data?.completed;
   const date = data?.info.date ?? game.date;
 
-  return (
-    <Pressable
-      onPress={() => openDetail({ pathname: '/game/[id]', params: { id: game.id } })}
-      accessibilityRole="button"
-      accessibilityLabel={`${game.away.abbr} at ${game.home.abbr}`}
-      style={({ pressed }) => [styles.row, pressed && { opacity: 0.75 }]}>
-      <View style={styles.teams}>
-        <Side side={game.away} score={started ? away : undefined} win={started && data!.completed && (away ?? 0) > (home ?? 0)} />
-        <Side side={game.home} score={started ? home : undefined} win={started && data!.completed && (home ?? 0) > (away ?? 0)} />
-      </View>
-      <View style={styles.info}>
-        <Text style={[styles.status, data?.live && { color: palette.loss }]} numberOfLines={1}>
-          {started ? data!.status : date ? kickoffLabel(date) : ''}
-        </Text>
-        {started && date ? <Text style={styles.date}>{new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text> : null}
-      </View>
-      <Pressable
-        onPress={onRemove}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel={`Remove ${game.away.abbr} at ${game.home.abbr} from watchlist`}
-        style={styles.remove}>
-        <StarIcon color={GOLD} size={20} filled />
-      </Pressable>
-    </Pressable>
-  );
-}
+  const scoreboard: ScoreboardGame = {
+    id: game.id,
+    date,
+    status: data?.status ?? '',
+    completed,
+    inProgress: !!data?.live,
+    away: { teamId: game.away.id, name: game.away.abbr, abbreviation: game.away.abbr, logo: game.away.logo, score: awayScore, winner: completed && (awayScore ?? 0) > (homeScore ?? 0) },
+    home: { teamId: game.home.id, name: game.home.abbr, abbreviation: game.home.abbr, logo: game.home.logo, score: homeScore, winner: completed && (homeScore ?? 0) > (awayScore ?? 0) },
+    cup: data?.cup,
+    kind: data?.kind ?? 'regular',
+    note: data?.note,
+    series: data?.series,
+  };
 
-function Side({ side, score, win }: { side: WatchedGame['away']; score?: number; win: boolean }) {
+  const day = date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
   return (
-    <View style={styles.side}>
-      {side.logo ? <Image source={side.logo} style={styles.logo} contentFit="contain" /> : <View style={styles.logo} />}
-      <Text style={[styles.abbr, win && { color: palette.chalk }]}>{side.abbr}</Text>
-      <Text style={[styles.score, win && { color: palette.chalk }]}>{score ?? ''}</Text>
-    </View>
+    <GameCard
+      game={scoreboard}
+      mine={false}
+      accent={palette.gold}
+      teams={teams}
+      extra={
+        <>
+          {day ? <Text style={styles.day}>{day}</Text> : null}
+          <Pressable
+            onPress={onRemove}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove ${game.away.abbr} at ${game.home.abbr} from watchlist`}>
+            <StarIcon color={palette.gold} size={14} filled />
+          </Pressable>
+        </>
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, backgroundColor: surfaces.card },
-  teams: { flex: 1, gap: 6 },
-  side: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logo: { width: 24, height: 24 },
-  abbr: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 15, color: withAlpha(palette.chalk, 0.75) },
-  score: { fontFamily: fonts.display, fontSize: 22, color: withAlpha(palette.chalk, 0.75), minWidth: 36, textAlign: 'right' },
-  info: { alignItems: 'flex-end', gap: 2, maxWidth: 120 },
-  status: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted, textAlign: 'right' },
-  date: { fontFamily: fonts.body, fontSize: 11, color: palette.muted },
-  remove: { paddingLeft: 4 },
+  day: { fontFamily: fonts.bodySemi, fontSize: 10, letterSpacing: 0.3, color: withAlpha(palette.chalk, 0.6) },
 });

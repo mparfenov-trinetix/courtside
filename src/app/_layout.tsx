@@ -23,7 +23,7 @@ import { ReduceMotion, ReducedMotionConfig } from 'react-native-reanimated';
 import { WidgetSync } from '@/widgets';
 import { NavDepthTracker } from '@/navigation';
 import { DataHealthBanner, ScreenError, installEraLogos } from '@/components';
-import { IntroOverlay } from '@/features/intro';
+import { IntroOverlay, RootLinkRedirect } from '@/features/intro';
 import { PickemSync } from '@/features/pickem';
 import { reportIssue } from '@/lib/data-health';
 import { HttpError, currentSeason, setHealthReporter } from '@/lib/espn';
@@ -189,6 +189,7 @@ export default function RootLayout() {
               <Stack.Screen name="series" options={{ animation: 'slide_from_right' }} />
             </Stack>
             {showIntro && <IntroOverlay onDone={() => setShowIntro(false)} />}
+            <RootLinkRedirect introOver={!showIntro} />
             <NavDepthTracker />
             <WidgetSync />
             <PickemSync />

@@ -32,7 +32,7 @@ const NextGameLayout = (props: NextGameProps, environment: WidgetEnvironment) =>
   // A game that is on, with the score the app last saw: the right side shows it instead of the tip-off time.
   const scored = props.live && props.myScore !== '';
   const when = has ? new Date(props.iso) : undefined;
-  const url = has ? 'courtside://game/' + props.gameId : 'courtside://';
+  const url = has ? 'courtside://game/' + props.gameId : 'courtside://home';
   const background = containerBackground(
     { type: 'linearGradient', colors: [props.bg2, props.bg], startPoint: { x: 0, y: 0 }, endPoint: { x: 1, y: 1 } },
     'widget',

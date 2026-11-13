@@ -14,7 +14,7 @@ const LockScreenLayout = (props: LockScreenProps, environment: WidgetEnvironment
   const family = environment.widgetFamily;
   const has = props.oppAbbr !== '';
   const versus = props.home ? 'vs' : '@';
-  const url = has && props.gameId !== '' ? 'courtside://game/' + props.gameId : 'courtside://';
+  const url = has && props.gameId !== '' ? 'courtside://game/' + props.gameId : 'courtside://home';
 
   if (family === 'accessoryInline') {
     return (

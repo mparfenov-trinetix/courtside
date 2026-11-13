@@ -56,7 +56,7 @@ export function WatchlistScreen() {
                     .slice()
                     .sort((a, b) => b.date.localeCompare(a.date))
                     .map((g) => (
-                      <WatchGame key={g.id} game={g} onRemove={() => toggleGame(g)} />
+                      <WatchGame key={g.id} game={g} teams={teams} onRemove={() => toggleGame(g)} />
                     ))}
                 </View>
               </View>

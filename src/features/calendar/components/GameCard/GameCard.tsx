@@ -35,6 +35,7 @@ export function GameCard({
   teams,
   wrapSide,
   marks = false,
+  extra,
 }: {
   game: ScoreboardGame;
   mine: boolean;
@@ -45,6 +46,8 @@ export function GameCard({
   wrapSide?: (side: 'away' | 'home', node: ReactNode) => ReactNode;
   /** Marks the team you took with a tick under its logo. Only Pick'em draws it: on the Calendar's cards it was noise. */
   marks?: boolean;
+  /** Something small for the top of the middle column, on the tags' row (the Watchlist puts the game's day and its star there). */
+  extra?: ReactNode;
 }) {
   const { home, away, status, completed, inProgress } = game;
   const client = useQueryClient();
@@ -70,7 +73,7 @@ export function GameCard({
   const postseason = game.kind === 'playoffs' || game.kind === 'playin';
   // On the Pick'em screen a game you made a call on marks the team you took with a tick under its logo (gold while it waits, green or red once it is decided).
   const pick = usePick(marks ? game.id : null);
-  const hasTags = Boolean(game.cup) || (postseason && !!playoffTag(game.note)) || showMine;
+  const hasTags = Boolean(game.cup) || (postseason && !!playoffTag(game.note)) || showMine || !!extra;
   // "(3)" beside a team in a playoff game: its seed.
   const seeds = usePlayoffSeeds(gameSeason, game.kind === 'playoffs');
   const showLead = inProgress && lead > 0;
@@ -106,6 +109,7 @@ export function GameCard({
             {game.cup ? <CupBadge stage={game.cup} /> : null}
             {postseason ? <PlayoffBadge note={game.note} /> : null}
             {showMine ? <Text style={[styles.mineTag, { color: accent }]}>★ {abbr}</Text> : null}
+            {extra}
           </View>
         ) : null}
         {started ? (

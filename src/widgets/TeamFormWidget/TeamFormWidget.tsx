@@ -85,7 +85,7 @@ const TeamFormLayout = (props: TeamFormProps, environment: WidgetEnvironment) =>
 
   if (small) {
     return (
-      <VStack alignment="leading" spacing={6} modifiers={[padding({ all: 2 }), surface, widgetURL('courtside://')]}>
+      <VStack alignment="leading" spacing={6} modifiers={[padding({ all: 2 }), surface, widgetURL('courtside://home')]}>
         <HStack spacing={8}>
           {crest(30)}
           <Text modifiers={[font({ size: 16, weight: 'heavy' }), foregroundStyle(white), lineLimit(1)]}>{props.teamAbbr + '  ' + props.record}</Text>
@@ -108,7 +108,7 @@ const TeamFormLayout = (props: TeamFormProps, environment: WidgetEnvironment) =>
   }
 
   return (
-    <VStack alignment="leading" spacing={8} modifiers={[padding({ all: 2 }), surface, widgetURL('courtside://')]}>
+    <VStack alignment="leading" spacing={8} modifiers={[padding({ all: 2 }), surface, widgetURL('courtside://home')]}>
       <HStack spacing={10}>
         {crest(44)}
         <VStack alignment="leading" spacing={3}>
