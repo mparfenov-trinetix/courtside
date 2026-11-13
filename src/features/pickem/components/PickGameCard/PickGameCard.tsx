@@ -55,7 +55,7 @@ export function PickGameCard({ game, teams }: { game: ScoreboardGame; teams?: Te
     );
   };
 
-  return <GameCard game={game} mine={false} accent={palette.maple} teams={teams} wrapSide={wrapSide} />;
+  return <GameCard game={game} mine={false} accent={palette.maple} teams={teams} wrapSide={wrapSide} marks />;
 }
 
 const styles = StyleSheet.create({

@@ -4,12 +4,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { FlashOverlay, PickBadge, Tick } from '@/components';
+import { FlashOverlay, PickMark, Tick } from '@/components';
 import { prefetchHeadToHead, usePlayoffSeeds } from '@/hooks';
 import { CupBadge } from '@/features/cup';
 import { PlayoffBadge } from '@/features/playoffs';
 import { seasonOfDate, teamInSeason, type ScoreboardGame, type Team } from '@/lib/espn';
-import { playoffTag } from '@/lib/league';
+import { playoffTag, type GamePick } from '@/lib/league';
 import { fonts, matchupColors, palette, withAlpha, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { usePick } from '@/state';
@@ -34,6 +34,7 @@ export function GameCard({
   abbr,
   teams,
   wrapSide,
+  marks = false,
 }: {
   game: ScoreboardGame;
   mine: boolean;
@@ -42,6 +43,8 @@ export function GameCard({
   teams?: Team[];
   /** Wraps each team's side (logo, code, record), so a screen can make the two sides buttons (Pick'em: a tap on a side picks that team); a tap anywhere else still opens the game. */
   wrapSide?: (side: 'away' | 'home', node: ReactNode) => ReactNode;
+  /** Marks the team you took with a tick under its logo. Only Pick'em draws it: on the Calendar's cards it was noise. */
+  marks?: boolean;
 }) {
   const { home, away, status, completed, inProgress } = game;
   const client = useQueryClient();
@@ -65,16 +68,16 @@ export function GameCard({
   const lead = started ? leadOf(away.score, home.score) : 0;
   const showMine = mine && !!abbr;
   const postseason = game.kind === 'playoffs' || game.kind === 'playin';
-  // A game you made a call on carries a small tag with it ("PICK NYK", then a tick or a cross).
-  const pick = usePick(game.id);
-  const hasTags = Boolean(game.cup) || (postseason && !!playoffTag(game.note)) || showMine || !!pick;
+  // On the Pick'em screen a game you made a call on marks the team you took with a tick under its logo (gold while it waits, green or red once it is decided).
+  const pick = usePick(marks ? game.id : null);
+  const hasTags = Boolean(game.cup) || (postseason && !!playoffTag(game.note)) || showMine;
   // "(3)" beside a team in a playoff game: its seed.
   const seeds = usePlayoffSeeds(gameSeason, game.kind === 'playoffs');
   const showLead = inProgress && lead > 0;
   const leader = leaderAbbr(away, home);
 
-  const awaySide = <TeamSide team={away} logo={awayThen?.logoDark || awayThen?.logo || away.logo} winner={away.winner} completed={completed} seed={seeds?.[away.teamId]} />;
-  const homeSide = <TeamSide team={home} logo={homeThen?.logoDark || homeThen?.logo || home.logo} winner={home.winner} completed={completed} seed={seeds?.[home.teamId]} right />;
+  const awaySide = <TeamSide team={away} logo={awayThen?.logoDark || awayThen?.logo || away.logo} winner={away.winner} completed={completed} seed={seeds?.[away.teamId]} pick={pick} />;
+  const homeSide = <TeamSide team={home} logo={homeThen?.logoDark || homeThen?.logo || home.logo} winner={home.winner} completed={completed} seed={seeds?.[home.teamId]} pick={pick} right />;
 
   return (
     <Pressable
@@ -102,7 +105,6 @@ export function GameCard({
           <View style={styles.tags}>
             {game.cup ? <CupBadge stage={game.cup} /> : null}
             {postseason ? <PlayoffBadge note={game.note} /> : null}
-            <PickBadge pick={pick} />
             {showMine ? <Text style={[styles.mineTag, { color: accent }]}>★ {abbr}</Text> : null}
           </View>
         ) : null}
@@ -146,14 +148,19 @@ function Status({ live, done, text }: { live: boolean; done: boolean; text: stri
 }
 
 /** One team: logo, abbreviation and record; the home side is mirrored. */
-function TeamSide({ team, logo: source, winner, completed, seed, right }: { team: ScoreboardGame['home']; logo: string; winner?: boolean; completed: boolean; seed?: number; right?: boolean }) {
+function TeamSide({ team, logo: source, winner, completed, seed, pick, right }: { team: ScoreboardGame['home']; logo: string; winner?: boolean; completed: boolean; seed?: number; pick?: GamePick; right?: boolean }) {
   const loser = completed && !winner;
   // Never an empty hole: a team without a logo shows its abbreviation in a disc.
-  const logo = source ? (
-    <Image source={source} style={styles.teamLogo} contentFit="contain" />
-  ) : (
-    <View style={[styles.teamLogo, styles.logoFallback]}>
-      <Text style={styles.logoFallbackText}>{(team.abbreviation || team.name).slice(0, 3)}</Text>
+  const logo = (
+    <View style={styles.teamLogo}>
+      {source ? (
+        <Image source={source} style={styles.teamLogo} contentFit="contain" />
+      ) : (
+        <View style={[styles.teamLogo, styles.logoFallback]}>
+          <Text style={styles.logoFallbackText}>{(team.abbreviation || team.name).slice(0, 3)}</Text>
+        </View>
+      )}
+      <PickMark pick={pick} teamId={team.teamId} />
     </View>
   );
   return (

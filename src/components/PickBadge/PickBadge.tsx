@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { resultOf, type GamePick } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 
-/** A small tag for a game you made a call on: "PICK NYK" while it waits, "✓ NYK" when it was right, "✗ NYK" when it was not. */
+/** A small tag for a pick in a list (the Pick'em history and the score card story; the game cards mark the team itself with `PickMark`): "PICK NYK" while it waits, "✓ NYK" when it was right, "✗ NYK" when it was not. */
 export function PickBadge({ pick }: { pick?: GamePick }) {
   if (!pick) return null;
   const abbr = (pick.teamId === pick.home.id ? pick.home : pick.away).abbr;
