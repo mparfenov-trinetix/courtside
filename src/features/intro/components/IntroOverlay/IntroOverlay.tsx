@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
@@ -52,7 +52,7 @@ const rise = (to: number, ms: number) => withTiming(to, { duration: ms, easing: 
  * Building a screen freezes whatever is moving, so the animation never overlaps it. The order: the native splash is still up (a still
  * picture of the ball), and under it `/home` is built (the drawer and the home card); then the splash goes and the animation plays, short
  * and in one piece; then, within a small time budget, the drawer builds its other heavy screens one at a time while the finished logo
- * stands still; then the fade. Whatever the budget did not cover is built after the intro has left. A tap skips the animation.
+ * stands still; then the fade. Whatever the budget did not cover is built after the intro has left. It cannot be noMotion: a tap on it does nothing, so the intro always plays whole (only Reduce Motion shortens it).
  */
 export function IntroOverlay({ onDone }: { onDone: () => void }) {
   const { width, height } = useWindowDimensions();
@@ -65,7 +65,7 @@ export function IntroOverlay({ onDone }: { onDone: () => void }) {
   const lineColor = palette.maple;
   const started = useRef(false);
   const leaving = useRef(false);
-  const skipped = useRef(false);
+  const noMotion = useRef(false);
   const gone = useRef(false);
   const wake = useRef<(() => void) | null>(null);
   const team = useRef({ hydrated, favoriteTeamId });
@@ -119,10 +119,10 @@ export function IntroOverlay({ onDone }: { onDone: () => void }) {
     return () => clearTimeout(t);
   }, [finished, hydrated, favoriteTeamId, onDone]);
 
-  /** Waits `ms` (a tap that skips the intro, or leaving the screen, ends the wait at once). */
+  /** Waits `ms` (leaving the screen ends the wait at once). */
   const sleep = (ms: number) =>
     new Promise<void>((resolve) => {
-      if (skipped.current || gone.current) {
+      if (noMotion.current || gone.current) {
         resolve();
         return;
       }
@@ -135,9 +135,9 @@ export function IntroOverlay({ onDone }: { onDone: () => void }) {
       wake.current = done;
     });
 
-  /** Plays one animation value from 0 to 1 (at once if the intro was skipped). */
+  /** Plays one animation value from 0 to 1 (at once under Reduce Motion). */
   const play = (value: SharedValue<number>, ms: number, easing: (t: number) => number, delay = 0) => {
-    value.value = skipped.current ? 1 : withDelay(delay, withTiming(1, { duration: ms, easing }));
+    value.value = noMotion.current ? 1 : withDelay(delay, withTiming(1, { duration: ms, easing }));
   };
 
   const run = async () => {
@@ -157,7 +157,7 @@ export function IntroOverlay({ onDone }: { onDone: () => void }) {
     // The animation, in one piece: the toss and a decaying bounce, the court's line, the circle drawn around the ball as it settles, the
     // wordmark, the circle's echo.
     if (reducedMotion) {
-      skipped.current = true;
+      noMotion.current = true;
     } else {
       ballY.value = withSequence(
         rise(-150, 220),
@@ -176,11 +176,11 @@ export function IntroOverlay({ onDone }: { onDone: () => void }) {
     }
 
     // The finished logo stands still while more screens are built, as many as fit in the budget.
-    if (favorite) await preloadWithin(STEP_BUDGET_MS, () => gone.current || skipped.current);
+    if (favorite) await preloadWithin(STEP_BUDGET_MS, () => gone.current || noMotion.current);
 
     if (gone.current) return;
     if (reducedMotion) setFinished(true);
-    else leave(skipped.current ? 150 : 320);
+    else leave(noMotion.current ? 150 : 320);
   };
 
   const start = () => {
@@ -197,12 +197,6 @@ export function IntroOverlay({ onDone }: { onDone: () => void }) {
     exit.value = withTiming(1, { duration: ms, easing: Easing.in(Easing.cubic) }, (done) => {
       if (done) scheduleOnRN(setFinished, true);
     });
-  };
-
-  const skip = () => {
-    if (!started.current) return;
-    skipped.current = true;
-    wake.current?.();
   };
 
   const ballStyle = useAnimatedStyle(() => {
@@ -249,7 +243,7 @@ export function IntroOverlay({ onDone }: { onDone: () => void }) {
   const centerY = height / 2;
 
   return (
-    <Pressable style={styles.root} onPress={skip} accessibilityLabel="Skip intro">
+    <View style={styles.root}>
       <Animated.View style={[StyleSheet.absoluteFill, containerStyle]} onLayout={start}>
         <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
           <AnimatedLine
@@ -296,7 +290,7 @@ export function IntroOverlay({ onDone }: { onDone: () => void }) {
           </Animated.View>
         </View>
       </Animated.View>
-    </Pressable>
+    </View>
   );
 }
 
