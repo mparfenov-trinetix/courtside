@@ -4,11 +4,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ListSkeleton } from '@/components';
 import { usePlayerGameLogs } from '@/hooks';
-import type { LeaderEntry } from '@/lib/espn';
+import type { LeaderEntry, Team } from '@/lib/espn';
 import { rankByForm, type FormEntry } from '@/lib/league';
 import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
+import { PlayerLine } from '../PlayerLine';
 import { useLeaderPool } from '../../utils';
 
 import { SHOWN } from './constants';
@@ -20,7 +21,7 @@ const COLD = '#60A5FA';
  * Who is playing above or below his own level: the last five games against the games before them in the season, from the
  * same game logs the player page uses.
  */
-export function HotCold({ abbrOf }: { abbrOf: (teamId: string) => string | undefined }) {
+export function HotCold({ teams }: { teams?: Team[] }) {
   const insets = useSafeAreaInsets();
   const { pool, pending } = useLeaderPool();
   const logs = usePlayerGameLogs(pool.map((p) => p.athleteId));
@@ -41,8 +42,8 @@ export function HotCold({ abbrOf }: { abbrOf: (teamId: string) => string | undef
         His last 5 games (3 while the season is young) against the rest of his season, by impact: points, rebounds, assists, steals and
         blocks, less turnovers. Among the league&apos;s top scorers, rebounders and passers.
       </Text>
-      <Section title="Hot" color={HOT} rows={hot} abbrOf={abbrOf} />
-      <Section title="Cold" color={COLD} rows={cold} abbrOf={abbrOf} />
+      <Section title="Hot" color={HOT} rows={hot} teams={teams} />
+      <Section title="Cold" color={COLD} rows={cold} teams={teams} />
       {loading > 0 && <Text style={styles.footer}>Checking {loading} more…</Text>}
     </ScrollView>
   );
@@ -52,12 +53,12 @@ function Section({
   title,
   color,
   rows,
-  abbrOf,
+  teams,
 }: {
   title: string;
   color: string;
   rows: FormEntry<LeaderEntry>[];
-  abbrOf: (teamId: string) => string | undefined;
+  teams?: Team[];
 }) {
   if (rows.length === 0) return null;
   return (
@@ -77,9 +78,9 @@ function Section({
               <Text style={styles.name} numberOfLines={1}>
                 {who.name}
               </Text>
-              <Text style={styles.line} numberOfLines={1}>
-                {abbrOf(who.teamId) ?? who.teamAbbr} · last {form.window} · {form.pts.toFixed(1)} pts · {form.reb.toFixed(1)} reb · {form.ast.toFixed(1)} ast
-              </Text>
+              <PlayerLine team={teams?.find((t) => t.id === who.teamId)}>
+                last {form.window} · {form.pts.toFixed(1)} pts · {form.reb.toFixed(1)} reb · {form.ast.toFixed(1)} ast
+              </PlayerLine>
             </View>
             <View style={[styles.pill, { backgroundColor: withAlpha(color, 0.16) }]}>
               <Text style={[styles.pillText, { color }]}>
@@ -111,7 +112,6 @@ const styles = StyleSheet.create({
   headshotWrap: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', backgroundColor: surfaces.raised, alignItems: 'center', justifyContent: 'center' },
   headshot: { width: 52, height: 44 },
   name: { fontFamily: fonts.bodyBold, fontSize: 15, color: palette.chalk },
-  line: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, marginTop: 1 },
   pill: { minWidth: 52, alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
   pillText: { fontFamily: fonts.displayBold, fontSize: 18 },
   footer: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, textAlign: 'center', paddingVertical: 14 },

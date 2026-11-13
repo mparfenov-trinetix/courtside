@@ -4,10 +4,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ListSkeleton } from '@/components';
 import { usePlayerGameLogs } from '@/hooks';
+import type { Team } from '@/lib/espn';
 import { efficiencyOf } from '@/lib/league';
 import { fonts, palette, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
+import { PlayerLine, playerBlurb } from '../PlayerLine';
 import { useLeaderPool } from '../../utils';
 
 /**
@@ -15,7 +17,7 @@ import { useLeaderPool } from '../../utils';
  * out from each player's game log. ESPN's own PER is not usable here (it has no minutes qualifier), so this covers the league's top
  * scorers, rebounders and passers.
  */
-export function Efficiency({ abbrOf }: { abbrOf: (teamId: string) => string | undefined }) {
+export function Efficiency({ teams }: { teams?: Team[] }) {
   const insets = useSafeAreaInsets();
   const { pool, pending } = useLeaderPool();
   const logs = usePlayerGameLogs(pool.map((p) => p.athleteId));
@@ -49,7 +51,7 @@ export function Efficiency({ abbrOf }: { abbrOf: (teamId: string) => string | un
             <Text style={styles.name} numberOfLines={1}>
               {who.name}
             </Text>
-            <Text style={styles.team}>{abbrOf(who.teamId) ?? who.teamAbbr}</Text>
+            <PlayerLine team={teams?.find((t) => t.id === who.teamId)}>{playerBlurb(who)}</PlayerLine>
           </View>
           <Text style={[styles.value, i === 0 && { color: palette.chalk }]}>{value.toFixed(1)}</Text>
         </Pressable>
@@ -75,7 +77,6 @@ const styles = StyleSheet.create({
   headshotWrap: { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', backgroundColor: surfaces.raised, alignItems: 'center', justifyContent: 'center' },
   headshot: { width: 56, height: 48 },
   name: { fontFamily: fonts.bodyBold, fontSize: 16, color: palette.chalk },
-  team: { fontFamily: fonts.body, fontSize: 13, color: palette.muted, marginTop: 1 },
   value: { fontFamily: fonts.display, fontSize: 28, color: palette.muted },
   footer: { fontFamily: fonts.body, fontSize: 12, color: palette.muted, textAlign: 'center', paddingVertical: 14 },
 });

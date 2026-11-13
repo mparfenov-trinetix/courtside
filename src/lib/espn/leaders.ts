@@ -15,6 +15,9 @@ export type LeaderEntry = {
   displayValue: string;
   /** Percentage categories: how many he makes a game ("1.1" threes at 58%), from his season record. */
   made?: string;
+  /** ESPN's position abbreviation ("G", "PF", "C") and his height as ESPN prints it (6' 7"), from his athlete record. */
+  position?: string;
+  height?: string;
 };
 
 /** The categories shown, keyed as the app names them, with ESPN's category name and how its value is read. */
@@ -35,7 +38,14 @@ export const LEADER_CATEGORIES = {
   // Minutes are a clock, not a decimal: 37.36 is 37:22 (ESPN's own display, "37.4", is a rounded decimal).
   mpg: { espn: 'minutesPerGame', clock: true },
   pfpg: { espn: 'foulsPerGame' },
-} as const satisfies Record<string, { espn: string; scale?: number; digits?: number; percent?: boolean; made?: string; clock?: boolean }>;
+  // Ranked by a number ESPN has no leaders list for, read from each player's season record: the players are the top fifty of `espn`'s list (the
+  // rebounders for the two kinds of rebound, the scorers for the rest), so these are the best of those fifty, not of the whole league.
+  // `per` divides by another stat of the record (the season's plus-minus is a total: per game it is comparable).
+  orpg: { espn: 'reboundsPerGame', stat: 'avgOffensiveRebounds' },
+  drpg: { espn: 'reboundsPerGame', stat: 'avgDefensiveRebounds' },
+  per: { espn: 'pointsPerGame', stat: 'PER' },
+  pm: { espn: 'pointsPerGame', stat: 'plusMinus', per: 'gamesPlayed', signed: true },
+} as const satisfies Record<string, { espn: string; scale?: number; digits?: number; percent?: boolean; made?: string; clock?: boolean; stat?: string; per?: string; signed?: boolean }>;
 
 export type LeaderCategory = keyof typeof LEADER_CATEGORIES;
 
@@ -60,7 +70,7 @@ function normalizeTeamLeaders(json: Json, limit = 8): { ref: string; ppg: string
 /** The first of them: the team's best player. Null when nobody is rated yet. */
 export const normalizeTeamStar = (json: Json) => normalizeTeamLeaders(json, 1)[0] ?? null;
 
-type AthleteInfo = { athleteId: string; name: string; shortName: string; headshot?: string; position?: string; jersey?: string };
+type AthleteInfo = { athleteId: string; name: string; shortName: string; headshot?: string; position?: string; jersey?: string; height?: string };
 
 /** Athlete records already read, by ref: the same player leads several categories, and the screen reads them one at a time. */
 const athletes = new Map<string, Promise<AthleteInfo>>();
@@ -78,6 +88,7 @@ function athleteOf(ref: string): Promise<AthleteInfo> {
           headshot: data.headshot?.href ?? (athleteId ? headshotUrl(athleteId) : undefined),
           position: data.position?.abbreviation ? String(data.position.abbreviation) : undefined,
           jersey: data.jersey ? String(data.jersey) : undefined,
+          height: data.displayHeight ? String(data.displayHeight) : undefined,
         };
       })
       .catch((): AthleteInfo => {
@@ -147,6 +158,54 @@ function recordOf(ref: string): Promise<Json | null> {
 }
 
 /**
+ * The categories ranked by a number in each player's season record: the top fifty of ESPN's list `espn` names, each one's record read (one small
+ * request each, read once per player and shared with the percentage tabs), the stat taken (divided by `per` when there is one) and the players
+ * sorted by it. A player whose record lacks the stat is left out.
+ */
+async function fetchStatCategory(
+  cats: Json[],
+  espn: string,
+  fmt: { stat: string; per?: string; signed?: boolean; digits?: number },
+  limit: number,
+): Promise<LeaderEntry[]> {
+  const raw = ((cats.find((c) => c.name === espn)?.leaders ?? []) as Json[]).slice(0, 50).map((l) => ({
+    ref: String(l.athlete?.$ref ?? '').replace(/^http:\/\//, 'https://'),
+    teamRef: String(l.team?.$ref ?? ''),
+    statsRef: String(l.statistics?.$ref ?? '').replace(/^http:\/\//, 'https://'),
+  }));
+  const [people, recs] = await Promise.all([
+    Promise.all(raw.map((r) => (r.ref ? athleteOf(r.ref) : Promise.resolve<AthleteInfo>({ athleteId: '', name: 'Unknown', shortName: '' })))),
+    Promise.all(raw.map((r) => (r.statsRef ? recordOf(r.statsRef) : Promise.resolve(null)))),
+  ]);
+  const digits = fmt.digits ?? 1;
+  const entries = raw.flatMap(({ teamRef }, i): LeaderEntry[] => {
+    const rec = recs[i];
+    let value = rec ? statByName(rec, fmt.stat) : undefined;
+    if (value !== undefined && fmt.per) {
+      const divisor = rec ? statByName(rec, fmt.per) : undefined;
+      value = divisor ? value / divisor : undefined;
+    }
+    if (value === undefined) return [];
+    return [
+      {
+        athleteId: people[i].athleteId,
+        name: people[i].name,
+        shortName: people[i].shortName,
+        teamId: teamRef.match(/teams\/(\d+)/)?.[1] ?? '',
+        teamAbbr: '',
+        teamColor: '#1D428A',
+        headshot: people[i].headshot,
+        position: people[i].position,
+        height: people[i].height,
+        value,
+        displayValue: (fmt.signed && value > 0 ? '+' : '') + value.toFixed(digits),
+      },
+    ];
+  });
+  return entries.sort((a, b) => b.value - a.value).slice(0, limit);
+}
+
+/**
  * One category's leaders (the top `limit`). Each category is read on its own, when its tab is opened: reading all fourteen at once
  * meant about 230 athlete requests before the screen showed anything. The one list request carries every category, so asking
  * again for another costs a single request; athletes already read are not asked for twice.
@@ -155,6 +214,7 @@ export async function fetchLeaderCategory(key: LeaderCategory, limit = 50): Prom
   const json = await getJson(`${CORE}/seasons/${currentSeason()}/types/2/leaders?limit=50&lang=en&region=us`);
   const cats: Json[] = json.categories ?? [];
   const { espn, ...fmt } = LEADER_CATEGORIES[key];
+  if ('stat' in fmt) return fetchStatCategory(cats, espn, fmt, limit);
   const scale = 'scale' in fmt ? fmt.scale : 1;
   const digits = 'digits' in fmt ? fmt.digits : 1;
   const raw = (((cats.find((c) => c.name === espn)?.leaders ?? []) as Json[]).slice(0, limit)).map((l) => ({
@@ -182,6 +242,8 @@ export async function fetchLeaderCategory(key: LeaderCategory, limit = 50): Prom
       teamAbbr: '',
       teamColor: '#1D428A',
       headshot: people[i].headshot,
+      position: people[i].position,
+      height: people[i].height,
       value: v,
       displayValue: clock ? minutesClock(v) : (scale === 1 && digits === 1 ? displayValue : v.toFixed(digits)) + (percent ? '%' : ''),
       made: made[i] != null ? made[i]!.toFixed(1) : undefined,

@@ -134,7 +134,7 @@ export function useSeasonGames(teamId: string | null | undefined, season: number
 /** One category of the league leaders (the top `limit`). The second part of the key is the shape of the data: bump it if it changes. */
 export const leaderCategoryOptions = (category: LeaderCategory, limit = 50) =>
   queryOptions({
-    queryKey: ['leaders', 5, category, limit],
+    queryKey: ['leaders', 6, category, limit],
     queryFn: () => fetchLeaderCategory(category, limit),
     staleTime: HOUR,
   });

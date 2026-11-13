@@ -8,6 +8,7 @@ import { useLeaderCategory, useRefresh } from '@/hooks';
 import type { LeaderCategory, LeaderEntry, Team } from '@/lib/espn';
 import { fonts, palette, surfaces, teamTheme, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
+import { PlayerLine, playerBlurb } from '../../components/PlayerLine';
 
 const PAGE = 10;
 
@@ -26,7 +27,7 @@ export function LeaderPage({ category, title, teams }: { category: LeaderCategor
   // Only the rows shown get their team's name and color (fifty of them were worked out on every render, ten are on screen).
   const leaders = all.slice(0, displayCount).map((entry) => {
     const team = teams?.find((t) => t.id === entry.teamId);
-    return team ? { ...entry, teamAbbr: team.abbreviation, teamColor: teamTheme(team).brand } : entry;
+    return { entry: team ? { ...entry, teamAbbr: team.abbreviation, teamColor: teamTheme(team).brand } : entry, team };
   });
   const hasMore = displayCount < all.length;
 
@@ -35,7 +36,7 @@ export function LeaderPage({ category, title, teams }: { category: LeaderCategor
       data={leaders}
       refreshControl={refreshControl}
       showsVerticalScrollIndicator={false}
-      keyExtractor={(item, i) => `${category}-${item.athleteId}-${i}`}
+      keyExtractor={(item, i) => `${category}-${item.entry.athleteId}-${i}`}
       contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 8 }}
       onEndReached={() => {
         if (hasMore) setDisplayCount((n) => Math.min(n + PAGE, all.length));
@@ -51,12 +52,12 @@ export function LeaderPage({ category, title, teams }: { category: LeaderCategor
           <Text style={styles.footerText}>Top {all.length} leaders</Text>
         )
       }
-      renderItem={({ item, index }) => <LeaderRow entry={item} rank={index + 1} />}
+      renderItem={({ item, index }) => <LeaderRow entry={item.entry} team={item.team} rank={index + 1} />}
     />
   );
 }
 
-function LeaderRow({ entry, rank }: { entry: LeaderEntry; rank: number }) {
+function LeaderRow({ entry, team, rank }: { entry: LeaderEntry; team?: Team; rank: number }) {
   const teamColor = entry.teamColor.startsWith('#') ? entry.teamColor : `#${entry.teamColor}`;
   const canNavigate = !!entry.athleteId && !!entry.teamId;
 
@@ -84,7 +85,7 @@ function LeaderRow({ entry, rank }: { entry: LeaderEntry; rank: number }) {
         <Text style={styles.playerName} numberOfLines={1}>
           {entry.name}
         </Text>
-        <Text style={styles.teamAbbr}>{entry.teamAbbr}</Text>
+        <PlayerLine team={team}>{playerBlurb(entry)}</PlayerLine>
       </View>
 
       {/* The percentages carry what he makes a game: "58%" with "(1.1)" beside it. */}
@@ -107,7 +108,6 @@ const styles = StyleSheet.create({
   headshot: { width: 56, height: 48 },
   initials: { fontFamily: fonts.bodyBold, fontSize: 15, color: palette.chalk },
   playerName: { fontFamily: fonts.bodyBold, fontSize: 16, color: palette.chalk },
-  teamAbbr: { fontFamily: fonts.body, fontSize: 13, color: palette.muted, marginTop: 1 },
   value: { fontFamily: fonts.display, fontSize: 28, color: palette.muted },
   made: { fontFamily: fonts.bodySemi, fontSize: 14, color: palette.muted },
 });

@@ -3,17 +3,16 @@ import { StyleSheet, View } from 'react-native';
 import { ScreenHeader } from '@/components';
 import { useTeams } from '@/hooks';
 import { palette } from '@/lib/theme';
-import { AwardOdds, Efficiency, HotCold, StatPager } from '../../components';
+import { AwardOdds, BestGames, Efficiency, HotCold, StatPager } from '../../components';
 import { LeaderPage } from './LeaderPage';
 import { PAGES } from './constants';
 
 /**
  * Players ranked by one stat, a `StatPager` like Team Leaders: swipe sideways, or tap a pill. The category on screen is read at once, its
- * neighbours once the slide in from the menu is over; Hot / Cold, the award odds and efficiency are pages of their own.
+ * neighbours once the slide in from the menu is over; Hot / Cold, the best games (Courtside Rating), the award odds and efficiency are pages of their own.
  */
 export function LeagueLeadersScreen() {
   const { data: teams } = useTeams();
-  const abbrOf = (id: string) => teams?.find((t) => t.id === id)?.abbreviation;
 
   return (
     <View style={[styles.root, { backgroundColor: palette.arena }]}>
@@ -26,11 +25,13 @@ export function LeagueLeadersScreen() {
           return (
             <View style={{ width }}>
               {key === 'form' ? (
-                <HotCold abbrOf={abbrOf} />
+                <HotCold teams={teams} />
+              ) : key === 'cr' ? (
+                <BestGames teams={teams} />
               ) : key === 'odds' ? (
                 <AwardOdds />
               ) : key === 'eff' ? (
-                <Efficiency abbrOf={abbrOf} />
+                <Efficiency teams={teams} />
               ) : (
                 <LeaderPage category={page.category!} title={page.full} teams={teams} />
               )}
