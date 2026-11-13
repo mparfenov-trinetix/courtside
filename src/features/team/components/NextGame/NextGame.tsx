@@ -5,6 +5,7 @@ import Animated from 'react-native-reanimated';
 
 import { FormDots } from '@/components';
 import type { Game } from '@/lib/espn';
+import { arenaOf } from '@/lib/league';
 import { fonts, palette, type TeamTheme, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 
@@ -29,7 +30,8 @@ function countdown(ms: number) {
   return `${m}m`;
 }
 
-export function NextGame({ schedule, theme }: { schedule: Game[]; theme: TeamTheme }) {
+/** The next game and how the team got here. The arena named under the date is the host's: this team's own on a home game, the opponent's on the road. */
+export function NextGame({ schedule, theme, teamId }: { schedule: Game[]; theme: TeamTheme; teamId: string }) {
   const now = useNow(30_000);
 
   const upcoming = schedule
@@ -45,6 +47,7 @@ export function NextGame({ schedule, theme }: { schedule: Game[]; theme: TeamThe
 
   if (!next) return null;
 
+  const arena = arenaOf(next.home ? teamId : next.opponentId);
   const start = new Date(next.date).getTime();
   const live = now >= start && now - start < GAME_WINDOW_MS;
   const when = new Date(next.date).toLocaleString('en-US', {
@@ -58,47 +61,50 @@ export function NextGame({ schedule, theme }: { schedule: Game[]; theme: TeamThe
   return (
     <Animated.View style={styles.wrap}>
       <Text style={styles.label}>{live ? 'Playing now' : 'Next game'}</Text>
-      <Pressable
-        onPress={() => openDetail({ pathname: '/game/[id]', params: { id: next.id } })}
-        accessibilityRole="button"
-        accessibilityLabel={`${next.home ? 'vs' : 'at'} ${next.opponent}, ${when}`}
-        style={({ pressed }) => [
-          styles.card,
-          { backgroundColor: withAlpha(theme.primary, 0.32), borderColor: withAlpha(theme.accent, 0.35) },
-          pressed && { opacity: 0.8 },
-        ]}>
-        {next.opponentLogo ? (
-          <Image source={next.opponentLogo} style={styles.logo} contentFit="contain" />
-        ) : (
-          <View style={[styles.logo, { backgroundColor: withAlpha(palette.chalk, 0.1), borderRadius: 26 }]} />
-        )}
-        <View style={styles.info}>
-          <Text style={styles.opp} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
-            {next.home ? 'vs' : '@'} {next.opponent}
-          </Text>
-          <Text style={styles.when}>{when}</Text>
-        </View>
-        <View style={styles.right}>
-          {live ? (
-            <View style={styles.livePill}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE</Text>
-            </View>
+      {/* One block: the game that is next, and under it how the team got here. */}
+      <View style={[styles.card, { backgroundColor: withAlpha(theme.primary, 0.32), borderColor: withAlpha(theme.accent, 0.35) }]}>
+        <Pressable
+          onPress={() => openDetail({ pathname: '/game/[id]', params: { id: next.id } })}
+          accessibilityRole="button"
+          accessibilityLabel={`${next.home ? 'vs' : 'at'} ${next.opponent}, ${when}`}
+          style={({ pressed }) => [styles.row, pressed && { opacity: 0.8 }]}>
+          {next.opponentLogo ? (
+            <Image source={next.opponentLogo} style={styles.logo} contentFit="contain" />
           ) : (
-            <>
-              <Text style={[styles.count, { color: theme.accent }]}>{countdown(start - now)}</Text>
-              <Text style={styles.countLabel}>to tip-off</Text>
-            </>
+            <View style={[styles.logo, { backgroundColor: withAlpha(palette.chalk, 0.1), borderRadius: 26 }]} />
           )}
-        </View>
-      </Pressable>
-
-      {form.length > 0 && (
-        <View style={styles.formRow}>
-          <Text style={styles.formLabel}>Form</Text>
-          <FormDots games={form} />
-        </View>
-      )}
+          <View style={styles.info}>
+            <Text style={styles.opp} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
+              {next.home ? 'vs' : '@'} {next.opponent}
+            </Text>
+            <Text style={styles.when}>{when}</Text>
+            {arena ? (
+              <Text style={styles.arena} numberOfLines={1}>
+                {arena.name}
+              </Text>
+            ) : null}
+          </View>
+          <View style={styles.right}>
+            {live ? (
+              <View style={styles.livePill}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={[styles.count, { color: theme.accent }]}>{countdown(start - now)}</Text>
+                <Text style={styles.countLabel}>to tip-off</Text>
+              </>
+            )}
+          </View>
+        </Pressable>
+        {form.length > 0 && (
+          <View style={[styles.formRow, { borderTopColor: withAlpha(theme.accent, 0.18) }]}>
+            <Text style={styles.formLabel}>Form</Text>
+            <FormDots games={form} />
+          </View>
+        )}
+      </View>
     </Animated.View>
   );
 }
@@ -114,18 +120,13 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     paddingHorizontal: 4,
   },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    padding: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
+  card: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 },
   logo: { width: 52, height: 52 },
   info: { flex: 1, gap: 2 },
   opp: { fontFamily: fonts.displayBold, fontSize: 24, color: palette.chalk },
   when: { fontFamily: fonts.body, fontSize: 13, color: withAlpha(palette.chalk, 0.7) },
+  arena: { fontFamily: fonts.body, fontSize: 12, color: palette.muted },
   right: { alignItems: 'flex-end' },
   count: { fontFamily: fonts.display, fontSize: 28 },
   countLabel: { fontFamily: fonts.body, fontSize: 11, color: palette.muted },
@@ -140,6 +141,6 @@ const styles = StyleSheet.create({
   },
   liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: palette.loss },
   liveText: { fontFamily: fonts.bodyBold, fontSize: 12, color: palette.loss, letterSpacing: 0.5 },
-  formRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingHorizontal: 4 },
+  formRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
   formLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: palette.muted, marginRight: 4 },
 });

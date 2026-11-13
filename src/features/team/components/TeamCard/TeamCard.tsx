@@ -29,7 +29,9 @@ const dealIn = new Keyframe({
   },
 }).duration(650);
 
-export const cardHeight = (width: number) => Math.round(width * 1.4);
+/** Height over width. It was 1.3 for a while to bring the day's scores up; once the Home/Away/Arena strip was gone the full 1.4 fits again. */
+export const CARD_ASPECT = 1.4;
+export const cardHeight = (width: number) => Math.round(width * CARD_ASPECT);
 
 type Props = {
   team: Team;

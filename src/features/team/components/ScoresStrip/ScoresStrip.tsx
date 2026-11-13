@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -10,7 +11,8 @@ import { involvesTeam, type ScoreboardGame, type ScoreboardTeam } from '@/lib/es
 import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { openDetail, sharedTag } from '@/navigation';
 
-export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highlightTeamId?: string | null }) {
+/** Today's games around the league; `calendar` adds an "All games ›" link at the right of the title that opens the Calendar on that same day board (the Calendar is also Month and Agenda, so the link names what you get, not the screen). */
+export function ScoresStrip({ accent, highlightTeamId, calendar = false }: { accent: string; highlightTeamId?: string | null; calendar?: boolean }) {
   // Today on the device's own clock, read each render: a drawer screen stays mounted past midnight and must move on to the next day.
   const today = localToday();
   const { games } = useGamesOnDay(today, today);
@@ -33,6 +35,16 @@ export function ScoresStrip({ accent, highlightTeamId }: { accent: string; highl
             <View style={styles.liveDot} />
             <Text style={styles.liveText}>LIVE</Text>
           </View>
+        )}
+        {calendar && (
+          <Pressable
+            onPress={() => router.navigate('/calendar')}
+            accessibilityRole="button"
+            accessibilityLabel="All games"
+            hitSlop={8}
+            style={styles.calendarLink}>
+            <Text style={[styles.calendarText, { color: accent }]}>All games ›</Text>
+          </Pressable>
         )}
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.list}>
@@ -99,6 +111,8 @@ const styles = StyleSheet.create({
   },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: palette.win },
   liveText: { fontFamily: fonts.bodyBold, fontSize: 10, color: palette.win, letterSpacing: 0.5 },
+  calendarLink: { marginLeft: 'auto' },
+  calendarText: { fontFamily: fonts.bodySemi, fontSize: 14 },
   list: { gap: 8, paddingHorizontal: 16 },
   card: {
     width: 138,

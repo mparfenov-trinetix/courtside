@@ -10,7 +10,8 @@ import { TILES, RATES } from './constants';
 
 const rankColor = (rank: number) => (rank <= 10 ? palette.win : rank > 20 ? palette.loss : palette.muted);
 
-export function TeamSeasonStats({ teamId, accent }: { teamId: string; accent: string }) {
+/** `home` and `away` are the season's records at each ("2-2"): two rows at the top of the table, without a league rank. */
+export function TeamSeasonStats({ teamId, accent, home, away }: { teamId: string; accent: string; home?: string; away?: string }) {
   const { data: rows } = useLeagueTeamStats();
   const me = rows?.find((r) => r.teamId === teamId);
   if (!rows || !me || me.gp === 0) return null;
@@ -32,6 +33,15 @@ export function TeamSeasonStats({ teamId, accent }: { teamId: string; accent: st
         })}
       </View>
       <View style={styles.card}>
+        {[['Home record', home], ['Away record', away]].map(([label, value]) =>
+          value ? (
+            <View key={label} style={[styles.rateRow, styles.rateBorder]}>
+              <Text style={styles.rateLabel}>{label}</Text>
+              <Text style={styles.rateValue}>{value}</Text>
+              <View style={styles.rank} />
+            </View>
+          ) : null,
+        )}
         {RATES.map((key, i) => {
           const m = metricByKey(key);
           const rank = rankOf(rows, teamId, m)!;

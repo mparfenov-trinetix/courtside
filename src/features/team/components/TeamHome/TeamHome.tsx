@@ -7,15 +7,16 @@ import { scheduleOnRN } from 'react-native-worklets';
 import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { TeamMark , CalendarIcon, CompareIcon, PeopleIcon, SearchIcon, StarIcon , IconButton, ScreenHeader, SeasonSheet, Skeleton, SkeletonGroup, TITLE_INSET, Glide, GLIDE, availableSeasons, headerHeight } from '@/components';
+import { TeamMark , CompareIcon, PeopleIcon, SearchIcon, StarIcon , IconButton, ScreenHeader, SeasonSheet, Skeleton, SkeletonGroup, TITLE_INSET, Glide, GLIDE, availableSeasons, headerHeight } from '@/components';
 import { MyCupCard } from '@/features/cup';
 import { NextGame } from '../NextGame';
 import { ScoresStrip } from '../ScoresStrip';
 import { TeamSwitcher } from '../TeamSwitcher';
 import { SeasonSeries } from '../SeasonSeries';
 import { goBack, sharedTag, openDetail, pushOnce } from '@/navigation';
+import { ArenaMap } from '../ArenaMap';
 import { CatchUp } from '../CatchUp';
-import { cardHeight, TeamCard } from '../TeamCard';
+import { CARD_ASPECT, cardHeight, TeamCard } from '../TeamCard';
 import { motionOf, PULL_TO_REFRESH, useRefreshAnimation } from '../TeamRefresh';
 import { TeamHighlights } from '../TeamHighlights';
 import { TeamSeasonStats } from '../TeamSeasonStats';
@@ -51,7 +52,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
   const theme = teamTheme(team);
   const rival = useTeam(pushed && favoriteTeamId !== teamId ? favoriteTeamId : null);
 
-  const cardWidth = Math.round(Math.min(width * 0.78, 360, (height - insets.top - insets.bottom - 230) / 1.4));
+  const cardWidth = Math.round(Math.min(width * 0.78, 360, (height - insets.top - insets.bottom - 230) / CARD_ASPECT));
   const tilt = useTilt({ width: cardWidth, height: cardHeight(cardWidth) }, { scrollSafe: true });
   // Pull the page down past the threshold and let go: the card plays the team's own refresh (see TeamRefresh/motions.ts).
   const { refreshing, refresh } = useManualRefresh([['team', teamId], ['schedule', teamId], ['standings'], ['leagueTeamStats'], ['scoreboard']], REFRESH_MIN_MS);
@@ -144,14 +145,6 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, bgStyle, headerFill]} />
       <ScreenHeader
         onBack={pushed ? goBack : undefined}
-        // Calendar is one of the two main screens: one tap from the Team card, next to the menu.
-        afterMenu={
-          pushed ? undefined : (
-            <IconButton label="Open the calendar" onPress={() => router.navigate('/calendar')}>
-              <CalendarIcon color={palette.chalk} />
-            </IconButton>
-          )
-        }
         centerTitle
         title={
           <Animated.View style={[styles.headerTitle, titleStyle]} pointerEvents="none">
@@ -225,19 +218,12 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
           </Glide>
         )}
 
-        {/* Team stats row */}
-        <Animated.View layout={GLIDE} style={styles.splits}>
-          <Split label="Home" value={detail?.homeRecord} />
-          <Split label="Away" value={detail?.awayRecord} />
-          <Split label="Arena" value={detail?.venue} wide />
-        </Animated.View>
-
         {/* The page reads top down in two zones. What is on now: what is coming (and, on a rival's page, how it has gone against you), today's
             scores, the Cup while it is on. Then the team itself: how good it is (the season numbers with league ranks), who carries it, how it has been doing,
             the clips, the odds, your own lists. */}
         {schedule && schedule.length > 0 && (
           <Glide>
-            <NextGame schedule={schedule} theme={theme} />
+            <NextGame schedule={schedule} theme={theme} teamId={team.id} />
           </Glide>
         )}
 
@@ -249,7 +235,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
 
         {/* Each block is a Glide: a section above that turns up late (the Cup, the numbers, the best player, the odds) fades in and these glide down instead of jumping. */}
         <Glide>
-          <ScoresStrip accent={theme.accent} highlightTeamId={team.id} />
+          <ScoresStrip accent={theme.accent} highlightTeamId={team.id} calendar={!pushed} />
         </Glide>
 
         <Glide>
@@ -257,7 +243,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         </Glide>
 
         <Glide>
-          <TeamSeasonStats teamId={team.id} accent={theme.accent} />
+          <TeamSeasonStats teamId={team.id} accent={theme.accent} home={detail?.homeRecord} away={detail?.awayRecord} />
         </Glide>
 
         <Glide>
@@ -302,6 +288,10 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         </Glide>
 
         <Glide>
+          <ArenaMap teamId={team.id} schedule={schedule} accent={theme.accent} />
+        </Glide>
+
+        <Glide>
           <Watchlist accent={theme.accent} teamId={team.id} teamAbbr={team.abbreviation} />
         </Glide>
 
@@ -340,17 +330,6 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         title={`${team.name}, by season`}
       />
     </Animated.View>
-  );
-}
-
-function Split({ label, value, wide }: { label: string; value?: string; wide?: boolean }) {
-  return (
-    <View style={wide ? { flex: 1 } : undefined}>
-      <Text style={styles.splitLabel}>{label}</Text>
-      <Text style={styles.splitValue} numberOfLines={1}>
-        {value ?? '–'}
-      </Text>
-    </View>
   );
 }
 
@@ -419,22 +398,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 12,
     paddingTop: 4,
-  },
-  splits: {
-    flexDirection: 'row',
-    gap: 24,
-    paddingHorizontal: 24,
-    marginBottom: 16,
-  },
-  splitLabel: {
-    fontFamily: fonts.body,
-    fontSize: 12,
-    color: palette.muted,
-  },
-  splitValue: {
-    fontFamily: fonts.displayBold,
-    fontSize: 20,
-    color: palette.chalk,
   },
   rosterButton: {
     height: 54,

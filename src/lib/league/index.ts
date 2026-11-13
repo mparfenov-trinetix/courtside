@@ -16,3 +16,4 @@ export * from './pickem';
 export * from './events';
 export * from './season-result';
 export * from './series-stats';
+export * from './arenas';

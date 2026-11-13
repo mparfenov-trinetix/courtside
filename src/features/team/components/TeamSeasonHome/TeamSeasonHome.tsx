@@ -11,7 +11,7 @@ import { conferenceStanding, PLAYOFFS_FROM, playoffTag, seasonResult } from '@/l
 import { fonts, fontSize, palette, space, surfaces, teamTheme, withAlpha } from '@/lib/theme';
 import { goBack, openDetail } from '@/navigation';
 import { SeasonResultCard } from '../SeasonResultCard';
-import { cardHeight, TeamCard } from '../TeamCard';
+import { CARD_ASPECT, cardHeight, TeamCard } from '../TeamCard';
 import { TeamStarCard } from '../TeamStarCard';
 
 /** "37-45": wins and losses of a list of finished games. */
@@ -39,7 +39,7 @@ export function TeamSeasonHome({ teamId, season: initial }: { teamId: string; se
   const { data: standings, isPending: standingsPending } = useStandings(season);
   const { data: games, isPending: gamesPending } = useSeasonGames(teamId, season);
 
-  const cardWidth = Math.round(Math.min(width * 0.78, 360, (height - insets.top - insets.bottom - 230) / 1.4));
+  const cardWidth = Math.round(Math.min(width * 0.78, 360, (height - insets.top - insets.bottom - 230) / CARD_ASPECT));
   const tilt = useTilt({ width: cardWidth, height: cardHeight(cardWidth) }, { scrollSafe: true });
 
   // The title comes in once the card is mostly gone and goes out only when you are back almost at the top (as on the team page).
