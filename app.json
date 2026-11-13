@@ -10,14 +10,14 @@
     "backgroundColor": "#0D1B2E",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.mykolaparfenov.courtside",
+      "bundleIdentifier": "com.mykolaparfenov.courtsideapp",
       "appleTeamId": "5K6PXTLH38",
       "config": {
         "usesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.mykolaparfenov.courtside",
+      "package": "com.mykolaparfenov.courtsideapp",
       "adaptiveIcon": {
         "backgroundColor": "#0D1B2E",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -40,7 +40,7 @@
       [
         "expo-widgets",
         {
-          "groupIdentifier": "group.com.mykolaparfenov.courtside",
+          "groupIdentifier": "group.com.mykolaparfenov.courtsideapp",
           "widgets": [
             {
               "name": "NextGameWidget",

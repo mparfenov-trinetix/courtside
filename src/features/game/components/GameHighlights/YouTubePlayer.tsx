@@ -4,7 +4,7 @@ import { WebView } from 'react-native-webview';
 import { youtubeWatchUrl } from '@/lib/youtube';
 
 /** The page that holds the iframe claims to be the app (YouTube answers a page that claims to be youtube.com with error 152, and one with no referrer with 153). */
-const ORIGIN = 'https://com.mykolaparfenov.courtside';
+const ORIGIN = 'https://com.mykolaparfenov.courtsideapp';
 
 const playerHtml = (videoId: string) =>
   `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{position:absolute;inset:0;width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&fs=1&origin=${encodeURIComponent(ORIGIN)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></body></html>`;
