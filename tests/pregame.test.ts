@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { moneylineToDecimal, normalizeGameSummary } from '../src/lib/espn';
+import { moneylineToDecimal, normalizeGameSummary, normalizePastPregame } from '../src/lib/espn';
 import type { HeadToHeadGame } from '../src/lib/espn';
 import { buildCatchUp, conferenceStanding, summarizeHeadToHead, visibleSeeds } from '../src/lib/league';
 import { gameHeat, parseLiveStatus } from '../src/lib/game';
@@ -121,4 +121,23 @@ test('the last minute is written with a decimal and still parses (4th and overti
   assert.deepEqual(parseLiveStatus('2:15 - 2OT'), { period: 6, seconds: 135 });
   assert.equal(gameHeat(100, 99, '12.0 - 4th').level, 'clutch');
   assert.equal(gameHeat(100, 99, '4:00 - OT').level, 'clutch');
+});
+
+test('a finished game keeps its pregame chances and closing line in the core API', () => {
+  const past = JSON.parse(readFileSync(new URL('./fixtures/game-past-pregame.json', import.meta.url), 'utf8'));
+  const { winProb, odds } = normalizePastPregame(past.predictor, past.odds);
+  // The predictor lists only the away side (13.7%): the home side is the rest of 100.
+  assert.ok(winProb);
+  assert.ok(Math.abs(winProb.away - 13.667) < 0.01);
+  assert.ok(Math.abs(winProb.home + winProb.away - 100) < 1e-9);
+  assert.equal(odds?.provider, 'DraftKings');
+  assert.equal(odds?.details, 'PHI -10.5');
+  assert.equal(odds?.overUnder, 240.5);
+  assert.equal(odds?.home.moneyLine, -518);
+  assert.equal(odds?.home.favorite, true);
+  assert.equal(odds?.away.decimal, 4.94);
+});
+
+test('a game with no published pregame data gives nothing, not a throw', () => {
+  assert.deepEqual(normalizePastPregame(undefined, undefined), { winProb: undefined, odds: undefined });
 });

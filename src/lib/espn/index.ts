@@ -14,7 +14,7 @@ export { fetchStandings } from './standings';
 export type { ConferenceStandings, StandingEntry } from './standings';
 export { clipLength, normalizeVideos, sharpSource, sharpestVariant, videoAllowed, videosAbout } from './video';
 export type { GameVideo } from './video';
-export { fetchGameSummary, fetchGameVideos, moneylineToDecimal, normalizeGameSummary } from './game';
+export { fetchGameSummary, fetchGameVideos, fetchPastPregame, moneylineToDecimal, normalizeGameSummary, normalizePastPregame } from './game';
 export type { BoxScorePlayer, BoxScoreTeam, FormGame, GameInfo, GameOdds, GameSummary, Injury, Play, Pregame, SideOdds } from './game';
 export { fetchScoreboardByDate, involvesTeam } from './scoreboard';
 export type { ScoreboardGame, ScoreboardTeam } from './scoreboard';

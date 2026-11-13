@@ -3,4 +3,5 @@ export * from './PickCard';
 export * from './PickGameCard';
 export * from './PickRecord';
 export * from './PickRow';
+export * from './PickSplit';
 export * from './PickemSync';

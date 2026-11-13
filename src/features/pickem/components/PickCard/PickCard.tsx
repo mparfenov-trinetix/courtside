@@ -1,7 +1,8 @@
+import { Image } from 'expo-image';
 import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Card, SectionLabel } from '@/components';
+import { Card, PickMark, SectionLabel } from '@/components';
 import { favoriteOf, isPickableKind, resultOf, winnerFromScores, type PickableGame } from '@/lib/league';
 import type { GameKind, Pregame } from '@/lib/espn';
 import { fonts, fontSize, palette, space } from '@/lib/theme';
@@ -9,6 +10,15 @@ import { settleStoredPicks, usePick } from '@/state';
 import { PickButtons } from '../PickButtons';
 
 type Side = { id: string; abbr: string; logo: string; color: string };
+
+/** A finished game settles the pick made on it from its own score, so the record is right the moment its page opens. Does nothing without a pick. */
+export function useSettlePick(gameId: string, awayId: string, homeId: string, scores: { away?: number; home?: number } | undefined, completed: boolean) {
+  const pick = usePick(gameId);
+  const winner = completed ? winnerFromScores({ id: awayId, score: scores?.away }, { id: homeId, score: scores?.home }) : undefined;
+  useEffect(() => {
+    if (winner && pick && !pick.winnerId) settleStoredPicks({ [gameId]: winner });
+  }, [winner, pick, gameId]);
+}
 
 /**
  * "Your pick" on the game page. Before tip-off: the two buttons (with ESPN's win chance and who is favored), and the pick can be
@@ -37,10 +47,7 @@ export function PickCard({
   started: boolean;
 }) {
   const pick = usePick(gameId);
-  const winner = completed ? winnerFromScores({ id: away.id, score: scores?.away }, { id: home.id, score: scores?.home }) : undefined;
-  useEffect(() => {
-    if (winner && pick && !pick.winnerId) settleStoredPicks({ [gameId]: winner });
-  }, [winner, pick, gameId]);
+  useSettlePick(gameId, away.id, home.id, scores, completed);
 
   if (!date || !isPickableKind(kind)) return null;
   // A game that is on or over has no use for the buttons unless there is a pick to show.
@@ -70,6 +77,23 @@ export function PickCard({
     tone = palette.loss;
   }
 
+  // Once the game has started the two big tiles have nothing left to do: one row says what you picked and how it went.
+  if (started && picked && pick) {
+    return (
+      <View style={styles.wrap}>
+        <Card padded={false} style={styles.compact}>
+          <View style={styles.logo}>
+            <Image source={picked.logo} style={StyleSheet.absoluteFill} contentFit="contain" />
+            <PickMark pick={pick} teamId={picked.id} size={14} />
+          </View>
+          <Text style={[styles.compactLine, { color: tone === palette.muted ? palette.chalk : tone }]} numberOfLines={1}>
+            {line}
+          </Text>
+        </Card>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.wrap}>
       <SectionLabel style={styles.label}>Who will win?</SectionLabel>
@@ -84,5 +108,8 @@ export function PickCard({
 const styles = StyleSheet.create({
   wrap: {},
   label: { marginBottom: space.sm },
+  compact: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md },
+  logo: { width: 30, height: 30 },
+  compactLine: { flex: 1, fontFamily: fonts.bodySemi, fontSize: fontSize.label },
   line: { fontFamily: fonts.bodySemi, fontSize: fontSize.label, marginTop: space.md, textAlign: 'center' },
 });

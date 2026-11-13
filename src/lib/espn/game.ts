@@ -1,4 +1,4 @@
-import { BASE, getJson, report } from './client';
+import { BASE, CORE, getJson, HttpError, report } from './client';
 import type { Json } from './client';
 import { headshotUrl } from './legend-photos';
 import { normalizeVideos, type GameVideo } from './video';
@@ -310,29 +310,65 @@ export function moneylineToDecimal(ml: number): number {
   return Math.round(dec * 100) / 100;
 }
 
-function normalizePregame(json: Json, homeId: string, awayId: string): Pregame {
-  const pct = (v: unknown) => {
-    const n = typeof v === 'string' ? parseFloat(v) : typeof v === 'number' ? v : NaN;
-    return Number.isFinite(n) ? n : undefined;
-  };
-  const homeP = pct(json.predictor?.homeTeam?.gameProjection);
-  const awayP = pct(json.predictor?.awayTeam?.gameProjection);
-  const winProb = homeP != null && awayP != null ? { home: homeP, away: awayP } : undefined;
+const pctOf = (v: unknown) => {
+  const n = typeof v === 'string' ? parseFloat(v) : typeof v === 'number' ? v : NaN;
+  return Number.isFinite(n) ? n : undefined;
+};
 
-  const pick: Json | undefined = (json.pickcenter ?? []).find((p: Json) => p.homeTeamOdds || p.awayTeamOdds);
+/** One sportsbook's line, from a `pickcenter` entry of the summary or an item of the core API's `odds` list (the same fields). */
+function normalizeOdds(pick: Json | undefined): GameOdds | undefined {
+  if (!pick) return undefined;
   const side = (o: Json | undefined): SideOdds => {
     const ml = typeof o?.moneyLine === 'number' ? o.moneyLine : undefined;
     return { moneyLine: ml, decimal: ml != null && ml !== 0 ? moneylineToDecimal(ml) : undefined, favorite: o?.favorite === true };
   };
-  const odds: GameOdds | undefined = pick
-    ? {
-        provider: pick.provider?.name ?? 'Sportsbook',
-        details: typeof pick.details === 'string' ? pick.details : undefined,
-        overUnder: typeof pick.overUnder === 'number' ? pick.overUnder : undefined,
-        home: side(pick.homeTeamOdds),
-        away: side(pick.awayTeamOdds),
-      }
-    : undefined;
+  return {
+    provider: pick.provider?.name ?? 'Sportsbook',
+    details: typeof pick.details === 'string' ? pick.details : undefined,
+    overUnder: typeof pick.overUnder === 'number' ? pick.overUnder : undefined,
+    home: side(pick.homeTeamOdds),
+    away: side(pick.awayTeamOdds),
+  };
+}
+
+/**
+ * What ESPN said before tip-off, read after the game: the summary drops its `predictor` and `pickcenter` once a game has started, but the
+ * core API keeps them (`.../competitions/{id}/predictor` and `/odds`; the line is the closing one). The predictor lists the statistics of
+ * one side only, so the other is the rest of 100.
+ */
+export function normalizePastPregame(predictor: Json | undefined, odds: Json | undefined): Pick<Pregame, 'winProb' | 'odds'> {
+  const projection = (team: Json | undefined) => pctOf(((team?.statistics ?? []) as Json[]).find((s) => s.name === 'gameProjection')?.value);
+  const homeP = projection(predictor?.homeTeam);
+  const awayP = projection(predictor?.awayTeam);
+  const home = homeP ?? (awayP != null ? 100 - awayP : undefined);
+  const away = awayP ?? (homeP != null ? 100 - homeP : undefined);
+  const items = (odds?.items ?? []) as Json[];
+  return {
+    winProb: home != null && away != null ? { home, away } : undefined,
+    odds: normalizeOdds(items.find((p) => p.homeTeamOdds || p.awayTeamOdds)),
+  };
+}
+
+/** A finished game's pregame chances and closing line (`normalizePastPregame`); a game ESPN has neither for gives an empty object. */
+export async function fetchPastPregame(gameId: string): Promise<Pick<Pregame, 'winProb' | 'odds'>> {
+  const read = async (part: string) => {
+    try {
+      return await getJson(`${CORE}/events/${gameId}/competitions/${gameId}/${part}`);
+    } catch (error) {
+      if (error instanceof HttpError) return undefined; // not published for this game
+      throw error;
+    }
+  };
+  const [predictor, odds] = await Promise.all([read('predictor'), read('odds')]);
+  return normalizePastPregame(predictor, odds);
+}
+
+function normalizePregame(json: Json, homeId: string, awayId: string): Pregame {
+  const homeP = pctOf(json.predictor?.homeTeam?.gameProjection);
+  const awayP = pctOf(json.predictor?.awayTeam?.gameProjection);
+  const winProb = homeP != null && awayP != null ? { home: homeP, away: awayP } : undefined;
+
+  const odds = normalizeOdds((json.pickcenter ?? []).find((p: Json) => p.homeTeamOdds || p.awayTeamOdds));
 
   const form: Record<string, FormGame[]> = {};
   for (const t of (json.lastFiveGames ?? []) as Json[]) {

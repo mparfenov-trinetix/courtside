@@ -1,0 +1,170 @@
+{
+ "predictor": {
+  "name": "Chicago Bulls at Philadelphia 76ers",
+  "shortName": "CHI @ PHI",
+  "homeTeam": {
+   "team": {}
+  },
+  "awayTeam": {
+   "team": {},
+   "statistics": [
+    {
+     "name": "gameProjection",
+     "displayName": "WIN PROB",
+     "shortDisplayName": "GP",
+     "description": "Team's predicted win percentage in this game at time of given BPI run",
+     "abbreviation": "GP",
+     "value": 13.667000000000002,
+     "displayValue": "13.7"
+    },
+    {
+     "name": "matchupQuality",
+     "displayName": "Matchup Quality",
+     "shortDisplayName": "MQ",
+     "description": "A measure of projected competitiveness and excitement in the game, using a 0 to 100 scale, with 100 as the most exciting",
+     "abbreviation": "MQ",
+     "value": 33.185,
+     "displayValue": "33.185"
+    },
+    {
+     "name": "teamChanceLoss",
+     "displayName": "Team Chance Loss",
+     "shortDisplayName": "Chance Loss",
+     "description": "",
+     "abbreviation": "TCL",
+     "value": 86.333,
+     "displayValue": "86.3"
+    },
+    {
+     "name": "teamPredPtDiff",
+     "displayName": "Team Pred Pt Diff",
+     "shortDisplayName": "Pred Pt Diff",
+     "description": "",
+     "abbreviation": "TPPD",
+     "value": -14.583,
+     "displayValue": "-14.583"
+    },
+    {
+     "name": "teamExpectedPts",
+     "displayName": "Team Expected Pts",
+     "shortDisplayName": "Expected Pts",
+     "description": "",
+     "abbreviation": "TEP",
+     "value": 110.401,
+     "displayValue": "110.401"
+    },
+    {
+     "name": "oppExpectedPts",
+     "displayName": "Opp Expected Pts",
+     "shortDisplayName": "Opp Expected Pts",
+     "description": "",
+     "abbreviation": "OEP",
+     "value": 124.984,
+     "displayValue": "124.984"
+    }
+   ]
+  }
+ },
+ "odds": {
+  "count": 1,
+  "pageIndex": 1,
+  "pageSize": 25,
+  "pageCount": 1,
+  "items": [
+   {
+    "provider": {
+     "id": "100",
+     "name": "DraftKings",
+     "priority": 1
+    },
+    "details": "PHI -10.5",
+    "overUnder": 240.5,
+    "spread": -10.5,
+    "overOdds": -110.0,
+    "underOdds": -110.0,
+    "awayTeamOdds": {
+     "favorite": false,
+     "underdog": true,
+     "moneyLine": 394,
+     "spreadOdds": -108.0,
+     "close": {
+      "pointSpread": {
+       "alternateDisplayValue": "+10.5",
+       "american": "+10.5"
+      },
+      "spread": {
+       "value": 1.92,
+       "displayValue": "25/27",
+       "alternateDisplayValue": "-108",
+       "decimal": 1.92,
+       "fraction": "25/27",
+       "american": "-108"
+      },
+      "moneyLine": {
+       "value": 4.94,
+       "displayValue": "197/50",
+       "alternateDisplayValue": "+394",
+       "decimal": 4.94,
+       "fraction": "197/50",
+       "american": "+394"
+      }
+     },
+     "team": {}
+    },
+    "homeTeamOdds": {
+     "favorite": true,
+     "underdog": false,
+     "moneyLine": -518,
+     "spreadOdds": -112.0,
+     "close": {
+      "pointSpread": {
+       "alternateDisplayValue": "-10.5",
+       "american": "-10.5"
+      },
+      "spread": {
+       "value": 1.89,
+       "displayValue": "25/28",
+       "alternateDisplayValue": "-112",
+       "decimal": 1.89,
+       "fraction": "25/28",
+       "american": "-112"
+      },
+      "moneyLine": {
+       "value": 1.19,
+       "displayValue": "50/259",
+       "alternateDisplayValue": "-518",
+       "decimal": 1.19,
+       "fraction": "50/259",
+       "american": "-518"
+      }
+     },
+     "team": {}
+    },
+    "moneylineWinner": false,
+    "spreadWinner": false,
+    "close": {
+     "over": {
+      "value": 1.9,
+      "displayValue": "10/11",
+      "alternateDisplayValue": "-110",
+      "decimal": 1.9,
+      "fraction": "10/11",
+      "american": "-110"
+     },
+     "under": {
+      "value": 1.9,
+      "displayValue": "10/11",
+      "alternateDisplayValue": "-110",
+      "decimal": 1.9,
+      "fraction": "10/11",
+      "american": "-110"
+     },
+     "total": {
+      "alternateDisplayValue": "240.5",
+      "american": "240.5"
+     }
+    }
+   }
+  ]
+ }
+}

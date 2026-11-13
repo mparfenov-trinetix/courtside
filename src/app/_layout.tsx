@@ -63,7 +63,7 @@ const persister = createAsyncStoragePersister({
 
 // Slow-changing, small payloads are restored on launch. Game summaries are big and live games change,
 // but a *finished* game never does, so the latest few of those are kept too and open instantly, offline.
-const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'playerCareer', 'leagueTeamStats', 'allStars', 'allStarWeekend', 'draft', 'draftee', 'seasonAwards', 'cup', 'headToHead', 'playerProfile', 'playerBio', 'playerGameLog', 'teamSeason', 'playoffSeeds']);
+const PERSISTED = new Set(['teams', 'team', 'roster', 'schedule', 'standings', 'leaders', 'playerStats', 'playerCareer', 'leagueTeamStats', 'allStars', 'allStarWeekend', 'draft', 'draftee', 'seasonAwards', 'cup', 'headToHead', 'playerProfile', 'playerBio', 'playerGameLog', 'teamSeason', 'playoffSeeds', 'gamePregame']);
 const KEPT_FINISHED_GAMES = 8;
 
 const isFinished = (q: Query) => !!(q.state.data as { completed?: boolean } | undefined)?.completed;

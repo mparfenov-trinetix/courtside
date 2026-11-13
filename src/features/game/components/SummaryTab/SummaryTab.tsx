@@ -2,7 +2,9 @@ import { View } from "react-native";
 import Animated from "react-native-reanimated";
 
 import { Collapsible, HeadToHead, Highlights } from "@/components";
-import { PickCard } from "@/features/pickem";
+import { PickCard, PickSplit, useSettlePick } from "@/features/pickem";
+import { usePastPregame } from "@/hooks";
+import { favoriteOf, isPickableKind } from "@/lib/league";
 import { ClutchCard } from "../ClutchCard";
 import { GameDuel } from "../GameDuel";
 import { GameFlow } from "../GameFlow";
@@ -12,6 +14,7 @@ import { GameInfoCard, GameLeaders, InjuryReport } from "../GameLeaders";
 import { KeyMoments } from "../KeyMoments";
 import { MatchupPlace } from "../MatchupPlace";
 import { Pregame } from "../Pregame";
+import { PregameOdds } from "../PregameOdds";
 import { TeamStatsCard } from "../TeamStatsCard";
 import { Timeouts } from "../Timeouts";
 import type {
@@ -227,8 +230,36 @@ export function SummaryTab({
 
   // One order for every game, live or finished, so a section is always where you left it: the team numbers and the leaders first (the
   // period filter in the bar above applies to both), then the clips (the game's video once it is over), then the story of the game.
-  // A game you picked a side of keeps your call at the top once it is on or over, with how it went.
-  const pickCard = hasStarted && (
+  // A game you picked a side of keeps your call once it is on or over, with how it went, as one row at the bottom (live or finished).
+  // A finished game shows what ESPN and the book said before tip-off in the same cards as the Pregame (the summary drops them once the
+  // game starts; the core API keeps them), your call made on the win probability's two halves, which now show how it went.
+  const past = usePastPregame(gameId, completed).data;
+  useSettlePick(gameId, away.team.id, home.team.id, { away: away.score, home: home.score }, completed);
+  const canPick = !!info.date && isPickableKind(kind);
+  const pastCard = completed && past && (past.winProb || past.odds) && (
+    <View key="past" style={{ paddingHorizontal: 16, marginBottom: 14 }}>
+      <PregameOdds
+        away={awaySide}
+        home={homeSide}
+        pregame={past}
+        past
+        pickable={
+          canPick && info.date
+            ? (pct) => (
+                <PickSplit
+                  game={{ id: gameId, date: info.date!, away: { id: awaySide.id, abbr: awaySide.abbr, logo: awaySide.logo }, home: { id: homeSide.id, abbr: homeSide.abbr, logo: homeSide.logo } }}
+                  colors={{ away: awayColor, home: homeColor }}
+                  favoriteId={favoriteOf(awaySide.id, homeSide.id, past)}
+                  pct={pct}
+                />
+              )
+            : undefined
+        }
+      />
+    </View>
+  );
+  // The one-row pick stands in only where the cards above cannot hold the call (live, or a final with no win probability).
+  const pickCard = hasStarted && !(pastCard && past?.winProb && canPick) && (
     <View key="pick" style={{ paddingHorizontal: 16, marginBottom: 14 }}>
       <PickCard
         gameId={gameId}
@@ -243,11 +274,11 @@ export function SummaryTab({
     </View>
   );
 
-  const ordered = [pickCard, stats, leaders, duel, completed ? media : highlights, recapCard, flowChart, clutch, moments, timeouts];
+  const body = [stats, leaders, duel, completed ? media : highlights, recapCard, flowChart, clutch, moments, timeouts];
 
   return (
     <View>
-      {ordered}
+      {body}
       {!hasStarted && (
         <Pregame
           gameId={gameId}
@@ -271,6 +302,10 @@ export function SummaryTab({
           <HeadToHead a={awaySide} b={homeSide} flush />
         </View>
       )}
+
+      {/* Your call is a one-line footnote, after the numbers and the meetings: the Pick'em screen is where picks are managed. */}
+      {pastCard}
+      {pickCard}
 
       {hasStarted && (
         <View>

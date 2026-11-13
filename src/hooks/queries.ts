@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import {
   fetchGameSummary,
   fetchGameVideos,
+  fetchPastPregame,
   fetchHeadToHead,
   fetchAllStars,
   fetchAllStarWeekend,
@@ -268,6 +269,19 @@ export function useGamesOnDay(day: Date, today: Date, enabled = true) {
   }
   const refetch = () => Promise.all([a.refetch(), b.refetch()]);
   return { games, isPending: a.isPending || b.isPending, error: a.error ?? b.error, refetch, keys: second ? [first, second] : [first] };
+}
+
+/**
+ * What ESPN said before tip-off about a game that is over (win chance and closing line), read from the core API because the summary drops
+ * it once the game has started. Never changes, so it is read once and kept (and persisted).
+ */
+export function usePastPregame(gameId: string, enabled: boolean) {
+  return useQuery({
+    enabled,
+    queryKey: ['gamePregame', gameId],
+    queryFn: () => fetchPastPregame(gameId),
+    staleTime: Infinity,
+  });
 }
 
 /**

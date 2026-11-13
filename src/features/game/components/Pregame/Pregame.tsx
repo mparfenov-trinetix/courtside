@@ -2,8 +2,9 @@ import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { GLIDE, HeadToHead, type H2HTeam } from '@/components';
-import { PickCard } from '@/features/pickem';
+import { PickCard, PickSplit } from '@/features/pickem';
 import type { GameInfo, GameKind, Pregame as PregameData } from '@/lib/espn';
+import { favoriteOf, isPickableKind } from '@/lib/league';
 import { GameInfoCard, InjuryReport } from '../GameLeaders';
 import { KeyMatchup } from '../KeyMatchup';
 import { MatchupForm } from '../MatchupForm';
@@ -37,15 +38,30 @@ export function Pregame({
   note?: string;
 }) {
   const teams = [away, home].map((t) => ({ id: t.id, abbr: t.abbr, color: t.color }));
+  // With a win probability, your call is made right on its two numbers; without one the pick card stands on its own.
+  const canPick = !!date && isPickableKind(kind);
+  const inline = canPick && !!data.winProb;
+  const game = date ? { id: gameId, date, away: { id: away.id, abbr: away.abbr, logo: away.logo }, home: { id: home.id, abbr: home.abbr, logo: home.logo } } : undefined;
   return (
     <View style={{ marginBottom: 18 }}>
       <View style={{ paddingHorizontal: 16 }}>
-        <PregameOdds away={away} home={home} pregame={data} />
+        <PregameOdds
+          away={away}
+          home={home}
+          pregame={data}
+          pickable={
+            inline && game
+              ? (pct) => <PickSplit game={game} colors={{ away: away.color, home: home.color }} favoriteId={favoriteOf(away.id, home.id, data)} pct={pct} />
+              : undefined
+          }
+        />
       </View>
-      {/* Your call, right under who is favored: the chances are the thing to weigh it against. */}
-      <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
-        <PickCard gameId={gameId} date={date} away={away} home={home} kind={kind} pregame={data} completed={false} started={false} />
-      </View>
+      {/* No win probability to hold the buttons: the pick card, right under what there is on who is favored. */}
+      {!inline && (
+        <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
+          <PickCard gameId={gameId} date={date} away={away} home={home} kind={kind} pregame={data} completed={false} started={false} />
+        </View>
+      )}
       {/* The best player of each side, face to face: the hook of the game, so right after who is favored. Lays itself out with its own padding. */}
       <View style={{ marginTop: 18 }}>
         <KeyMatchup awayId={away.id} homeId={home.id} injuries={info.injuries} />

@@ -1,17 +1,33 @@
 import { Image } from 'expo-image';
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import type { Pregame, SideOdds } from '@/lib/espn';
 import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
-import { ODDS_NOTE } from './constants';
 
 type Side = { abbr: string; logo: string; color: string };
 
 const american = (n?: number) => (n == null ? '' : n > 0 ? `+${n}` : String(n));
 
-/** Before tip-off: ESPN's win chance for each side and, when a book has posted a line, its prices. */
-export function PregameOdds({ away, home, pregame }: { away: Side; home: Side; pregame: Pick<Pregame, 'winProb' | 'odds'> }) {
+/**
+ * Before tip-off: ESPN's win chance for each side and, when a book has posted a line, its prices. `pickable` swaps the two plain
+ * percentages for whatever it draws (the game page puts the pick buttons there, so the call sits in the card that holds the chances).
+ */
+export function PregameOdds({
+  away,
+  home,
+  pregame,
+  pickable,
+  past = false,
+}: {
+  away: Side;
+  home: Side;
+  pregame: Pick<Pregame, 'winProb' | 'odds'>;
+  pickable?: (pct: { away: number; home: number }) => ReactNode;
+  /** The game is over: these are what ESPN and the book said before it, and the line is the closing one. */
+  past?: boolean;
+}) {
   const { winProb, odds } = pregame;
   if (!winProb && !odds) return null;
   // Rounded so the two always add up to 100.
@@ -22,28 +38,31 @@ export function PregameOdds({ away, home, pregame }: { away: Side; home: Side; p
     <Animated.View style={styles.wrap}>
       {winProb && (
         <>
-          <Text style={styles.title}>Win probability</Text>
+          <Text style={styles.title}>{past ? 'Pregame win probability · ESPN' : 'Win probability · ESPN'}</Text>
           <View style={styles.card}>
-            <View style={styles.labels}>
-              <Text style={[styles.pct, { color: away.color }]}>
-                {away.abbr} {awayPct}%
-              </Text>
-              <Text style={[styles.pct, { color: home.color }]}>
-                {homePct}% {home.abbr}
-              </Text>
-            </View>
+            {pickable ? (
+              pickable({ away: awayPct, home: homePct })
+            ) : (
+              <View style={styles.labels}>
+                <Text style={[styles.pct, { color: away.color }]}>
+                  {away.abbr} {awayPct}%
+                </Text>
+                <Text style={[styles.pct, { color: home.color }]}>
+                  {homePct}% {home.abbr}
+                </Text>
+              </View>
+            )}
             <View style={styles.bar}>
               <View style={{ flex: Math.max(winProb.away, 1), backgroundColor: away.color }} />
               <View style={{ flex: Math.max(winProb.home, 1), backgroundColor: home.color }} />
             </View>
-            <Text style={styles.note}>ESPN matchup predictor</Text>
-          </View>
+                      </View>
         </>
       )}
 
       {odds && (
         <>
-          <Text style={[styles.title, winProb && { marginTop: 18 }]}>Odds · {odds.provider}</Text>
+          <Text style={[styles.title, winProb && { marginTop: 18 }]}>{past ? 'Closing odds' : 'Odds'} · {odds.provider}</Text>
           <View style={styles.card}>
             <View style={styles.prices}>
               <Price side={away} odds={odds.away} />
@@ -53,7 +72,6 @@ export function PregameOdds({ away, home, pregame }: { away: Side; home: Side; p
               </View>
               <Price side={home} odds={odds.home} />
             </View>
-            <Text style={styles.note}>{ODDS_NOTE}</Text>
           </View>
         </>
       )}
@@ -89,7 +107,6 @@ const styles = StyleSheet.create({
   labels: { flexDirection: 'row', justifyContent: 'space-between' },
   pct: { fontFamily: fonts.display, fontSize: 28 },
   bar: { height: 8, borderRadius: 4, overflow: 'hidden', flexDirection: 'row', gap: 2 },
-  note: { fontFamily: fonts.body, fontSize: 11, color: palette.muted },
   prices: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   price: { alignItems: 'center', gap: 2, minWidth: 80 },
   logo: { width: 30, height: 30 },
