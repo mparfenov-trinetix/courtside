@@ -17,7 +17,7 @@ import { ArrowLeftIcon, MenuIcon } from '../Icons';
 import { fonts, palette } from '@/lib/theme';
 
 
-export function useOpenDrawer() {
+function useOpenDrawer() {
   const navigation = useNavigation<DrawerNavigationProp<Record<string, object | undefined>>>();
   return () => navigation.openDrawer();
 }
@@ -104,7 +104,7 @@ export function LoadingState({ label = 'Loading' }: { label?: string }) {
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <EmptyState title="Couldn’t reach ESPN" text={message} placement="center" action={<Button label="Try again" onPress={onRetry} style={styles.retry} />} />
+    <EmptyState title="Couldn’t load this" text={message} placement="center" action={<Button label="Try again" onPress={onRetry} style={styles.retry} />} />
   );
 }
 

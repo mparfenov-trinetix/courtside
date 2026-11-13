@@ -79,12 +79,13 @@ export function useTeamDetail(teamId?: string | null) {
 }
 
 /** A team's best player by ESPN's rating (the form widget's free corner); null before anyone is rated. */
-export function useTeamStar(teamId?: string | null) {
+export function useTeamStar(teamId?: string | null, season: number = currentSeason()) {
   return useQuery({
-    queryKey: ['teamStar', teamId, currentSeason()],
-    queryFn: () => fetchTeamStar(teamId!),
+    queryKey: ['teamStar', teamId, season],
+    queryFn: () => fetchTeamStar(teamId!, season),
     enabled: !!teamId,
-    staleTime: 6 * HOUR,
+    // A finished season's best player never changes.
+    staleTime: season < currentSeason() ? Infinity : 6 * HOUR,
   });
 }
 
@@ -180,7 +181,7 @@ export function useMinuteTick(waiting: boolean) {
 }
 
 /** What a game that has just finished changes elsewhere: the team's record and form, the standings, the schedule. */
-export function refreshAfterFinal(client: QueryClient) {
+function refreshAfterFinal(client: QueryClient) {
   const season = currentSeason();
   const keys = ['schedule', 'team', 'teamSeason', 'leagueTeamStats', 'standings', 'leaders', 'playerStats', 'playerGameLog'];
   client.invalidateQueries({
@@ -325,7 +326,7 @@ export function useAfterSettle(delayMs = 900) {
 }
 
 /** `enabled: false` reads nothing from the network (a page that is only being scrolled past); what is cached is still returned. */
-export function useScoreboardByDate(date: string, enabled = true) {
+function useScoreboardByDate(date: string, enabled = true) {
   const focused = useIsFocused();
   const client = useQueryClient();
   const query = useQuery({
@@ -435,16 +436,20 @@ export function useCupGames(season?: number) {
   });
 }
 
+/**
+ * A season's postseason as every reader of the `['postseason', season]` cache must see it: before 2009-10 ESPN's notes do not name the rounds,
+ * so they are worked out from the series. One function for every reader of that key, because whoever fetches first fills the cache for the
+ * rest: the seeds beside a team in a game once filled it with the raw games, and the old season's bracket was left empty by it.
+ */
+const loadPostseason = (season: number) =>
+  fetchPostseason(season).then((p) => (season < NOTED_FROM ? { ...p, playoffs: inferPlayoffNotes(p.playoffs, conferenceMap(p.standings)) } : p));
+
 export function usePostseason(season: number, enabled = true) {
   const current = currentSeason();
   return useQuery({
     queryKey: ['postseason', season],
     enabled,
-    queryFn: () =>
-      fetchPostseason(season).then((p) =>
-        // Before 2009-10 ESPN's notes do not name the rounds: they are worked out from the series.
-        season < NOTED_FROM ? { ...p, playoffs: inferPlayoffNotes(p.playoffs, conferenceMap(p.standings)) } : p,
-      ),
+    queryFn: () => loadPostseason(season),
     staleTime: season === current ? 5 * 60 * 1000 : Infinity,
     // Games in progress move the series score.
     refetchInterval: (query) =>
@@ -467,11 +472,12 @@ export function usePlayoffSeeds(season: number | undefined, enabled: boolean) {
     enabled: enabled && season != null,
     staleTime: year === currentSeason() ? 6 * HOUR : Infinity,
     queryFn: async () => {
-      const post = await client.ensureQueryData({ queryKey: ['postseason', year], queryFn: () => fetchPostseason(year) });
+      const post = await client.ensureQueryData({ queryKey: ['postseason', year], queryFn: () => loadPostseason(year) });
       return playoffSeeds(post.playoffs, seedMap(post.standings));
     },
   });
-  return data;
+  // The cache may hold this season's seeds from a playoff game seen earlier: a game that is not a playoff game must not show them.
+  return enabled ? data : undefined;
 }
 
 export function usePlayerProfile(athleteId?: string | null) {

@@ -41,10 +41,32 @@ export function viaProxy(url: string, proxy: string | undefined): string {
   return url;
 }
 
+/** ESPN answered, with a status that is not a success. A 4xx will not change when asked again (a bad id, a season that does not exist). */
+export class HttpError extends Error {
+  status: number;
+  // (No parameter property: Node's type stripping, which runs the tests, does not take that syntax.)
+  constructor(status: number, url: string) {
+    super(`ESPN returned ${status} for ${url}`);
+    this.status = status;
+  }
+}
+
+/** How long a request may take before it is given up on: a stalled connection otherwise leaves a skeleton on screen for as long as the system waits. */
+const REQUEST_TIMEOUT_MS = 20_000;
+
 export async function getJson(url: string): Promise<Json> {
-  const res = await fetch(viaProxy(url, process.env.EXPO_PUBLIC_ESPN_PROXY));
-  if (!res.ok) throw new Error(`ESPN returned ${res.status} for ${url}`);
-  return res.json();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(viaProxy(url, process.env.EXPO_PUBLIC_ESPN_PROXY), { signal: controller.signal });
+    if (!res.ok) throw new HttpError(res.status, url);
+    return await res.json();
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error('ESPN took too long to answer');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export const CORE = 'https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba';

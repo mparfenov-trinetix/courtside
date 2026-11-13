@@ -1,14 +1,14 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSlotsStyle } from '../CompareBar';
 import { CompareRow, rowWinner, type Row } from '../CompareRow';
 import { Radar, type RadarAxis } from '../Radar';
-import { HeadToHead, EmptyState, MINI_CARD_RATIO, MiniCardEmpty, MiniTeamCard, dealIn } from '@/components';
+import { Button, HeadToHead, EmptyState, MINI_CARD_RATIO, MiniCardEmpty, MiniTeamCard, PageSheet, dealIn } from '@/components';
 import { useLeagueTeamStats, useSceneSettled, useStandings, useTeamDetail, useTeams } from '@/hooks';
 import type { Team, TeamStatRow } from '@/lib/espn';
 import { TEAM_METRICS, conferenceStanding, formatMetric, metricByKey, ordinal, rankOf, type TeamMetric } from '@/lib/league';
@@ -64,7 +64,7 @@ export function useTeamPicks() {
 /** Head-to-head season comparison for two teams, with league ranks computed from all 30. `scrollY` is the page's scroll, which the cards follow. */
 export function TeamCompare({ scrollY }: { scrollY: SharedValue<number> }) {
   const { teams, idA, idB, teamA, teamB, colors } = useTeamPicks();
-  const { data: table, isPending } = useLeagueTeamStats();
+  const { data: table, isPending, isError, refetch } = useLeagueTeamStats();
   const [picking, setPicking] = useState<'a' | 'b' | null>(null);
   const { width: screen } = useWindowDimensions();
   const cardW = Math.floor((screen - 32 - 10) / 2);
@@ -102,15 +102,15 @@ export function TeamCompare({ scrollY }: { scrollY: SharedValue<number> }) {
             <Text style={styles.tallyLabel}>categories won</Text>
             <Text style={[styles.tallyNum, { color: colors.home }]}>{winsB}</Text>
           </View>
-          {rows.map((r, i) => (
-            <CompareRow key={r.label} row={r} aColor={colors.away} bColor={colors.home} delay={i * 30} />
+          {rows.map((r) => (
+            <CompareRow key={r.label} row={r} aColor={colors.away} bColor={colors.home} />
           ))}
         </Animated.View>
       ) : (
         <EmptyState
-          title={idA && idB ? 'Loading stats' : 'Pick two teams'}
-          text={idA && idB ? 'Fetching league stats.' : 'Compare scoring, shooting and defense, with where each team ranks in the league.'}
-          action={idA && idB && isPending && <ActivityIndicator color={palette.muted} style={{ marginTop: 12 }} />}
+          title={idA && idB ? (isError ? 'Couldn’t load the stats' : 'Loading stats') : 'Pick two teams'}
+          text={idA && idB ? (isError ? 'Check your connection and try again.' : 'Fetching league stats.') : 'Compare scoring, shooting and defense, with where each team ranks in the league.'}
+          action={idA && idB ? isError ? <Button label="Try again" onPress={() => void refetch()} style={{ marginTop: 12 }} /> : isPending ? <ActivityIndicator color={palette.muted} style={{ marginTop: 12 }} /> : undefined : undefined}
         />
       )}
 
@@ -160,11 +160,11 @@ function TeamPicker({
 }) {
   const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="pageSheet">
+    <PageSheet visible={visible} onClose={onClose}>
       <View style={styles.modal}>
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Choose a team</Text>
-          <Pressable onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" onPress={onClose} hitSlop={10}>
             <Text style={styles.cancel}>Cancel</Text>
           </Pressable>
         </View>
@@ -175,7 +175,7 @@ function TeamPicker({
           renderItem={({ item }) => {
             const disabled = item.id === disabledId;
             return (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 disabled={disabled}
                 onPress={() => onPick(item)}
                 style={({ pressed }) => [
@@ -191,7 +191,7 @@ function TeamPicker({
           }}
         />
       </View>
-    </Modal>
+    </PageSheet>
   );
 }
 

@@ -31,11 +31,11 @@ export const Rows: Story = {
   render: () => (
     <ScrollView>
       <View style={{ padding: 16 }}>
-        <CompareRow row={{ label: 'Points', a: 27.4, b: 22.1, fmt }} aColor="#E2B077" bColor="#60A5FA" delay={0} />
-        <CompareRow row={{ label: 'Rebounds', a: 5.1, b: 9.3, fmt }} aColor="#E2B077" bColor="#60A5FA" delay={40} />
+        <CompareRow row={{ label: 'Points', a: 27.4, b: 22.1, fmt }} aColor="#E2B077" bColor="#60A5FA" />
+        <CompareRow row={{ label: 'Rebounds', a: 5.1, b: 9.3, fmt }} aColor="#E2B077" bColor="#60A5FA" />
         {/* Lower is better: the smaller number wins and gets the bright bar. */}
-        <CompareRow row={{ label: 'Turnovers', a: 3.1, b: 2.2, fmt, lowerBetter: true, aSub: '24th in NBA', bSub: '3rd in NBA' }} aColor="#E2B077" bColor="#60A5FA" delay={80} />
-        <CompareRow row={{ label: 'Steals', a: 1.4, b: 1.4, fmt }} aColor="#E2B077" bColor="#60A5FA" delay={120} />
+        <CompareRow row={{ label: 'Turnovers', a: 3.1, b: 2.2, fmt, lowerBetter: true, aSub: '24th in NBA', bSub: '3rd in NBA' }} aColor="#E2B077" bColor="#60A5FA" />
+        <CompareRow row={{ label: 'Steals', a: 1.4, b: 1.4, fmt }} aColor="#E2B077" bColor="#60A5FA" />
       </View>
     </ScrollView>
   ),

@@ -28,7 +28,7 @@ export function SearchScreen() {
   const [query, setQuery] = useState('');
   const [recent, setRecent] = useState<Hit[]>([]);
   const { data: teams } = useTeams();
-  const { data: players, isFetching } = usePlayerSearch(query);
+  const { data: players, isFetching, isError } = usePlayerSearch(query);
 
   useEffect(() => {
     const id = setTimeout(() => setQuery(text.trim()), 250);
@@ -119,7 +119,7 @@ export function SearchScreen() {
           />
           {isFetching && <ActivityIndicator color={palette.muted} size="small" />}
         </Glass>
-        <Pressable onPress={goBack} hitSlop={10}>
+        <Pressable accessibilityRole="button" onPress={goBack} hitSlop={10}>
           <Text style={styles.cancel}>Cancel</Text>
         </Pressable>
       </View>
@@ -133,7 +133,7 @@ export function SearchScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}
         ListEmptyComponent={
           <Text style={styles.empty}>
-            {searching ? (isFetching ? ' ' : 'No players or teams found') : 'Type at least two letters.'}
+            {searching ? (isFetching ? ' ' : isError ? 'Couldn’t search players. Teams are still listed when they match.' : 'No players or teams found') : 'Type at least two letters.'}
           </Text>
         }
         renderSectionHeader={({ section }) =>
@@ -148,7 +148,7 @@ export function SearchScreen() {
             <Text style={styles.section}>{section.title}</Text>
           )
         }
-        renderItem={({ item, index }) => (
+        renderItem={({ item }) => (
           <Animated.View>
             <Pressable
               onPress={() => {

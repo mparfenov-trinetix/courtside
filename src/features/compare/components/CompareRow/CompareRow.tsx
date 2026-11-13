@@ -23,7 +23,7 @@ export function rowWinner(r: Row): 'a' | 'b' | null {
   return aBetter ? 'a' : 'b';
 }
 
-export function CompareRow({ row, aColor, bColor, delay }: { row: Row; aColor: string; bColor: string; delay: number }) {
+export function CompareRow({ row, aColor, bColor }: { row: Row; aColor: string; bColor: string }) {
   const progress = useSharedValue(0);
   const { a, b } = row;
   useEffect(() => {

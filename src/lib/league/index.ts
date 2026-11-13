@@ -12,3 +12,7 @@ export * from './titles';
 export * from './key-matchup';
 export * from './player-h2h';
 export * from './header-names';
+export * from './pickem';
+export * from './events';
+export * from './season-result';
+export * from './series-stats';

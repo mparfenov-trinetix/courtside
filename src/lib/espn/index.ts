@@ -1,11 +1,14 @@
-export { setHealthReporter, viaProxy } from './client';
+export { HttpError, setHealthReporter, viaProxy } from './client';
 export { classifyGame, cupStage, seriesLine, currentSeason, seasonLabel, seasonOfDate, teamLogo, tricode } from './common';
 export type { GameKind } from './common';
+export { eraColorsFor, eraIn, eraLogoFor, registerEraLogos, renamedSince, teamAsItWas, teamEras, teamInSeason, withEraLogo } from './franchise';
+export type { TeamEra } from './franchise';
+export { FRANCHISE_ERAS } from './franchise-eras';
 export { fetchRoster, fetchTeamDetail, fetchTeams } from './teams';
 export type { Player, Roster, Team, TeamDetail } from './teams';
 export { fetchHeadToHead, fetchTeamSchedule, fetchTeamSeason } from './schedule';
 export type { Game, HeadToHeadGame } from './schedule';
-export { fetchLeaderCategory, fetchTeamRated, fetchTeamStar, LEADER_CATEGORIES, minutesClock, normalizeTeamLeaders, normalizeTeamStar, statByName } from './leaders';
+export { fetchLeaderCategory, fetchTeamRated, fetchTeamStar, LEADER_CATEGORIES, minutesClock, normalizeTeamStar, statByName } from './leaders';
 export type { LeaderCategory, LeaderEntry, TeamStar } from './leaders';
 export { fetchStandings } from './standings';
 export type { ConferenceStandings, StandingEntry } from './standings';
@@ -49,9 +52,11 @@ export {
   fetchArticle,
   fetchNews,
   normalizeArticle,
+  normalizeGameRecap,
   normalizeNews,
   type ArticleBlock,
   type ArticleText,
+  type GameRecap,
   type NewsArticle,
   type NewsKind,
 } from './news';

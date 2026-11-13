@@ -1,7 +1,9 @@
 import { router, type Href } from 'expo-router';
 
+import { currentSeason } from '@/lib/espn';
+
 /** Game, team and player pages are pushed on top of each other; past this many, the top one is swapped instead. */
-export const MAX_DETAIL_DEPTH = 3;
+const MAX_DETAIL_DEPTH = 3;
 
 let detailDepth = 0;
 
@@ -59,4 +61,12 @@ export function openDetail(href: Href) {
   if (!free()) return;
   if (detailDepth >= MAX_DETAIL_DEPTH) router.replace(href);
   else router.push(href);
+}
+
+/**
+ * The address of a team's page. With a `season` of the past it is the team's card in that season (the SuperSonics of 2006-07, the Celtics of
+ * 2008), as an old game, standings table or champion card should open it; without one, or for the season in progress, today's team page.
+ */
+export function teamHref(teamId: string, season?: number): Href {
+  return (season != null && season < currentSeason() ? `/team/${teamId}?season=${season}` : `/team/${teamId}`) as Href;
 }

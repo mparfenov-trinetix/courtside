@@ -4,7 +4,6 @@ import { useEffect, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -15,7 +14,7 @@ import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CompareHeaderTitle, CompareRow, PlayerExtras, PlayerHeadToHead, type Row, Radar, type RadarAxis, TeamCompare, useSlotsStyle, useTeamPicks } from '../../components';
-import { MINI_CARD_RATIO, MiniCardEmpty, MiniPlayerCard, Segmented, dealIn, slideIn, ScreenHeader, SearchInput, EmptyState } from '@/components';
+import { Button, MINI_CARD_RATIO, MiniCardEmpty, MiniPlayerCard, PageSheet, Segmented, dealIn, slideIn, ScreenHeader, SearchInput, EmptyState } from '@/components';
 import { usePlayerCareer, usePlayerSearch, usePlayerStats, useSceneSettled, useTeams } from '@/hooks';
 import { headshotUrl, tricode, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
 import { lastNameOf, nba2kRating, namesScale } from '@/lib/league';
@@ -114,8 +113,8 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
   const [picking, setPicking] = useState<'a' | 'b' | null>(null);
   const slotA = pickedA !== undefined ? pickedA : fromParams;
 
-  const { data: statsA, isLoading: loadingStatsA } = usePlayerStats(slotA?.id);
-  const { data: statsB, isLoading: loadingStatsB } = usePlayerStats(slotB?.id);
+  const { data: statsA, isLoading: loadingStatsA, isError: failedStatsA, refetch: retryStatsA } = usePlayerStats(slotA?.id);
+  const { data: statsB, isLoading: loadingStatsB, isError: failedStatsB, refetch: retryStatsB } = usePlayerStats(slotB?.id);
   const { data: careerA, isLoading: loadingCareerA } = usePlayerCareer(scope === 'career' ? slotA?.id : undefined);
   const { data: careerB, isLoading: loadingCareerB } = usePlayerCareer(scope === 'career' ? slotB?.id : undefined);
   // A card chosen after the screen has settled is dealt in with a flip (not on the screen's own first draw, which is inside the slide in from the menu).
@@ -230,15 +229,23 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
               <Text style={styles.tallyLabel}>categories won</Text>
               <Text style={[styles.tallyNum, { color: colors.home }]}>{winsB}</Text>
             </View>
-            {rows.map((r, i) => (
-              <CompareRow key={r.label} row={r} aColor={colors.away} bColor={colors.home} delay={i * 40} />
+            {rows.map((r) => (
+              <CompareRow key={r.label} row={r} aColor={colors.away} bColor={colors.home} />
             ))}
           </Animated.View>
         ) : (
           <EmptyState
-            title={slotA && slotB ? 'Loading stats' : 'Pick two players'}
-            text={slotA && slotB ? 'Fetching season averages.' : 'Search any NBA player and see their season averages head to head.'}
-            action={slotA && slotB && <ActivityIndicator color={palette.muted} style={{ marginTop: 12 }} />}
+            title={slotA && slotB ? (failedStatsA || failedStatsB ? 'Couldn’t load the stats' : 'Loading stats') : 'Pick two players'}
+            text={slotA && slotB ? (failedStatsA || failedStatsB ? 'Check your connection and try again.' : 'Fetching season averages.') : 'Search any NBA player and see their season averages head to head.'}
+            action={
+              slotA && slotB ? (
+                failedStatsA || failedStatsB ? (
+                  <Button label="Try again" onPress={() => { retryStatsA(); retryStatsB(); }} style={{ marginTop: 12 }} />
+                ) : (
+                  <ActivityIndicator color={palette.muted} style={{ marginTop: 12 }} />
+                )
+              ) : undefined
+            }
           />
         )}
 
@@ -321,10 +328,10 @@ function PickerModal({
     return () => clearTimeout(id);
   }, [text]);
 
-  const { data, isFetching } = usePlayerSearch(query);
+  const { data, isFetching, isError } = usePlayerSearch(query);
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} onDismiss={() => { setText(''); setQuery(''); }} presentationStyle="pageSheet">
+    <PageSheet visible={visible} onClose={onClose} onDismiss={() => { setText(''); setQuery(''); }}>
       <View style={[styles.modal, { paddingTop: 16 }]}>
         <View style={styles.searchRow}>
           <SearchInput
@@ -337,7 +344,7 @@ function PickerModal({
             returnKeyType="search"
             style={styles.input}
           />
-          <Pressable onPress={onClose} hitSlop={10}>
+          <Pressable accessibilityRole="button" onPress={onClose} hitSlop={10}>
             <Text style={styles.cancel}>Cancel</Text>
           </Pressable>
         </View>
@@ -348,10 +355,10 @@ function PickerModal({
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           ListEmptyComponent={
-            query.trim().length >= 2 && !isFetching ? <Text style={styles.noResults}>No players found</Text> : undefined
+            query.trim().length >= 2 && !isFetching ? <Text style={styles.noResults}>{isError ? 'Couldn’t search. Check your connection.' : 'No players found'}</Text> : undefined
           }
           renderItem={({ item }) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               onPress={() => onPick(item)}
               disabled={item.id === disabledId}
               style={({ pressed }) => [styles.result, item.id === disabledId && { opacity: 0.4 }, pressed && { backgroundColor: surfaces.card }]}>
@@ -364,7 +371,7 @@ function PickerModal({
           )}
         />
       </View>
-    </Modal>
+    </PageSheet>
   );
 }
 

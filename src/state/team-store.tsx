@@ -57,7 +57,8 @@ const subscribe = (listener: () => void) => {
 export function TeamProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     AsyncStorage.getItem(FAVORITE_KEY)
-      .then((id) => set({ favoriteTeamId: id, currentTeamId: id }))
+      // A team chosen while the saved one was being read is not taken back.
+      .then((id) => (data.favoriteTeamId == null ? set({ favoriteTeamId: id, currentTeamId: id }) : undefined))
       .catch(() => {})
       .finally(() => set({ hydrated: true }));
   }, []);

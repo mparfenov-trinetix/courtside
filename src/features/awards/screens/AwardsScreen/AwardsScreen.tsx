@@ -5,8 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AwardSection, AwardsHero } from '../../components';
 import { EmptyState, ErrorState, ListSkeleton, ScreenHeader, SeasonButton, SeasonSheet } from '@/components';
 import { useRefresh, useSeasonAwards, useTeams } from '@/hooks';
-import { awardSeasons, currentSeason } from '@/lib/espn';
+import { awardSeasons, currentSeason, teamInSeason } from '@/lib/espn';
 import { palette } from '@/lib/theme';
+import { EventsBack } from '@/features/events';
 
 /**
  * The season awards by year, from 1999-00: MVP, Finals MVP, Defensive Player, Rookie, Sixth Man, Most Improved and Clutch Player of the Year, the
@@ -20,11 +21,12 @@ export function AwardsScreen() {
   const { data, isPending, error, refetch } = useSeasonAwards(season);
   const { data: teams } = useTeams();
   const refreshControl = useRefresh([['seasonAwards', season]], season >= currentSeason());
-  const teamOf = (id?: string) => (id ? teams?.find((t) => t.id === id) : undefined);
+  // The team as it was called that season (a 1996 winner played for Seattle, not Oklahoma City).
+  const teamOf = (id?: string) => (id ? teamInSeason(teams?.find((t) => t.id === id), season) : undefined);
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.arena }}>
-      <ScreenHeader title="Awards" right={<SeasonButton season={season} onPress={() => setPicking(true)} />} />
+      <ScreenHeader title="Awards" afterMenu={<EventsBack />} right={<SeasonButton season={season} onPress={() => setPicking(true)} />} />
       {isPending ? (
         <ListSkeleton count={7} avatar="round" />
       ) : error ? (

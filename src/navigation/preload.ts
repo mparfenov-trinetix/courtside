@@ -47,7 +47,7 @@ export function endPreloadDrive() {
  * play its next stretch of animation on an idle thread, not under a view-creating commit). True while more screens remain. Waits (briefly) for
  * the drawer, which only starts offering steps once it has mounted.
  */
-export async function preloadStep(): Promise<boolean> {
+async function preloadStep(): Promise<boolean> {
   const start = Date.now();
   while (!step && Date.now() - start < 1500) await new Promise<void>((resolve) => setTimeout(resolve, 30));
   return step ? step() : false;

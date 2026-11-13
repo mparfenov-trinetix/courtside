@@ -5,9 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DraftHero, PickRow } from '../../components';
 import { EmptyState, ErrorState, ListSkeleton, ScreenHeader, SectionLabel, SeasonButton, SeasonSheet } from '@/components';
 import { useDraft, useRefresh, useTeams } from '@/hooks';
-import { currentSeason, draftSeasons, type NbaDraftPick } from '@/lib/espn';
+import { currentSeason, draftSeasons, teamInSeason, type NbaDraftPick } from '@/lib/espn';
 import { palette, space } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
+import { EventsBack } from '@/features/events';
 
 type Item = { key: string; round: number } | { key: string; pick: NbaDraftPick };
 const ROUND_NAMES: Record<number, string> = { 1: 'First round', 2: 'Second round' };
@@ -22,7 +23,8 @@ export function DraftScreen() {
   const { data: teams } = useTeams();
   const favoriteTeamId = useScreenTeamStore((s) => s.favoriteTeamId);
   const refreshControl = useRefresh([['draft', season]], season >= currentSeason());
-  const teamOf = (id: string) => teams?.find((t) => t.id === id);
+  // The team as it was called in that June: the Sonics drafted Westbrook, not Oklahoma City.
+  const teamOf = (id: string) => teamInSeason(teams?.find((t) => t.id === id), season);
 
   // The picks with a heading before each round.
   const items = useMemo<Item[]>(() => {
@@ -40,7 +42,7 @@ export function DraftScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.arena }}>
-      <ScreenHeader title="NBA Draft" right={<SeasonButton season={season} label={String} noun="year" onPress={() => setPicking(true)} />} />
+      <ScreenHeader title="NBA Draft" afterMenu={<EventsBack />} right={<SeasonButton season={season} label={String} noun="year" onPress={() => setPicking(true)} />} />
       {isPending ? (
         <ListSkeleton count={7} avatar="round" />
       ) : error ? (

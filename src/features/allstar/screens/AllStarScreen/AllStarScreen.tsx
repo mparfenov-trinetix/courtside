@@ -7,6 +7,7 @@ import { EmptyState, ErrorState, ListSkeleton, ScreenHeader, SeasonButton, Seaso
 import { useAllStarWeekend, useRefresh } from '@/hooks';
 import { allStarSeasons, currentSeason } from '@/lib/espn';
 import { palette } from '@/lib/theme';
+import { EventsBack } from '@/features/events';
 
 /**
  * All-Star Weekend by year: the game (or games, the format has changed over the years), who played and the MVP. The dunk, three-point and
@@ -22,7 +23,7 @@ export function AllStarScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.arena }}>
-      <ScreenHeader title="All-Star Weekend" right={<SeasonButton season={season} label={String} noun="year" onPress={() => setPicking(true)} />} />
+      <ScreenHeader title="All-Star Weekend" afterMenu={<EventsBack />} right={<SeasonButton season={season} label={String} noun="year" onPress={() => setPicking(true)} />} />
       {isPending ? (
         <ListSkeleton count={4} avatar="square" />
       ) : error ? (

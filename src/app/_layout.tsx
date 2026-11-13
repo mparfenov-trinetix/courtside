@@ -22,10 +22,11 @@ import { ReduceMotion, ReducedMotionConfig } from 'react-native-reanimated';
 
 import { WidgetSync } from '@/widgets';
 import { NavDepthTracker } from '@/navigation';
-import { DataHealthBanner, ScreenError } from '@/components';
+import { DataHealthBanner, ScreenError, installEraLogos } from '@/components';
 import { IntroOverlay } from '@/features/intro';
+import { PickemSync } from '@/features/pickem';
 import { reportIssue } from '@/lib/data-health';
-import { currentSeason, setHealthReporter } from '@/lib/espn';
+import { HttpError, currentSeason, setHealthReporter } from '@/lib/espn';
 import { palette } from '@/lib/theme';
 import { useWindowSizeGuard } from '@/lib/window-size';
 import { LastVisitProvider, TeamProvider, WatchlistProvider } from '@/state';
@@ -38,10 +39,18 @@ const DAY = 24 * 60 * 60 * 1000;
 const WEEK = 7 * DAY;
 
 setHealthReporter(reportIssue);
+// Before anything draws a past season: the pictures of the names a team no longer has.
+const ERA_LOGOS = installEraLogos();
 
 // gcTime must be at least the persister's maxAge or restored data is discarded.
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 2, gcTime: WEEK } },
+  defaultOptions: {
+    queries: {
+      // Two more tries for a network failure or a 5xx, none for a 4xx (a bad id will not get better), so a deep link to a game that does not exist shows its error at once.
+      retry: (count, error) => !(error instanceof HttpError && error.status >= 400 && error.status < 500) && count < 2,
+      gcTime: WEEK,
+    },
+  },
 });
 
 const persister = createAsyncStoragePersister({
@@ -59,6 +68,25 @@ const KEPT_FINISHED_GAMES = 8;
 
 const isFinished = (q: Query) => !!(q.state.data as { completed?: boolean } | undefined)?.completed;
 
+/** The few finished games kept for offline, worked out once per write of the cache (it asks about every query in turn: a sort for each was a sort per game). */
+let newestAt = 0;
+let newest = new Set<Query>();
+function newestFinishedGames(): Set<Query> {
+  const now = Date.now();
+  if (now - newestAt > 1000) {
+    newestAt = now;
+    newest = new Set(
+      queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ['game'] })
+        .filter(isFinished)
+        .sort((a, b) => b.state.dataUpdatedAt - a.state.dataUpdatedAt)
+        .slice(0, KEPT_FINISHED_GAMES),
+    );
+  }
+  return newest;
+}
+
 function shouldPersist(q: Query): boolean {
   if (q.state.status !== 'success') return false;
   const kind = String(q.queryKey[0]);
@@ -68,13 +96,7 @@ function shouldPersist(q: Query): boolean {
   // Finished seasons never change: their playoffs and Cup are kept for offline too.
   if ((kind === 'postseason' || kind === 'cup') && Number(q.queryKey[1]) < currentSeason()) return true;
   if (kind !== 'game' || !isFinished(q)) return false;
-  const newest = queryClient
-    .getQueryCache()
-    .findAll({ queryKey: ['game'] })
-    .filter(isFinished)
-    .sort((a, b) => b.state.dataUpdatedAt - a.state.dataUpdatedAt)
-    .slice(0, KEPT_FINISHED_GAMES);
-  return newest.includes(q);
+  return newestFinishedGames().has(q);
 }
 
 const navTheme = {
@@ -131,7 +153,7 @@ export default function RootLayout() {
         persistOptions={{
           persister,
           maxAge: WEEK,
-          buster: 'v10',
+          buster: `v13-${ERA_LOGOS}`,
           dehydrateOptions: {
             shouldDehydrateQuery: shouldPersist,
           },
@@ -164,10 +186,12 @@ export default function RootLayout() {
               <Stack.Screen name="matchup-playoffs" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="matchup-cup" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="matchup-compare" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="series" options={{ animation: 'slide_from_right' }} />
             </Stack>
             {showIntro && <IntroOverlay onDone={() => setShowIntro(false)} />}
             <NavDepthTracker />
             <WidgetSync />
+            <PickemSync />
             <DataHealthBanner />
           </ThemeProvider>
           </LastVisitProvider>

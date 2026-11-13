@@ -1,4 +1,4 @@
-import { CORE, fetchRef, getJson, type Json } from './client';
+import { CORE, HttpError, fetchRef, getJson, type Json } from './client';
 import { currentSeason } from './common';
 import { headshotUrl } from './legend-photos';
 
@@ -138,7 +138,11 @@ export function normalizeSeasonAwards(season: number, awards: Json[], athletes: 
  * with all the teams, all at once). A finished season never changes.
  */
 export async function fetchSeasonAwards(season: number): Promise<SeasonAwards> {
-  const list = await getJson(`${CORE}/seasons/${season}/awards?lang=en&region=us`).catch(() => undefined);
+  // ESPN answering that a season has no awards yet is an empty season; the network failing is an error to retry, not a finished season with nothing in it.
+  const list = await getJson(`${CORE}/seasons/${season}/awards?lang=en&region=us`).catch((error) => {
+    if (error instanceof HttpError) return undefined;
+    throw error;
+  });
   const wanted = new Set(AWARDS.map((a) => a.id));
   const refs = ((list?.items ?? []) as Json[]).map((i) => i.$ref).filter((ref) => wanted.has(idIn(ref, 'awards') ?? ''));
   const awards = (await Promise.all(refs.map((ref) => fetchRef(ref)))).filter((a): a is Json => a != null);

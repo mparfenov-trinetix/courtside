@@ -64,13 +64,13 @@ export function PlayerExtras({ a, b, aColor, bColor }: { a: Who; b: Who; aColor:
 
   return (
     <View>
-      {contract.length > 0 && <Block title="Contract" lines={contract} aColor={aColor} bColor={bColor} delay={60} />}
-      {honors.length > 0 && <Block title="Honors" lines={honors} aColor={aColor} bColor={bColor} delay={120} />}
+      {contract.length > 0 && <Block title="Contract" lines={contract} aColor={aColor} bColor={bColor} />}
+      {honors.length > 0 && <Block title="Honors" lines={honors} aColor={aColor} bColor={bColor} />}
     </View>
   );
 }
 
-function Block({ title, lines, aColor, bColor, delay }: { title: string; lines: Line[]; aColor: string; bColor: string; delay: number }) {
+function Block({ title, lines, aColor, bColor }: { title: string; lines: Line[]; aColor: string; bColor: string }) {
   return (
     <Animated.View style={styles.wrap}>
       <Text style={styles.title}>{title}</Text>

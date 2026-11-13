@@ -13,7 +13,7 @@ export type BarSide = { label: string; image?: string; kind: 'face' | 'logo'; co
 
 
 /** Where the two cards start in the page's scroll (under the Players / Teams switch). */
-export const SLOTS_TOP = 66;
+const SLOTS_TOP = 66;
 
 // The compact bar comes in as the cards go: from when half of them has scrolled away until nine tenths have.
 const startOf = (cardH: number) => SLOTS_TOP + cardH * 0.5;
