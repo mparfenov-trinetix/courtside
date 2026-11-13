@@ -50,19 +50,23 @@ export default function DrawerLayout() {
       }}>
       <Drawer.Screen name="home" options={{ title: 'Team card' }} />
       <Drawer.Screen name="teams" options={{ title: 'Teams' }} />
-      <Drawer.Screen name="league-leaders" options={{ title: 'League Leaders' }} />
-      <Drawer.Screen name="team-leaders" options={{ title: 'Team Leaders' }} />
       <Drawer.Screen name="standings" options={{ title: 'Standings' }} />
       <Drawer.Screen name="playoffs" options={{ title: 'Playoffs' }} />
       <Drawer.Screen name="cup" options={{ title: 'NBA Cup' }} />
       <Drawer.Screen name="all-star" options={{ title: 'All-Star Weekend' }} />
       <Drawer.Screen name="draft" options={{ title: 'NBA Draft' }} />
       <Drawer.Screen name="awards" options={{ title: 'Awards' }} />
-      <Drawer.Screen name="wire" options={{ title: 'League Wire' }} />
-      <Drawer.Screen name="news" options={{ title: 'News' }} />
       <Drawer.Screen name="calendar" options={{ title: 'Calendar' }} />
+      <Drawer.Screen name="around" options={{ title: 'Around the league' }} />
+      <Drawer.Screen name="events" options={{ title: 'Events' }} />
       <Drawer.Screen name="compare" options={{ title: 'Compare' }} />
       <Drawer.Screen name="watchlist" options={{ title: 'Watchlist' }} />
+      <Drawer.Screen name="pickem" options={{ title: "Pick'em" }} />
+      <Drawer.Screen name="league-leaders" options={{ title: 'Player leaders' }} />
+      <Drawer.Screen name="team-leaders" options={{ title: 'Team leaders' }} />
+      {/* News and the wire stopped being rows of the menu (they are panes of Around the league) but stay declared: a route that is not declared here does not open from a link. */}
+      <Drawer.Screen name="news" options={{ title: 'News' }} />
+      <Drawer.Screen name="wire" options={{ title: 'Injuries and moves' }} />
     </Drawer>
   );
 }

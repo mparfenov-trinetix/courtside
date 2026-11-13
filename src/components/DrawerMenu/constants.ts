@@ -9,6 +9,8 @@ export type MenuItem = {
   route: string;
   href: Href;
   label: string;
+  /** Other screens this row stands for (a hub's screens): the row is lit on any of them. */
+  also?: string[];
   Icon: ComponentType<{ color: string; size?: number; filled?: boolean }>;
 };
 

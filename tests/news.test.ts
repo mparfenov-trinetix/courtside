@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { articleBlocks, normalizeArticle, normalizeNews } from '../src/lib/espn';
+import { articleBlocks, normalizeArticle, normalizeGameRecap, normalizeNews } from '../src/lib/espn';
 import { timeAgo } from '../src/lib/date';
 
 // Real responses, trimmed: the league feed with one article of each type, and the text of three of them.
@@ -74,4 +74,25 @@ test('timeAgo: how long ago, the way the news list says it', () => {
   assert.equal(timeAgo('2026-11-08T05:00:00Z', now), 'Yesterday');
   assert.match(timeAgo('2026-11-02T05:00:00Z', now), /^Nov [12]$/);
   assert.equal(timeAgo('nonsense', now), '');
+});
+
+test('a game summary\'s recap: only a Recap with an id and a headline, the dash cut off its first sentence, a picture when there is one', () => {
+  const article = {
+    id: 50364199,
+    type: 'Recap',
+    headline: 'Maxey, James lead 76ers to 7-1 start',
+    description: '— Tyrese Maxey scored 15 of his game-high 26 points.',
+    images: [{ type: 'Media', ratio: '16x9', url: 'http://espnmedia-cdn.akamaized.net/x.jpg' }],
+  };
+  assert.deepEqual(normalizeGameRecap(article), {
+    id: '50364199',
+    headline: 'Maxey, James lead 76ers to 7-1 start',
+    description: 'Tyrese Maxey scored 15 of his game-high 26 points.',
+    image: 'https://espnmedia-cdn.akamaized.net/x.jpg',
+  });
+  // A preview (an unplayed game), an article with no id or headline, and no article at all.
+  assert.equal(normalizeGameRecap({ ...article, type: 'Preview' }), undefined);
+  assert.equal(normalizeGameRecap({ ...article, id: undefined }), undefined);
+  assert.equal(normalizeGameRecap({ ...article, headline: '' }), undefined);
+  assert.equal(normalizeGameRecap(undefined), undefined);
 });

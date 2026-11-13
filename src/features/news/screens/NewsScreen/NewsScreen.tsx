@@ -25,7 +25,7 @@ const KEEPS: Record<Exclude<Filter, 'all' | 'mine'>, NewsArticle['kind'][]> = {
  * The league's news from ESPN: game recaps and previews, stories, short news items and videos, newest first, with a strip to narrow it to
  * your team or to one kind. A recap, preview, story or news item opens in the app (its text), a video on espn.com.
  */
-export function NewsScreen() {
+export function NewsScreen({ embedded = false }: { embedded?: boolean } = {}) {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<Filter>('all');
   const favoriteTeamId = useScreenTeamStore((s) => s.favoriteTeamId);
@@ -61,7 +61,7 @@ export function NewsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: palette.arena }}>
-      <ScreenHeader title="News" />
+      {embedded ? null : <ScreenHeader title="News" />}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

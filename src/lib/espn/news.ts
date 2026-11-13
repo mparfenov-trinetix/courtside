@@ -72,6 +72,29 @@ export function normalizeNews(json: Json): NewsArticle[] {
   });
 }
 
+/** A finished game's recap as its own summary carries it: enough to show a card and open the article (the text is read by id, as any article's). */
+export type GameRecap = {
+  id: string;
+  headline: string;
+  /** ESPN's one-line summary: the game's first sentence. */
+  description?: string;
+  image?: string;
+};
+
+/**
+ * Pure: the recap in a game summary's `article` (ESPN's AP recap of the game, the same article the news feed lists). Only a `Recap` counts: a
+ * game that has not been played carries a preview there, and a game with no article at all none.
+ */
+export function normalizeGameRecap(article: Json | undefined): GameRecap | undefined {
+  if (!article || String(article.type) !== 'Recap' || article.id == null || !article.headline) return undefined;
+  return {
+    id: String(article.id),
+    headline: String(article.headline),
+    description: article.description ? String(article.description).replace(/^\s*[—-]\s*/, '') : undefined,
+    image: pickImage((article.images ?? []) as Json[]),
+  };
+}
+
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '–', mdash: '—', hellip: '…', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“' };
 
 function decode(text: string): string {

@@ -13,7 +13,7 @@ import { fonts, logoOn, mix, palette, teamTheme, withAlpha, surfaces } from '@/l
 import { pushOnce, returningFromDetail } from '@/navigation';
 import { useTeamStore } from '@/state';
 import { Glass } from '../Glass';
-import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, CupIcon, DraftIcon, GridIcon, MedalIcon, NewsIcon, PeopleIcon, PodiumIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon, WireIcon } from '../Icons';
+import { BracketIcon, CalendarIcon, CardIcon, CompareIcon, GridIcon, NewsIcon, PeopleIcon, SearchIcon, StandingsIcon, StarIcon, TrophyIcon, CupIcon, PickemIcon, PodiumIcon } from '../Icons';
 import { NbaLogo } from '../NbaLogo';
 import { DRAWER_WIDTH, SCENE_RADIUS, type MenuSection } from './constants';
 
@@ -21,37 +21,31 @@ import { DRAWER_WIDTH, SCENE_RADIUS, type MenuSection } from './constants';
 const STORYBOOK = process.env.EXPO_PUBLIC_STORYBOOK_ENABLED === 'true';
 
 /** The menu: what is yours, the league, and the tournaments and events (playoffs, the Cup, All-Star Weekend, the Draft). */
-export const SECTIONS: MenuSection[] = [
+const SECTIONS: MenuSection[] = [
   {
-    // What is yours, no heading of its own: your team, its calendar, what you starred (players and games alike).
+    // What is yours, no heading of its own: your team, its calendar, what you starred (players and games alike) and what you picked.
     title: '',
     items: [
       { route: 'home', href: '/home', label: 'Team card', Icon: CardIcon },
       { route: 'calendar', href: '/calendar' as Href, label: 'Calendar', Icon: CalendarIcon },
       { route: 'watchlist', href: '/watchlist' as Href, label: 'Watchlist', Icon: StarIcon },
+      { route: 'pickem', href: '/pickem' as Href, label: "Pick'em", Icon: PickemIcon },
     ],
   },
   {
-    // The whole league: tables, leaderboards (players, and teams ranked by a team stat), every team's roster (the Teams pager) and a way to put two players or teams side by side.
+    // The whole league: the table and the playoffs, the leaderboards (players, and teams ranked by a team stat), every team's roster (the Teams
+    // pager), a way to put two players or teams side by side, what is going on around the league (news, injuries and moves: one screen of
+    // three panes) and the yearly events that are not the season itself (the Cup, the All-Star Weekend, the Draft and the Awards: a hub).
     title: 'League',
     items: [
       { route: 'standings', href: '/standings', label: 'Standings', Icon: StandingsIcon },
+      { route: 'playoffs', href: '/playoffs' as Href, label: 'Playoffs', Icon: BracketIcon },
       { route: 'league-leaders', href: '/league-leaders', label: 'Player leaders', Icon: TrophyIcon },
       { route: 'team-leaders', href: '/team-leaders' as Href, label: 'Team leaders', Icon: PodiumIcon },
       { route: 'teams', href: '/teams', label: 'Teams', Icon: PeopleIcon },
       { route: 'compare', href: '/compare' as Href, label: 'Compare', Icon: CompareIcon },
-      { route: 'wire', href: '/wire' as Href, label: 'League wire', Icon: WireIcon },
-      { route: 'news', href: '/news' as Href, label: 'News', Icon: NewsIcon },
-    ],
-  },
-  {
-    title: 'Tournaments',
-    items: [
-      { route: 'playoffs', href: '/playoffs' as Href, label: 'Playoffs', Icon: BracketIcon },
-      { route: 'cup', href: '/cup' as Href, label: 'NBA Cup', Icon: CupIcon },
-      { route: 'all-star', href: '/all-star' as Href, label: 'All-Star Weekend', Icon: StarIcon },
-      { route: 'draft', href: '/draft' as Href, label: 'NBA Draft', Icon: DraftIcon },
-      { route: 'awards', href: '/awards' as Href, label: 'Awards', Icon: MedalIcon },
+      { route: 'around', href: '/around' as Href, label: 'Around the league', also: ['news', 'wire'], Icon: NewsIcon },
+      { route: 'events', href: '/events' as Href, label: 'Events', also: ['cup', 'all-star', 'draft', 'awards'], Icon: CupIcon },
     ],
   },
 ];
@@ -169,8 +163,8 @@ export function DrawerMenu(props: DrawerContentComponentProps) {
                 <Text style={styles.sectionTitle}>{section.title}</Text>
               </Reveal>
             ) : null}
-            {section.items.map(({ route, href, label, Icon }) => {
-              const active = route === activeRoute;
+            {section.items.map(({ route, href, label, also, Icon }) => {
+              const active = route === activeRoute || !!(activeRoute && also?.includes(activeRoute));
               const color = active ? palette.chalk : dim;
               return (
                 <Reveal key={route} progress={progress} index={ORDER.items[route]}>
