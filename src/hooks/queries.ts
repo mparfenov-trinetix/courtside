@@ -42,10 +42,11 @@ import {
   type Game,
   type GameVideo,
   type LeaderCategory,
+  type PlayerSeasonStats,
   type ScoreboardGame,
 } from '@/lib/espn';
 import { parseEspnDate, scoreboardKeysFor, startsOnDay, toDateKey } from '@/lib/date';
-import { NOTED_FROM, isMatchupStar, conferenceMap, inferPlayoffNotes, playoffSeeds, seedMap } from '@/lib/league';
+import { NOTED_FROM, isMatchupStar, type StartedGame, conferenceMap, inferPlayoffNotes, playoffSeeds, seedMap } from '@/lib/league';
 import { awaitsTipOff, boardPhase, gamePhase, shotsOf } from '@/lib/game';
 import { findGameRecap, recapQuery, searchVideos, type RecapGame, type SearchVideo } from '@/lib/youtube';
 
@@ -368,6 +369,49 @@ export function usePlayerStats(athleteId?: string | null) {
     enabled: !!athleteId,
     staleTime: HOUR,
   });
+}
+
+/**
+ * The season lines of a whole roster, one cached read per player (the same `['playerStats', id]` queries the player pages and Compare use, so
+ * a player opened before is already there). `enabled` holds the reads back until a view that shows them is open.
+ */
+export function useRosterStats(ids: string[], enabled: boolean) {
+  const queries = useQueries({
+    queries: ids.map((id) => ({ enabled, queryKey: ['playerStats', id], queryFn: () => fetchPlayerStats(id), staleTime: HOUR })),
+  });
+  const byId = new Map<string, PlayerSeasonStats | undefined>(ids.map((id, i) => [id, queries[i]?.data]));
+  return { statsOf: (id: string) => byId.get(id), pending: enabled && queries.some((q) => q.isPending), loaded: queries.filter((q) => q.data).length };
+}
+
+/**
+ * Who started each of a team's last `count` finished games and whether it won: from the box scores, through the same cached `['game', id]`
+ * query the game page reads (a finished game never changes, so each is read once). ESPN has no lineup feed; starting fives are what a box
+ * score does say. `total` is how many games were asked for, `done` how many have come back.
+ */
+export function useRecentStarts(teamId: string | null | undefined, enabled: boolean, count = 10) {
+  const { data: schedule } = useTeamSchedule(enabled ? teamId : undefined);
+  const recent = (schedule ?? [])
+    .filter((g) => g.completed && g.result)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, count);
+  const queries = useQueries({
+    queries: recent.map((g) => ({
+      enabled,
+      queryKey: ['game', g.id],
+      queryFn: () => fetchGameSummary(g.id),
+      staleTime: Infinity,
+    })),
+  });
+  const games: StartedGame[] = [];
+  queries.forEach((q, i) => {
+    const summary = q.data;
+    const game = recent[i];
+    if (!summary || !game) return;
+    const side = summary.home.team.id === teamId ? summary.home : summary.away.team.id === teamId ? summary.away : undefined;
+    if (!side) return;
+    games.push({ gameId: game.id, won: game.result === 'W', starterIds: side.starters.map((p) => p.id) });
+  });
+  return { games, total: recent.length, done: queries.filter((q) => q.data).length, pending: enabled && (!schedule || queries.some((q) => q.isPending)) };
 }
 
 export function usePlayerGameLog(athleteId?: string | null) {

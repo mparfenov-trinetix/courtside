@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { useWindowDimensions } from 'react-native';
 
-import { appWidthOf, isRegularWidth, uiScale } from '@/lib/layout';
+import { appWidthOf, gridColumns, gridItemWidth, isRegularWidth, uiScale } from '@/lib/layout';
 
 /**
  * The size the app is drawn at: `useWindowDimensions`, with the width cut to the column the app lives in (see `lib/layout`). On a phone it is the
@@ -11,6 +11,17 @@ import { appWidthOf, isRegularWidth, uiScale } from '@/lib/layout';
 export function useAppWindow() {
   const { width, height } = useWindowDimensions();
   return { width: appWidthOf(width), height, windowWidth: width, regular: isRegularWidth(width) };
+}
+
+/**
+ * Columns for a list of cards or rows: as many as fit at `min` points each in the app's width less `inset` (the page's side padding, both sides),
+ * one on a phone. `itemWidth` is each item's width, for a grid built by hand.
+ */
+export function useGridColumns(min = 380, inset = 32, gap = 8) {
+  const { width } = useAppWindow();
+  const available = width - inset;
+  const columns = gridColumns(available, min, gap);
+  return { columns, gap, itemWidth: gridItemWidth(available, columns, gap) };
 }
 
 /** The factor to multiply a phone-drawn size by: 1 on a phone, more on an iPad or a Mac window (see `uiScale`). */

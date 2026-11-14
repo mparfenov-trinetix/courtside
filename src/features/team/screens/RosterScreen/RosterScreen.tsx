@@ -9,14 +9,16 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
-import Animated, { Easing, interpolateColor, withTiming, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import Animated, { Easing, interpolateColor, withTiming, useAnimatedScrollHandler, useAnimatedStyle, useDerivedValue, useSharedValue } from 'react-native-reanimated';
 
-import { ListSkeleton, ScreenHeader } from '@/components';
-import { useAppWindow, useKeepPagerPlace, useSceneSettled, useTeams } from '@/hooks';
+import { IconButton, ListSkeleton, OptionSheet, ScreenHeader } from '@/components';
+import { useSceneSettled, useTeams, useAppWindow, useKeepPagerPlace } from '@/hooks';
 import { fetchRoster, type Team } from '@/lib/espn';
 import { palette, teamTheme } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
-import { TeamPills, TeamRoster } from '../../components';
+import { COMPACT_AT, TeamPills, TeamRoster } from '../../components';
+import { ROSTER_MODES, type RosterMode } from '../../constants';
+import { loadRosterMode, rememberedRosterMode, saveRosterMode } from '../../utils/roster-mode';
 
 /** After the slide-in from the menu is over, how long before the rows are built. */
 const OPEN_MS = 100;
@@ -58,6 +60,31 @@ function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
   const [index, setIndex] = useState(start);
   // Turned to a new width the pager stays on its team.
   useKeepPagerPlace(pagerRef, index, width);
+  // The view of every team's page: the list, a card for each player to swipe through, or the team's insights. In the card view the pager's own
+  // sideways swipe is off (a swipe on the cards must not change team); the pills and arrows still do.
+  const [mode, setModeState] = useState<RosterMode>(() => rememberedRosterMode() ?? 'list');
+  const setMode = (next: RosterMode) => {
+    setModeState(next);
+    saveRosterMode(next);
+  };
+  // The first time after launch the saved view is read from disk; a view picked meanwhile wins.
+  useEffect(() => {
+    let live = true;
+    loadRosterMode().then((saved) => {
+      if (live && saved) setModeState(saved);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+  const [sheet, setSheet] = useState(false);
+  const current = ROSTER_MODES.find((m) => m.key === mode) ?? ROSTER_MODES[0]!;
+  // Where each page's list has scrolled to (by place in the pager; a page that was never scrolled has no entry). The strip folds up as the page under it
+  // scrolls: its codes fade and it shortens, and between two pages of the pager it blends from one page's state to the other's.
+  const offsets = useSharedValue<Record<number, number>>({});
+  useEffect(() => {
+    offsets.set({});
+  }, [mode, offsets]);
   // The page a tap or arrow asked for while its scroll is still running. Rapid taps build on it, not on the page
   // last settled on, and the scroll-end events of the animations they interrupted are ignored.
   const pending = useRef<number | null>(null);
@@ -115,6 +142,17 @@ function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
     if (jumping.get()) return;
     page.set(e.contentOffset.x / width);
   });
+  // Whether the page under the strip has scrolled far enough to fold it, blended between two pages while the pager is between them, and then eased in
+  // time (as the game page's collapse is), not tied to the finger: a fast flick would otherwise snap it in a frame or two, and a slow drag would
+  // leave the strip half folded.
+  const compact = useDerivedValue(() => {
+    const at = page.get();
+    const low = Math.floor(at);
+    const part = at - low;
+    const folded = (i: number) => ((offsets.get()[i] ?? 0) > COMPACT_AT ? 1 : 0);
+    const want = part === 0 ? folded(low) : folded(low) * (1 - part) + folded(low + 1) * part;
+    return withTiming(want, { duration: 260, easing: Easing.out(Easing.cubic) });
+  });
   const background = useAnimatedStyle(() => ({
     backgroundColor:
       jumpBlend.get() >= 0
@@ -164,10 +202,17 @@ function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
 
   return (
     <Animated.View style={[styles.root, background]}>
-      <ScreenHeader title="Teams" />
+      <ScreenHeader
+        title="Teams"
+        right={
+          <IconButton onPress={() => setSheet(true)} label={`Roster view: ${current.label}. Change view`}>
+            <current.Icon color={palette.chalk} size={22} />
+          </IconButton>
+        }
+      />
 
       <View style={styles.strip}>
-        <TeamPills teams={teams} page={page} jump={{ from: jumpFrom, to: jumpTo, blend: jumpBlend }} selected={index} onSelect={goTo} />
+        <TeamPills teams={teams} page={page} compact={compact} jump={{ from: jumpFrom, to: jumpTo, blend: jumpBlend }} selected={index} onSelect={goTo} />
       </View>
 
       <Animated.FlatList
@@ -175,9 +220,11 @@ function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
         data={teams}
         horizontal
         pagingEnabled
-        extraData={index}
+        extraData={[index, mode]}
         keyExtractor={(t) => t.id}
         showsHorizontalScrollIndicator={false}
+        // The cards swipe sideways too: with that view open the pager stays put (the pills and arrows change team).
+        scrollEnabled={mode !== 'cards'}
         initialScrollIndex={start}
         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
         // The visible page and two on each side. A longer jump is not scrolled through (see goTo).
@@ -198,9 +245,14 @@ function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
             width={width}
             active={Math.abs(i - index) <= 1 || (settledAt != null && Math.abs(i - settledAt) <= 1)}
             rows={settledAt != null && Math.abs(i - settledAt) <= 1}
+            mode={mode}
+            pageIndex={i}
+            offsets={offsets}
           />
         )}
       />
+
+      <OptionSheet visible={sheet} title="Roster view" options={ROSTER_MODES} value={mode} onPick={setMode} onClose={() => setSheet(false)} />
     </Animated.View>
   );
 }

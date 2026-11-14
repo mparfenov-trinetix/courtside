@@ -17,6 +17,12 @@ export const isRegularWidth = (windowWidth: number): boolean => appWidthOf(windo
 /** A bottom sheet (a view picker, a legend) is never wider than this, however wide the window: a sheet as wide as an iPad is a wall. */
 export const SHEET_MAX = 560;
 
+/** How many columns of items at least `min` wide fit in `available` points with `gap` between them (1 on a phone). */
+export const gridColumns = (available: number, min: number, gap: number): number => Math.max(1, Math.floor((available + gap) / (min + gap)));
+
+/** The width of one item in a grid of `columns` filling `available` points. */
+export const gridItemWidth = (available: number, columns: number, gap: number): number => (available - gap * (columns - 1)) / columns;
+
 /** The widest a page of cards or rows is drawn; wider windows keep the page's background and centre the content. */
 export const READABLE_MAX = 1000;
 

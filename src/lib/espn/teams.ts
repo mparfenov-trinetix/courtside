@@ -44,6 +44,10 @@ export type Player = {
   college?: string;
   experience?: number;
   headshot?: string;
+  /** Where he was born: the country, or "city, country". */
+  country?: string;
+  /** Today's injury status on the roster feed ("Day-To-Day", "Out"), when he has one. */
+  injury?: string;
 };
 
 export type Roster = {
@@ -140,6 +144,8 @@ function normalizePlayer(a: Json): Player {
     college: a.college?.name ?? a.college?.shortName,
     experience: a.experience?.years,
     headshot: a.headshot?.href,
+    country: typeof a.birthPlace?.country === 'string' ? a.birthPlace.country : undefined,
+    injury: typeof a.injuries?.[0]?.status === 'string' ? a.injuries[0].status : undefined,
   };
 }
 

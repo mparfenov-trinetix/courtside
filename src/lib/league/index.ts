@@ -17,3 +17,4 @@ export * from './events';
 export * from './season-result';
 export * from './series-stats';
 export * from './arenas';
+export * from './roster-insights';

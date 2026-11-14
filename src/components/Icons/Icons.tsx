@@ -294,6 +294,42 @@ export function ViewMonthIcon({ size = 22, color }: IconProps) {
   );
 }
 
+/** A list of people: a dot and a line, three times. */
+export function ViewListIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx={5.5} cy={6} r={1.6} {...stroke(color)} />
+      <Circle cx={5.5} cy={12} r={1.6} {...stroke(color)} />
+      <Circle cx={5.5} cy={18} r={1.6} {...stroke(color)} />
+      <Path d="M10.5 6H20M10.5 12H20M10.5 18H20" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+/** Cards to swipe through: one upright card with the edges of its neighbours behind it. */
+export function ViewCardsIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Rect x={7} y={4} width={10} height={16} rx={2.5} {...stroke(color)} />
+      <Path d="M3.5 7.5v9M20.5 7.5v9" {...stroke(color)} />
+      <Circle cx={12} cy={10.5} r={2} {...stroke(color)} />
+      <Path d="M9.4 16.2c.6-1.6 1.6-2.2 2.6-2.2s2 .6 2.6 2.2" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+/** Numbers about a team: three bars of different height on a baseline. */
+export function ViewInsightsIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M4 20h16" {...stroke(color)} />
+      <Rect x={5.5} y={11} width={3.4} height={9} rx={1} {...stroke(color)} />
+      <Rect x={10.3} y={5} width={3.4} height={15} rx={1} {...stroke(color)} />
+      <Rect x={15.1} y={13.5} width={3.4} height={6.5} rx={1} {...stroke(color)} />
+    </Svg>
+  );
+}
+
 /** A tick: a right call, a chosen side. */
 export function CheckIcon({ size = 16, color }: IconProps) {
   return (

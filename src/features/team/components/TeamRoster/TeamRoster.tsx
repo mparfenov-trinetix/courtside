@@ -1,16 +1,23 @@
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { scrollTo, useAnimatedRef, useAnimatedScrollHandler, useSharedValue, type AnimatedRef, type SharedValue } from 'react-native-reanimated';
+import { useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChevronIcon, ErrorState, Card } from '@/components';
 import { RosterSkeleton } from './RosterSkeleton';
-import { useRefresh, useRoster, useScale } from '@/hooks';
+import { useGridColumns, useRefresh, useRoster, useScale } from '@/hooks';
 import type { Player, Team } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha, type TeamTheme, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { useTeamStore } from '@/state';
+import type { RosterMode } from '../../constants';
+import { COLLAPSE_AT } from '../TeamPills';
+import { RosterCards } from '../RosterCards';
+import { RosterInsights } from '../RosterInsights';
 
 /**
  * One team's roster page: its banner, head coach and players. It has no background of its own: the pager paints
@@ -18,10 +25,29 @@ import { useTeamStore } from '@/state';
  * `active` pages load their data (the visible team and the ones next to it). The rows are built only for `rows` pages
  * (the team the pager last came to rest on and its two neighbours, so a swipe to a neighbour shows real rows at once).
  * Every other page, including each one a long jump scrolls through, shows a skeleton, so no page is ever blank and
- * none has to lay out forty rows of headshots mid-flight.
+ * none has to lay out forty rows of headshots mid-flight. `mode` is the view the Teams screen is in: the list, a swipeable card for each
+ * player, or the team's insights (lineups, rankings, makeup, a comparison).
  */
-export function TeamRoster({ team, width, active, rows }: { team: Team; width: number; active: boolean; rows: boolean }) {
+export function TeamRoster({
+  team,
+  width,
+  active,
+  rows,
+  mode = 'list',
+  pageIndex,
+  offsets,
+}: {
+  team: Team;
+  width: number;
+  active: boolean;
+  rows: boolean;
+  mode?: RosterMode;
+  /** This page's place in the pager, and where every page's list has scrolled to (by place): the strip above reads them to fold itself up. */
+  pageIndex?: number;
+  offsets?: SharedValue<Record<number, number>>;
+}) {
   const insets = useSafeAreaInsets();
+  const { columns, itemWidth } = useGridColumns(420);
   const theme = teamTheme(team);
   const { data, isPending, error, refetch } = useRoster(active ? team.id : undefined);
   const refreshControl = useRefresh([['roster', team.id]]);
@@ -39,8 +65,51 @@ export function TeamRoster({ team, width, active, rows }: { team: Team; width: n
     openDetail({ pathname: '/player/[id]', params: { id: player.id, teamId: team.id } });
   };
 
-  return (
-    <View style={[styles.page, { width }]}>
+  // Where this page's list has scrolled to, for the strip above (a page that goes away or starts again counts as not scrolled). A scroll that comes to
+  // rest while the banner is half gone and the strip half folded is finished for you, as on the game page: back to the top, or on to the folded strip.
+  const listRef = useAnimatedRef<Animated.FlatList<Player>>();
+  const insightsRef = useAnimatedRef<Animated.ScrollView>();
+  const flick = useSharedValue(0);
+  const settle = (y: number, velocity: number) => {
+    'worklet';
+    if (y <= 1 || y >= COLLAPSE_AT - 1) return;
+    const down = Math.abs(velocity) > 0.25 ? velocity > 0 : y > COLLAPSE_AT / 2;
+    scrollTo((mode === 'insights' ? insightsRef : listRef) as unknown as AnimatedRef<Animated.ScrollView>, 0, down ? COLLAPSE_AT : 0, true);
+  };
+  const onScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      if (!offsets || pageIndex == null) return;
+      offsets.modify((v) => {
+        'worklet';
+        v[pageIndex] = e.contentOffset.y;
+        return v;
+      });
+    },
+    onEndDrag: (e) => {
+      const v = e.velocity?.y ?? 0;
+      flick.set(v);
+      // With momentum still to come, wait for it to finish (it keeps the flick's direction); without any, settle now.
+      if (Math.abs(v) < 0.05) settle(e.contentOffset.y, 0);
+    },
+    onMomentumEnd: (e) => {
+      settle(e.contentOffset.y, flick.get());
+    },
+  });
+  useEffect(() => {
+    if (!offsets || pageIndex == null) return;
+    const clear = () => offsets.modify((v) => {
+      'worklet';
+      delete v[pageIndex];
+      return v;
+    });
+    clear();
+    return clear;
+  }, [offsets, pageIndex, mode]);
+
+  // The banner is the head of the list or of the insights, so it scrolls away with them; where nothing scrolls (loading, an error, the cards) it stays on top.
+  const scrolls = !error && !isPending && rows && (mode === 'insights' || mode === 'list') && !!data;
+  const banner = (
+    <View style={scrolls ? styles.bannerIn : styles.bannerFixed}>
       <Pressable
         onPress={openTeam}
         accessibilityRole="button"
@@ -60,14 +129,27 @@ export function TeamRoster({ team, width, active, rows }: { team: Team; width: n
           <ChevronIcon color={withAlpha(theme.onPrimary, 0.75)} />
         </Card>
       </Pressable>
+    </View>
+  );
+
+  return (
+    <View style={[styles.page, { width }]}>
+      {scrolls ? null : banner}
 
       {error && rows ? (
         <ErrorState message={error.message} onRetry={refetch} />
       ) : isPending || !rows ? (
         <RosterSkeleton />
+      ) : mode === 'cards' && data ? (
+        <RosterCards players={data.players} team={team} theme={theme} />
+      ) : mode === 'insights' && data ? (
+        <RosterInsights players={data.players} team={team} theme={theme} header={banner} onScroll={onScroll} scrollRef={insightsRef} />
       ) : (
-        <FlatList
+        <Animated.FlatList
+          ref={listRef}
           data={data?.players}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           refreshControl={refreshControl}
           keyExtractor={(p) => p.id}
           showsVerticalScrollIndicator={false}
@@ -76,11 +158,29 @@ export function TeamRoster({ team, width, active, rows }: { team: Team; width: n
           maxToRenderPerBatch={8}
           windowSize={7}
           removeClippedSubviews
+          // Two or three columns of players on an iPad or a Mac window.
+          key={columns}
+          numColumns={columns}
+          columnWrapperStyle={columns > 1 ? { gap: 8 } : undefined}
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24, gap: 8 }}
-          ListHeaderComponent={data?.coach ? <CoachRow coach={data.coach} theme={theme} /> : undefined}
-          renderItem={({ item }) => <PlayerRow player={item} theme={theme} onPress={() => openPlayer(item)} />}
+          ListHeaderComponent={
+            <>
+              {banner}
+              {data?.coach ? <CoachRow coach={data.coach} theme={theme} /> : null}
+            </>
+          }
+          renderItem={({ item }) => (
+            <View style={columns > 1 ? { width: itemWidth } : undefined}>
+              <PlayerRow player={item} theme={theme} onPress={() => openPlayer(item)} />
+            </View>
+          )}
         />
       )}
+
+      {/* The rows slide under the strip, so their top edge fades into the page instead of being cut off along it. */}
+      {scrolls ? (
+        <LinearGradient pointerEvents="none" colors={[theme.background, withAlpha(theme.background, 0)]} style={styles.edge} />
+      ) : null}
     </View>
   );
 }
@@ -143,10 +243,11 @@ const styles = StyleSheet.create({
   page: {
     flex: 1,
   },
+  // The banner on top of a page that does not scroll sits 16 in from the sides; at the head of a list or the insights, whose own padding is 16, it fills the width.
+  edge: { position: 'absolute', top: 0, left: 0, right: 0, height: 22 },
+  bannerFixed: { marginHorizontal: 16, marginTop: 14, marginBottom: 6 },
+  bannerIn: { marginBottom: 8 },
   banner: {
-    marginHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 6,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
