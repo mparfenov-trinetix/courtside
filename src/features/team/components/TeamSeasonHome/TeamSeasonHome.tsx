@@ -1,11 +1,11 @@
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, ListSkeleton, Pill, ScreenHeader, SeasonButton, SeasonSheet, SectionLabel, TeamMark, TITLE_INSET, Glide, headerHeight } from '@/components';
-import { useSeasonGames, useStandings, useTeam, useTilt } from '@/hooks';
+import { useSeasonGames, useStandings, useTeam, useTilt, useAppWindow } from '@/hooks';
 import { currentSeason, teamAsItWas, type Game, type TeamDetail } from '@/lib/espn';
 import { conferenceStanding, PLAYOFFS_FROM, playoffTag, seasonResult } from '@/lib/league';
 import { fonts, fontSize, palette, space, surfaces, teamTheme, withAlpha } from '@/lib/theme';
@@ -13,6 +13,7 @@ import { goBack, openDetail } from '@/navigation';
 import { SeasonResultCard } from '../SeasonResultCard';
 import { CARD_ASPECT, cardHeight, TeamCard } from '../TeamCard';
 import { TeamStarCard } from '../TeamStarCard';
+import { READABLE } from '@/lib/layout';
 
 /** "37-45": wins and losses of a list of finished games. */
 function recordOf(games: Game[]): string {
@@ -31,7 +32,7 @@ function recordOf(games: Game[]): string {
 export function TeamSeasonHome({ teamId, season: initial }: { teamId: string; season: number }) {
   const [season, setSeason] = useState(initial);
   const [picking, setPicking] = useState(false);
-  const { width, height } = useWindowDimensions();
+  const { width, height, regular: wide } = useAppWindow();
   const insets = useSafeAreaInsets();
   const current = useTeam(teamId);
   const team = current ? teamAsItWas(current, season) : null;
@@ -39,7 +40,7 @@ export function TeamSeasonHome({ teamId, season: initial }: { teamId: string; se
   const { data: standings, isPending: standingsPending } = useStandings(season);
   const { data: games, isPending: gamesPending } = useSeasonGames(teamId, season);
 
-  const cardWidth = Math.round(Math.min(width * 0.78, 360, (height - insets.top - insets.bottom - 230) / CARD_ASPECT));
+  const cardWidth = Math.round(Math.min(width * 0.78, wide ? 440 : 360, (height - insets.top - insets.bottom - 230) / CARD_ASPECT));
   const tilt = useTilt({ width: cardWidth, height: cardHeight(cardWidth) }, { scrollSafe: true });
 
   // The title comes in once the card is mostly gone and goes out only when you are back almost at the top (as on the team page).
@@ -103,7 +104,7 @@ export function TeamSeasonHome({ teamId, season: initial }: { teamId: string; se
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: headerHeight(insets.top), paddingBottom: insets.bottom + 32 }}>
+        contentContainerStyle={[READABLE, { paddingTop: headerHeight(insets.top), paddingBottom: insets.bottom + 32 }]}>
         <View style={styles.cardArea}>
           <TeamCard key={season} team={team} detail={detail} standing={standing} loading={standingsPending && !entry} width={cardWidth} tilt={tilt} />
         </View>

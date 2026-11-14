@@ -1,10 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View, type FlatList, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { StyleSheet, Text, View, type FlatList, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { Easing, useAnimatedScrollHandler, useSharedValue, withTiming } from 'react-native-reanimated';
 
-import { prefetchGamesOnDay, useSceneSettled } from '@/hooks';
+import { prefetchGamesOnDay, useSceneSettled, useAppWindow, useKeepPagerPlace } from '@/hooks';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { MONTHS } from '../../constants';
 import { DayPage } from '../DayPage';
@@ -42,13 +42,15 @@ export function DayPager({
   /** The days (local YYYYMMDD) the selected team plays. */
   gameDays: Set<string>;
 }) {
-  const { width } = useWindowDimensions();
+  const { width } = useAppWindow();
   const pagerRef = useRef<FlatList<Date>>(null);
   const found = dates.findIndex((d) => d.getTime() === selected.getTime());
   const index = found < 0 ? Math.max(0, dates.findIndex((d) => d.getTime() === today.getTime())) : found;
 
   // The page the pager is on (or heading to).
   const at = useRef(index);
+  // Turned to a new width the pager stays on its day.
+  useKeepPagerPlace(pagerRef, index, width);
   // The page a tap asked for while its scroll is still running: rapid taps build on it, and the scroll-end events of the
   // animations they interrupted are ignored.
   const pending = useRef<number | null>(null);

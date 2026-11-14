@@ -6,7 +6,8 @@ export const CARD_RATIO = 1.4;
 
 /** The card's width on a screen this wide, and its height. */
 export const playerCardSize = (screenWidth: number) => {
-  const width = Math.min(screenWidth * 0.74, 300);
+  // An iPad or a Mac window gets a bigger card (a phone: at most 300).
+  const width = Math.min(screenWidth * 0.74, screenWidth >= 600 ? 380 : 300);
   return { width, height: Math.round(width * CARD_RATIO) };
 };
 

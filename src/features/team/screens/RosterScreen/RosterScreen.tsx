@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   StyleSheet,
-  useWindowDimensions,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -13,7 +12,7 @@ import {
 import Animated, { Easing, interpolateColor, withTiming, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
 import { ListSkeleton, ScreenHeader } from '@/components';
-import { useSceneSettled, useTeams } from '@/hooks';
+import { useAppWindow, useKeepPagerPlace, useSceneSettled, useTeams } from '@/hooks';
 import { fetchRoster, type Team } from '@/lib/espn';
 import { palette, teamTheme } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
@@ -54,9 +53,11 @@ export function RosterScreen() {
 }
 
 function RosterPager({ teams, start }: { teams: Team[]; start: number }) {
-  const { width } = useWindowDimensions();
+  const { width } = useAppWindow();
   const pagerRef = useRef<FlatList<Team>>(null);
   const [index, setIndex] = useState(start);
+  // Turned to a new width the pager stays on its team.
+  useKeepPagerPlace(pagerRef, index, width);
   // The page a tap or arrow asked for while its scroll is still running. Rapid taps build on it, not on the page
   // last settled on, and the scroll-end events of the animations they interrupted are ignored.
   const pending = useRef<number | null>(null);

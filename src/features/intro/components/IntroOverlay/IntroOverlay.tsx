@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
@@ -21,7 +21,7 @@ import Svg, { Circle, Line } from 'react-native-svg';
 
 import { Basketball, NbaLogo } from '@/components';
 import { currentSeason } from '@/lib/espn';
-import { leaderCategoryOptions, leagueTeamStatsOptions, prefetchGamesOnDay, seasonGamesOptions, teamsOptions } from '@/hooks';
+import { leaderCategoryOptions, leagueTeamStatsOptions, prefetchGamesOnDay, seasonGamesOptions, teamsOptions, useAppWindow } from '@/hooks';
 import { localToday } from '@/lib/date';
 import { endPreloadDrive, preloadWithin, setBehindIntro, whenIdle } from '@/navigation';
 import { fonts, palette } from '@/lib/theme';
@@ -55,7 +55,7 @@ const rise = (to: number, ms: number) => withTiming(to, { duration: ms, easing: 
  * stands still; then the fade. Whatever the budget did not cover is built after the intro has left. It cannot be noMotion: a tap on it does nothing, so the intro always plays whole (only Reduce Motion shortens it).
  */
 export function IntroOverlay({ onDone }: { onDone: () => void }) {
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useAppWindow();
   const reducedMotion = useReducedMotion();
   const queryClient = useQueryClient();
   const { hydrated, favoriteTeamId } = useTeamStore();

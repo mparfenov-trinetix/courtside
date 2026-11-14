@@ -1,10 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { StyleSheet, useWindowDimensions, View, type FlatList, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { StyleSheet, View, type FlatList, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
-import { useSceneSettled } from '@/hooks';
+import { useSceneSettled, useAppWindow, useKeepPagerPlace } from '@/hooks';
 import { StatPills } from '../StatPills';
 import { JUMP_MS, NEAR } from './constants';
 
@@ -28,7 +28,7 @@ export function StatPager({
   renderPage: (key: string, width: number) => ReactNode;
   fallback?: ReactNode;
 }) {
-  const { width } = useWindowDimensions();
+  const { width } = useAppWindow();
   const { stat } = useLocalSearchParams<{ stat?: string }>();
   const found = pages.findIndex((p) => p.key === stat);
   const index = found >= 0 ? found : Math.max(0, pages.findIndex((p) => p.key === defaultKey));
@@ -37,6 +37,8 @@ export function StatPager({
   const labels = pages.map((p) => p.label);
 
   const pagerRef = useRef<FlatList>(null);
+  // Turned to a new width the pager stays on its stat.
+  useKeepPagerPlace(pagerRef, index, width);
   // The page the pager is on or heading to.
   const at = useRef(index);
   // The pager's position as a fractional page: the strip's highlight follows it.

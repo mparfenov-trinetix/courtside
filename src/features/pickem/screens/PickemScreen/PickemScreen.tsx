@@ -10,6 +10,7 @@ import { isLocked, isPickableKind, summarizePicks } from '@/lib/league';
 import { fonts, fontSize, palette, space, withAlpha } from '@/lib/theme';
 import { usePicks } from '@/state';
 import { PickGameCard, PickRecord, PickRow } from '../../components';
+import { READABLE } from '@/lib/layout';
 
 /** What the page says about where picks live and how the favorite is told. */
 const NOTE = "Your picks are kept on this phone only. A pick is final at tip-off; the favorite is ESPN's win chance, or the book's price when there is none.";
@@ -56,7 +57,7 @@ export function PickemScreen() {
   return (
     <View style={styles.root}>
       <ScreenHeader title="Pick'em" color={palette.chalk} />
-      <ScrollView refreshControl={refreshControl} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.lg }}>
+      <ScrollView refreshControl={refreshControl} showsVerticalScrollIndicator={false} contentContainerStyle={[READABLE, { paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.lg }]}>
         <PickRecord summary={summary} />
 
         {todayGames.length + tomorrowGames.length > 0 ? <Text style={styles.hint}>Tap a team to pick it · tap the rest of the card to open the game</Text> : null}

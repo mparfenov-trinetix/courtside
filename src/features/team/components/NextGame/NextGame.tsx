@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { FormDots } from '@/components';
+import { useScale } from '@/hooks';
 import type { Game } from '@/lib/espn';
 import { arenaOf } from '@/lib/league';
 import { fonts, palette, type TeamTheme, withAlpha } from '@/lib/theme';
@@ -33,6 +34,8 @@ function countdown(ms: number) {
 /** The next game and how the team got here. The arena named under the date is the host's: this team's own on a home game, the opponent's on the road. */
 export function NextGame({ schedule, theme, teamId }: { schedule: Game[]; theme: TeamTheme; teamId: string }) {
   const now = useNow(30_000);
+  // 1 on a phone; an iPad or a Mac window draws the opponent's logo and the numbers bigger.
+  const k = useScale();
 
   const upcoming = schedule
     .filter((g) => !g.completed)
@@ -69,15 +72,15 @@ export function NextGame({ schedule, theme, teamId }: { schedule: Game[]; theme:
           accessibilityLabel={`${next.home ? 'vs' : 'at'} ${next.opponent}, ${when}`}
           style={({ pressed }) => [styles.row, pressed && { opacity: 0.8 }]}>
           {next.opponentLogo ? (
-            <Image source={next.opponentLogo} style={styles.logo} contentFit="contain" />
+            <Image source={next.opponentLogo} style={[styles.logo, k > 1 && { width: 52 * k, height: 52 * k }]} contentFit="contain" />
           ) : (
-            <View style={[styles.logo, { backgroundColor: withAlpha(palette.chalk, 0.1), borderRadius: 26 }]} />
+            <View style={[styles.logo, k > 1 && { width: 52 * k, height: 52 * k }, { backgroundColor: withAlpha(palette.chalk, 0.1), borderRadius: 26 * k }]} />
           )}
           <View style={styles.info}>
-            <Text style={styles.opp} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
+            <Text style={[styles.opp, k > 1 && { fontSize: 24 * k }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.65}>
               {next.home ? 'vs' : '@'} {next.opponent}
             </Text>
-            <Text style={styles.when}>{when}</Text>
+            <Text style={[styles.when, k > 1 && { fontSize: 13 * k }]}>{when}</Text>
             {arena ? (
               <Text style={styles.arena} numberOfLines={1}>
                 {arena.name}
@@ -92,7 +95,7 @@ export function NextGame({ schedule, theme, teamId }: { schedule: Game[]; theme:
               </View>
             ) : (
               <>
-                <Text style={[styles.count, { color: theme.accent }]}>{countdown(start - now)}</Text>
+                <Text style={[styles.count, k > 1 && { fontSize: 28 * k }, { color: theme.accent }]}>{countdown(start - now)}</Text>
                 <Text style={styles.countLabel}>to tip-off</Text>
               </>
             )}

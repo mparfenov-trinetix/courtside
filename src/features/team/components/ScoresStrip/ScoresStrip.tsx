@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { ARRIVE, FlashOverlay, HeatBadge, Tick } from '@/components';
-import { useGamesOnDay } from '@/hooks';
+import { useGamesOnDay, useScale } from '@/hooks';
 import { localToday } from '@/lib/date';
 import { gameHeat } from '@/lib/game';
 import { involvesTeam, type ScoreboardGame, type ScoreboardTeam } from '@/lib/espn';
@@ -15,6 +15,8 @@ import { openDetail, sharedTag } from '@/navigation';
 export function ScoresStrip({ accent, highlightTeamId, calendar = false }: { accent: string; highlightTeamId?: string | null; calendar?: boolean }) {
   // Today on the device's own clock, read each render: a drawer screen stays mounted past midnight and must move on to the next day.
   const today = localToday();
+  // 1 on a phone; an iPad or a Mac window draws the cards bigger.
+  const k = useScale();
   const { games } = useGamesOnDay(today, today);
 
   if (!games || games.length === 0) return null;
@@ -57,16 +59,17 @@ export function ScoresStrip({ accent, highlightTeamId, calendar = false }: { acc
               accessibilityRole="button"
               style={({ pressed }) => [
                 styles.card,
+                k > 1 && { width: 138 * k, padding: 12 * k, gap: 6 * k, borderRadius: 16 * k },
                 mine && { borderColor: withAlpha(accent, 0.6) },
                 g.inProgress && { backgroundColor: withAlpha(palette.win, 0.08) },
                 pressed && { opacity: 0.75 },
               ]}>
               <FlashOverlay radius={16} signature={`${g.away.score ?? ''}-${g.home.score ?? ''}-${g.status}`} />
-              <Side team={g.away} completed={g.completed} gameId={g.id} side="away" />
-              <Side team={g.home} completed={g.completed} gameId={g.id} side="home" />
+              <Side k={k} team={g.away} completed={g.completed} gameId={g.id} side="away" />
+              <Side k={k} team={g.home} completed={g.completed} gameId={g.id} side="home" />
               {g.inProgress ? <HeatBadge heat={gameHeat(g.away.score, g.home.score, g.status)} compact /> : null}
               <Tick
-                style={[styles.status, g.inProgress && { color: palette.win }]}
+                style={[styles.status, k > 1 && { fontSize: 11 * k }, g.inProgress && { color: palette.win }]}
                 value={
                   !g.completed && !g.inProgress
                     ? new Date(g.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
@@ -81,16 +84,16 @@ export function ScoresStrip({ accent, highlightTeamId, calendar = false }: { acc
   );
 }
 
-function Side({ team, completed, gameId, side }: { team: ScoreboardTeam; completed: boolean; gameId: string; side: 'away' | 'home' }) {
+function Side({ k, team, completed, gameId, side }: { k: number; team: ScoreboardTeam; completed: boolean; gameId: string; side: 'away' | 'home' }) {
   const dim = completed && !team.winner;
   return (
     <View style={styles.side}>
-      <Animated.View sharedTransitionTag={sharedTag('strip', 'game', gameId, side, 'logo')} style={styles.logo}>
+      <Animated.View sharedTransitionTag={sharedTag('strip', 'game', gameId, side, 'logo')} style={[styles.logo, k > 1 && { width: 24 * k, height: 24 * k }]}>
         {team.logo ? <Image source={team.logo} style={StyleSheet.absoluteFill} contentFit="contain" /> : null}
       </Animated.View>
-      <Text style={[styles.abbr, dim && { color: withAlpha(palette.chalk, 0.5) }]}>{team.abbreviation}</Text>
+      <Text style={[styles.abbr, k > 1 && { fontSize: 14 * k }, dim && { color: withAlpha(palette.chalk, 0.5) }]}>{team.abbreviation}</Text>
       <Animated.View sharedTransitionTag={sharedTag('strip', 'game', gameId, side, 'score')}>
-        <Tick style={[styles.score, dim && { color: withAlpha(palette.chalk, 0.5) }]} value={team.score != null ? Math.round(team.score) : ''} />
+        <Tick style={[styles.score, k > 1 && { fontSize: 20 * k }, dim && { color: withAlpha(palette.chalk, 0.5) }]} value={team.score != null ? Math.round(team.score) : ''} />
       </Animated.View>
     </View>
   );

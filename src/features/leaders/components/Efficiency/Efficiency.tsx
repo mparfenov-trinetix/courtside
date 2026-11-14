@@ -11,6 +11,7 @@ import { openDetail } from '@/navigation';
 
 import { PlayerLine, playerBlurb } from '../PlayerLine';
 import { useLeaderPool } from '../../utils';
+import { READABLE } from '@/lib/layout';
 
 /**
  * Efficiency per game (points, rebounds, assists, steals and blocks, less missed shots, missed free throws and turnovers), worked
@@ -32,7 +33,7 @@ export function Efficiency({ teams }: { teams?: Team[] }) {
     .sort((a, b) => b.value - a.value);
 
   return (
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 8 }}>
+    <ScrollView contentContainerStyle={[READABLE, { paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 8 }]}>
       <Text style={styles.note}>
         Efficiency per game: points + rebounds + assists + steals + blocks, less missed shots, missed free throws and turnovers. Among the
         league&apos;s top scorers, rebounders and passers.

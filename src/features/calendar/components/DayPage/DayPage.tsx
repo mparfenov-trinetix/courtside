@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorState, EmptyState } from '@/components';
+import { READABLE } from '@/lib/layout';
 import { useGamesOnDay, useRefresh, useTeam, useTeams } from '@/hooks';
 import { involvesTeam, type ScoreboardGame } from '@/lib/espn';
 import { teamTheme } from '@/lib/theme';
@@ -66,7 +67,7 @@ function LivePage({ date, today, width }: { date: Date; today: Date; width: numb
     <View style={{ width }}>
       <ScrollView
         refreshControl={refreshControl}
-        contentContainerStyle={[styles.list, // Room for the floating Today pill, so the last card scrolls up clear of it.
+        contentContainerStyle={[READABLE, styles.list, // Room for the floating Today pill, so the last card scrolls up clear of it.
           { paddingBottom: insets.bottom + TODAY_PILL_CLEARANCE }]}
         showsVerticalScrollIndicator={false}>
         {body}

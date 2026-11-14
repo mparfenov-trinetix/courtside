@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureDetector, usePanGesture, usePinchGesture, useSimultaneousGestures, useTapGesture } from 'react-native-gesture-handler';
 import Animated, { interpolate, useAnimatedProps, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import Svg, { G, Line, Path } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { useTeams } from '@/hooks';
+import { useTeams, useAppWindow } from '@/hooks';
 import type { Game } from '@/lib/espn';
 import { tricode } from '@/lib/espn';
 import { ARENAS, arenaOf, milesBetween } from '@/lib/league';
@@ -36,7 +36,7 @@ const clampOffset = (t: number, size: number, z: number) => {
  * the same transform, so they stay the same size at every zoom and stay sharp.
  */
 export function ArenaMap({ teamId, schedule, accent }: { teamId: string; schedule?: Game[]; accent: string }) {
-  const { width } = useWindowDimensions();
+  const { width } = useAppWindow();
   const { data: teams } = useTeams();
   const mapWidth = Math.round(width - 2 * SIDE - 2 * PAD);
   const mapHeight = Math.round(mapWidth / ASPECT);

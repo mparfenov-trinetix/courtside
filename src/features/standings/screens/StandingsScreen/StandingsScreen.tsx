@@ -7,16 +7,19 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Segmented, ErrorState, ListSkeleton, ScreenHeader , SeasonButton, SeasonSheet } from '@/components';
-import { useRefresh, useStandings, useTeams } from '@/hooks';
+import { useRefresh, useScale, useStandings, useTeams } from '@/hooks';
 import { currentSeason, teamInSeason, type StandingEntry } from '@/lib/espn';
 import { hasPlayIn } from '@/lib/league';
 import { fonts, matchupColors, palette, teamTheme, withAlpha, surfaces } from '@/lib/theme';
 import { useTeamStore } from '@/state';
 import { goBack, openDetail, sharedTag, teamHref } from '@/navigation';
+import { READABLE } from '@/lib/layout';
 
 type Conference = 'league' | 'east' | 'west';
 
 const COL = { w: 30, l: 30, pct: 44, gb: 38, strk: 40 };
+/** The columns' widths, grown with the numbers on an iPad or a Mac window (`k` is 1 on a phone). */
+const colsOf = (k: number) => ({ w: COL.w * k, l: COL.l * k, pct: COL.pct * k, gb: COL.gb * k, strk: COL.strk * k });
 
 const TABS: { key: Conference; label: string }[] = [
   { key: 'league', label: 'League' },
@@ -137,7 +140,7 @@ function StandingsTable({
           onScrollToIndexFailed={(info) => listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false })}
           refreshControl={refreshControl}
           keyExtractor={(item, i) => ('sectionTitle' in item ? `header-${item.sectionTitle}` : `${item.teamId}-${i}`)}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 6 }}
+          contentContainerStyle={[READABLE, { paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 6 }]}
           ListHeaderComponent={<ColumnHeader />}
           renderItem={({ item }) => {
             if ('sectionTitle' in item) {
@@ -152,14 +155,16 @@ function StandingsTable({
 }
 
 function ColumnHeader() {
+  const k = useScale();
+  const col = colsOf(k);
   return (
     <View style={styles.columnHeader}>
       <Text style={[styles.colHeaderText, { flex: 1 }]} />
-      <Text style={[styles.colHeaderText, { width: COL.w }]}>W</Text>
-      <Text style={[styles.colHeaderText, { width: COL.l }]}>L</Text>
-      <Text style={[styles.colHeaderText, { width: COL.pct }]}>PCT</Text>
-      <Text style={[styles.colHeaderText, { width: COL.gb }]}>GB</Text>
-      <Text style={[styles.colHeaderText, { width: COL.strk }]}>STRK</Text>
+      <Text style={[styles.colHeaderText, k > 1 && { fontSize: 11 * k }, { width: col.w }]}>W</Text>
+      <Text style={[styles.colHeaderText, k > 1 && { fontSize: 11 * k }, { width: col.l }]}>L</Text>
+      <Text style={[styles.colHeaderText, k > 1 && { fontSize: 11 * k }, { width: col.pct }]}>PCT</Text>
+      <Text style={[styles.colHeaderText, k > 1 && { fontSize: 11 * k }, { width: col.gb }]}>GB</Text>
+      <Text style={[styles.colHeaderText, k > 1 && { fontSize: 11 * k }, { width: col.strk }]}>STRK</Text>
     </View>
   );
 }
@@ -180,6 +185,9 @@ function TeamRow({ entry, season, name, highlight }: { entry: StandingEntry; sea
   const favoriteTeamId = useTeamStore((s) => s.favoriteTeamId);
   const gbText = entry.gamesBehind === 0 ? '—' : entry.gamesBehind.toFixed(1);
   const pctText = entry.winPct.toFixed(3).replace(/^0/, '');
+  // 1 on a phone; an iPad or a Mac window draws the rows' logo, name and numbers bigger.
+  const k = useScale();
+  const col = colsOf(k);
   const streakColor = entry.streak.startsWith('W') ? palette.win : entry.streak.startsWith('L') ? palette.loss : palette.muted;
 
   return (
@@ -196,29 +204,30 @@ function TeamRow({ entry, season, name, highlight }: { entry: StandingEntry; sea
         accessibilityLabel={`Open ${entry.teamName}`}
         style={({ pressed }) => [
           styles.row,
+          k > 1 && { paddingVertical: 8 * k, borderRadius: 14 * k },
           highlight ? { backgroundColor: withAlpha(highlight, 0.2), borderWidth: 1.5, borderColor: withAlpha(highlight, 0.85) } : null,
           pressed && { opacity: 0.7 },
         ]}>
-        <Text style={styles.seed}>{entry.seed}</Text>
+        <Text style={[styles.seed, k > 1 && { fontSize: 13 * k, width: 22 * k }]}>{entry.seed}</Text>
         {entry.teamLogo ? (
-          <Animated.View sharedTransitionTag={sharedTag('standings', 'team', entry.teamId, 'logo')} style={styles.logo}>
+          <Animated.View sharedTransitionTag={sharedTag('standings', 'team', entry.teamId, 'logo')} style={[styles.logo, k > 1 && { width: 28 * k, height: 28 * k }]}>
             <Image source={entry.teamLogo} style={StyleSheet.absoluteFill} contentFit="contain" />
           </Animated.View>
         ) : (
-          <View style={[styles.logo, { backgroundColor: surfaces.raised, borderRadius: 14 }]} />
+          <View style={[styles.logo, k > 1 && { width: 28 * k, height: 28 * k }, { backgroundColor: surfaces.raised, borderRadius: 14 * k }]} />
         )}
         <View style={{ flex: 1 }}>
           {/* The nickname, as the team was called that season; the longest (Timberwolves, Trail Blazers) shrink a little to fit the row. */}
-          <Text style={styles.teamName} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+          <Text style={[styles.teamName, k > 1 && { fontSize: 15 * k }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
             {name}
             {entry.teamId === favoriteTeamId ? '  ★' : ''}
           </Text>
         </View>
-        <Text style={[styles.stat, { width: COL.w }]}>{entry.wins}</Text>
-        <Text style={[styles.stat, { width: COL.l }]}>{entry.losses}</Text>
-        <Text style={[styles.stat, { width: COL.pct }]}>{pctText}</Text>
-        <Text style={[styles.stat, { width: COL.gb, color: palette.muted }]}>{gbText}</Text>
-        <Text style={[styles.stat, { width: COL.strk, color: streakColor, fontFamily: fonts.bodyBold }]}>{entry.streak || '–'}</Text>
+        <Text style={[styles.stat, k > 1 && { fontSize: 14 * k }, { width: col.w }]}>{entry.wins}</Text>
+        <Text style={[styles.stat, k > 1 && { fontSize: 14 * k }, { width: col.l }]}>{entry.losses}</Text>
+        <Text style={[styles.stat, k > 1 && { fontSize: 14 * k }, { width: col.pct }]}>{pctText}</Text>
+        <Text style={[styles.stat, k > 1 && { fontSize: 14 * k }, { width: col.gb, color: palette.muted }]}>{gbText}</Text>
+        <Text style={[styles.stat, k > 1 && { fontSize: 14 * k }, { width: col.strk, color: streakColor, fontFamily: fonts.bodyBold }]}>{entry.streak || '–'}</Text>
       </Pressable>
     </View>
   );

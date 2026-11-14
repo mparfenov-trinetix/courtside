@@ -4,11 +4,12 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState, ErrorState, ListSkeleton } from '@/components';
-import { useLeaderCategory, useRefresh } from '@/hooks';
+import { useLeaderCategory, useRefresh, useScale } from '@/hooks';
 import type { LeaderCategory, LeaderEntry, Team } from '@/lib/espn';
 import { fonts, palette, surfaces, teamTheme, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { PlayerLine, playerBlurb } from '../../components/PlayerLine';
+import { READABLE } from '@/lib/layout';
 
 const PAGE = 10;
 
@@ -37,7 +38,7 @@ export function LeaderPage({ category, title, teams }: { category: LeaderCategor
       refreshControl={refreshControl}
       showsVerticalScrollIndicator={false}
       keyExtractor={(item, i) => `${category}-${item.entry.athleteId}-${i}`}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 8 }}
+      contentContainerStyle={[READABLE, { paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 8 }]}
       onEndReached={() => {
         if (hasMore) setDisplayCount((n) => Math.min(n + PAGE, all.length));
       }}
@@ -60,16 +61,18 @@ export function LeaderPage({ category, title, teams }: { category: LeaderCategor
 function LeaderRow({ entry, team, rank }: { entry: LeaderEntry; team?: Team; rank: number }) {
   const teamColor = entry.teamColor.startsWith('#') ? entry.teamColor : `#${entry.teamColor}`;
   const canNavigate = !!entry.athleteId && !!entry.teamId;
+  // 1 on a phone; an iPad or a Mac window draws the photo, name and number bigger.
+  const k = useScale();
 
   return (
     <Pressable accessibilityRole="button"
       onPress={() => canNavigate && openDetail({ pathname: '/player/[id]', params: { id: entry.athleteId, teamId: entry.teamId } })}
       style={({ pressed }) => [styles.row, pressed && canNavigate && { opacity: 0.7 }]}>
-      <Text style={[styles.rank, rank <= 3 && styles.rankTop]}>{rank}</Text>
+      <Text style={[styles.rank, k > 1 && { fontSize: 15 * k, width: 22 * k }, rank <= 3 && styles.rankTop]}>{rank}</Text>
 
-      <View style={[styles.headshotWrap, { backgroundColor: withAlpha(teamColor, 0.25) }]}>
+      <View style={[styles.headshotWrap, k > 1 && { width: 48 * k, height: 48 * k, borderRadius: 24 * k }, { backgroundColor: withAlpha(teamColor, 0.25) }]}>
         {entry.headshot ? (
-          <Image source={entry.headshot} style={styles.headshot} contentFit="cover" transition={100} />
+          <Image source={entry.headshot} style={[styles.headshot, k > 1 && { width: 56 * k, height: 48 * k }]} contentFit="cover" transition={100} />
         ) : (
           <Text style={styles.initials}>
             {entry.name
@@ -82,14 +85,14 @@ function LeaderRow({ entry, team, rank }: { entry: LeaderEntry; team?: Team; ran
       </View>
 
       <View style={{ flex: 1 }}>
-        <Text style={styles.playerName} numberOfLines={1}>
+        <Text style={[styles.playerName, k > 1 && { fontSize: 16 * k }]} numberOfLines={1}>
           {entry.name}
         </Text>
         <PlayerLine team={team}>{playerBlurb(entry)}</PlayerLine>
       </View>
 
       {/* The percentages carry what he makes a game: "58%" with "(1.1)" beside it. */}
-      <Text style={[styles.value, rank === 1 && { color: palette.chalk }]}>
+      <Text style={[styles.value, k > 1 && { fontSize: 28 * k }, rank === 1 && { color: palette.chalk }]}>
         {entry.displayValue}
         {entry.made ? <Text style={styles.made}> ({entry.made})</Text> : null}
       </Text>

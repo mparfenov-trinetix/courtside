@@ -11,6 +11,7 @@ import { formatMetric, ordinal, type TeamMetric } from '@/lib/league';
 import { fonts, palette, withAlpha, surfaces, teamTheme } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { FULL } from './constants';
+import { READABLE } from '@/lib/layout';
 
 /**
  * One stat of the Team Leaders pager: every team ranked by it. All pages rank the same cached league feed, so a page costs a sort
@@ -46,7 +47,7 @@ export const MetricPage = memo(function MetricPage({
         keyExtractor={(r) => r.teamId}
         showsVerticalScrollIndicator={false}
         initialNumToRender={12}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 6 }}
+        contentContainerStyle={[READABLE, { paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 6 }]}
         ListHeaderComponent={<Text style={styles.categoryLabel}>{FULL[metric.key]}</Text>}
         renderItem={({ item, index }) => (
           <TeamRow

@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,11 +9,12 @@ import { useSlotsStyle } from '../CompareBar';
 import { CompareRow, rowWinner, type Row } from '../CompareRow';
 import { Radar, type RadarAxis } from '../Radar';
 import { Button, HeadToHead, EmptyState, MINI_CARD_RATIO, MiniCardEmpty, MiniTeamCard, PageSheet, dealIn } from '@/components';
-import { useLeagueTeamStats, useSceneSettled, useStandings, useTeamDetail, useTeams } from '@/hooks';
+import { useLeagueTeamStats, useSceneSettled, useStandings, useTeamDetail, useTeams, useAppWindow } from '@/hooks';
 import type { Team, TeamStatRow } from '@/lib/espn';
 import { TEAM_METRICS, conferenceStanding, formatMetric, metricByKey, ordinal, rankOf, type TeamMetric } from '@/lib/league';
 import { fonts, matchupColors, palette, teamTheme, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
+import { READABLE } from '@/lib/layout';
 
 function buildRows(rows: TeamStatRow[], a: TeamStatRow, b: TeamStatRow): Row[] {
   const out: Row[] = [];
@@ -66,7 +67,7 @@ export function TeamCompare({ scrollY }: { scrollY: SharedValue<number> }) {
   const { teams, idA, idB, teamA, teamB, colors } = useTeamPicks();
   const { data: table, isPending, isError, refetch } = useLeagueTeamStats();
   const [picking, setPicking] = useState<'a' | 'b' | null>(null);
-  const { width: screen } = useWindowDimensions();
+  const { width: screen } = useAppWindow();
   const cardW = Math.floor((screen - 32 - 10) / 2);
   const { data: standings, isLoading: loadingStandings } = useStandings();
   // A team chosen after the screen has settled is dealt in with a flip (not on the screen's own first draw, inside the slide in from the menu).
@@ -171,7 +172,7 @@ function TeamPicker({
         <FlatList
           data={teams}
           keyExtractor={(t) => t.id}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          contentContainerStyle={[READABLE, { paddingBottom: insets.bottom + 24 }]}
           renderItem={({ item }) => {
             const disabled = item.id === disabledId;
             return (

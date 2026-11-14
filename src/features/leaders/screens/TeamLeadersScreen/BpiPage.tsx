@@ -8,6 +8,7 @@ import { usePowerIndex, useRefresh } from '@/hooks';
 import type { PowerRow, Team } from '@/lib/espn';
 import { fontSize, fonts, palette, radius, space, surfaces, teamTheme, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
+import { READABLE } from '@/lib/layout';
 
 const signed = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(1)}`;
 const pct = (n: number) => (n >= 10 ? `${Math.round(n)}%` : n >= 0.1 ? `${n.toFixed(1)}%` : '<0.1%');
@@ -34,7 +35,7 @@ export const BpiPage = memo(function BpiPage({ teams, currentTeamId, width }: { 
           keyExtractor={(r) => r.teamId}
           showsVerticalScrollIndicator={false}
           initialNumToRender={10}
-          contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: 6 }}
+          contentContainerStyle={[READABLE, { paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: 6 }]}
           ListHeaderComponent={
             <Text style={styles.category}>
               {`Basketball Power Index: the points a team would beat an average team by, on a neutral court. ESPN's rating, with its projection of the season.`}

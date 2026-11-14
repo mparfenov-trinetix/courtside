@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FlashOverlay, PickMark, Tick } from '@/components';
-import { prefetchHeadToHead, usePlayoffSeeds } from '@/hooks';
+import { prefetchHeadToHead, usePlayoffSeeds, useScale } from '@/hooks';
 import { CupBadge } from '@/features/cup';
 import { PlayoffBadge } from '@/features/playoffs';
 import { seasonOfDate, teamInSeason, type ScoreboardGame, type Team } from '@/lib/espn';
@@ -50,6 +50,8 @@ export function GameCard({
   extra?: ReactNode;
 }) {
   const { home, away, status, completed, inProgress } = game;
+  // 1 on a phone; an iPad or a Mac window draws the logos, names and scores bigger.
+  const k = useScale();
   const client = useQueryClient();
   const started = completed || inProgress;
 
@@ -79,8 +81,8 @@ export function GameCard({
   const showLead = inProgress && lead > 0;
   const leader = leaderAbbr(away, home);
 
-  const awaySide = <TeamSide team={away} logo={awayThen?.logoDark || awayThen?.logo || away.logo} winner={away.winner} completed={completed} seed={seeds?.[away.teamId]} pick={pick} />;
-  const homeSide = <TeamSide team={home} logo={homeThen?.logoDark || homeThen?.logo || home.logo} winner={home.winner} completed={completed} seed={seeds?.[home.teamId]} pick={pick} right />;
+  const awaySide = <TeamSide k={k} team={away} logo={awayThen?.logoDark || awayThen?.logo || away.logo} winner={away.winner} completed={completed} seed={seeds?.[away.teamId]} pick={pick} />;
+  const homeSide = <TeamSide k={k} team={home} logo={homeThen?.logoDark || homeThen?.logo || home.logo} winner={home.winner} completed={completed} seed={seeds?.[home.teamId]} pick={pick} right />;
 
   return (
     <Pressable
@@ -89,7 +91,7 @@ export function GameCard({
       onPress={() => openDetail({ pathname: '/game/[id]', params: { id: game.id } })}
       accessibilityRole="button"
       accessibilityLabel={`${away.abbreviation} at ${home.abbreviation}, ${line}`}
-      style={({ pressed }) => [styles.card, mine && { borderColor: withAlpha(accent, 0.75) }, pressed && { opacity: 0.8 }]}>
+      style={({ pressed }) => [styles.card, k > 1 && { paddingVertical: 12 * k, paddingHorizontal: 12 * k, borderRadius: 16 * k }, mine && { borderColor: withAlpha(accent, 0.75) }, pressed && { opacity: 0.8 }]}>
       <LinearGradient
         colors={[withAlpha(colors.away, 0.34), withAlpha(colors.away, 0.04), withAlpha(colors.home, 0.04), withAlpha(colors.home, 0.34)]}
         locations={[0, 0.38, 0.62, 1]}
@@ -103,7 +105,7 @@ export function GameCard({
 
       {wrapSide ? wrapSide('away', awaySide) : awaySide}
 
-      <View style={styles.mid}>
+      <View style={[styles.mid, k > 1 && { width: 112 * k }]}>
         {hasTags ? (
           <View style={styles.tags}>
             {game.cup ? <CupBadge stage={game.cup} /> : null}
@@ -114,16 +116,16 @@ export function GameCard({
         ) : null}
         {started ? (
           <View style={styles.scores}>
-            <Score value={away.score} dim={completed && !away.winner} live={inProgress} />
+            <Score k={k} value={away.score} dim={completed && !away.winner} live={inProgress} />
             <Text style={styles.dash}>–</Text>
-            <Score value={home.score} dim={completed && !home.winner} live={inProgress} />
+            <Score k={k} value={home.score} dim={completed && !home.winner} live={inProgress} />
           </View>
         ) : (
-          <Text style={styles.tipTime}>{tip}</Text>
+          <Text style={[styles.tipTime, k > 1 && { fontSize: 25 * k, lineHeight: 28 * k }]}>{tip}</Text>
         )}
         <View style={styles.statusRow}>
           {inProgress ? <View style={styles.liveDot} /> : null}
-          <Status live={inProgress} done={completed} text={started ? line : 'Tip-off'} />
+          <Status k={k} live={inProgress} done={completed} text={started ? line : 'Tip-off'} />
         </View>
         {showLead ? (
           <Text style={styles.leadText}>
@@ -139,28 +141,29 @@ export function GameCard({
   );
 }
 
-function Score({ value, dim, live }: { value?: number; dim: boolean; live: boolean }) {
+function Score({ k, value, dim, live }: { k: number; value?: number; dim: boolean; live: boolean }) {
   if (value == null) return null;
-  const style = [styles.score, dim && { color: withAlpha(palette.chalk, 0.58) }];
+  const style = [styles.score, k > 1 && { fontSize: 32 * k, lineHeight: 34 * k }, dim && { color: withAlpha(palette.chalk, 0.58) }];
   return live ? <Tick style={style} value={Math.round(value)} /> : <Text style={style}>{Math.round(value)}</Text>;
 }
 
 /** The clock or "Final": animated only while the game is on. */
-function Status({ live, done, text }: { live: boolean; done: boolean; text: string }) {
-  const style = [styles.statusText, live && { color: palette.win }, done && { color: withAlpha(palette.chalk, 0.65) }];
+function Status({ k, live, done, text }: { k: number; live: boolean; done: boolean; text: string }) {
+  const style = [styles.statusText, k > 1 && { fontSize: 11 * k }, live && { color: palette.win }, done && { color: withAlpha(palette.chalk, 0.65) }];
   return live ? <Tick style={style} value={text} /> : <Text style={style}>{text}</Text>;
 }
 
 /** One team: logo, abbreviation and record; the home side is mirrored. */
-function TeamSide({ team, logo: source, winner, completed, seed, pick, right }: { team: ScoreboardGame['home']; logo: string; winner?: boolean; completed: boolean; seed?: number; pick?: GamePick; right?: boolean }) {
+function TeamSide({ k, team, logo: source, winner, completed, seed, pick, right }: { k: number; team: ScoreboardGame['home']; logo: string; winner?: boolean; completed: boolean; seed?: number; pick?: GamePick; right?: boolean }) {
   const loser = completed && !winner;
+  const size = k > 1 ? { width: 40 * k, height: 40 * k } : null;
   // Never an empty hole: a team without a logo shows its abbreviation in a disc.
   const logo = (
-    <View style={styles.teamLogo}>
+    <View style={[styles.teamLogo, size]}>
       {source ? (
-        <Image source={source} style={styles.teamLogo} contentFit="contain" />
+        <Image source={source} style={[styles.teamLogo, size]} contentFit="contain" />
       ) : (
-        <View style={[styles.teamLogo, styles.logoFallback]}>
+        <View style={[styles.teamLogo, size, styles.logoFallback, { borderRadius: 20 * k }]}>
           <Text style={styles.logoFallbackText}>{(team.abbreviation || team.name).slice(0, 3)}</Text>
         </View>
       )}
@@ -171,11 +174,11 @@ function TeamSide({ team, logo: source, winner, completed, seed, pick, right }: 
     <View style={[styles.side, right && styles.sideRight]}>
       {right ? null : logo}
       <View style={{ alignItems: right ? 'flex-end' : 'flex-start' }}>
-        <Text style={[styles.teamName, loser && { color: withAlpha(palette.chalk, 0.55) }]} numberOfLines={1}>
+        <Text style={[styles.teamName, k > 1 && { fontSize: 16 * k }, loser && { color: withAlpha(palette.chalk, 0.55) }]} numberOfLines={1}>
           {team.abbreviation || team.name}
           {seed ? <Text style={styles.seed}> ({seed})</Text> : null}
         </Text>
-        {team.record ? <Text style={styles.record}>{team.record}</Text> : null}
+        {team.record ? <Text style={[styles.record, k > 1 && { fontSize: 11 * k }]}>{team.record}</Text> : null}
       </View>
       {right ? logo : null}
     </View>

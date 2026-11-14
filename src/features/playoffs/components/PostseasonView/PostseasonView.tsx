@@ -11,6 +11,7 @@ import { currentSeason, seasonLabel } from '@/lib/espn';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
 import { openDetail, pushOnce, teamHref } from '@/navigation';
+import { READABLE } from '@/lib/layout';
 
 const GOLD = palette.gold;
 
@@ -44,7 +45,7 @@ function PostseasonPane({ season, kind }: { season: number; kind: 'playoffs' | '
     <ScrollView
       refreshControl={refreshControl}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 24 }}>
+      contentContainerStyle={[READABLE, { paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 24 }]}>
       {champion && finals && (
         <Animated.View>
           <Pressable

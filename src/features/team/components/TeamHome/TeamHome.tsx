@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { scheduleOnRN } from 'react-native-worklets';
 import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,12 +23,13 @@ import { TeamSeasonStats } from '../TeamSeasonStats';
 import { TeamStarCard } from '../TeamStarCard';
 import { TitleOdds } from '../TitleOdds';
 import { Watchlist } from '@/features/watchlist';
-import { useManualRefresh, useStandings, useTeam, useTeamDetail, useTeamSchedule, useTilt } from '@/hooks';
+import { useManualRefresh, useStandings, useTeam, useTeamDetail, useTeamSchedule, useTilt, useAppWindow } from '@/hooks';
 import { conferenceStanding } from '@/lib/league';
 import { streakOf } from '@/lib/widgets';
 import type { Game } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha, surfaces } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
+import { READABLE } from '@/lib/layout';
 
 /**
  * The team card page. As the drawer's "Team card" screen it shows the current team and a menu button;
@@ -38,7 +39,7 @@ import { useScreenTeamStore } from '@/state';
 const REFRESH_MIN_MS = 2400;
 
 export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string | null; pushed?: boolean; origin?: string }) {
-  const { width, height } = useWindowDimensions();
+  const { width, height, regular } = useAppWindow();
   const insets = useSafeAreaInsets();
   const { currentTeamId, favoriteTeamId, viewTeam } = useScreenTeamStore();
   const [switching, setSwitching] = useState(false);
@@ -52,7 +53,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
   const theme = teamTheme(team);
   const rival = useTeam(pushed && favoriteTeamId !== teamId ? favoriteTeamId : null);
 
-  const cardWidth = Math.round(Math.min(width * 0.78, 360, (height - insets.top - insets.bottom - 230) / CARD_ASPECT));
+  const cardWidth = Math.round(Math.min(width * 0.78, regular ? 440 : 360, (height - insets.top - insets.bottom - 230) / CARD_ASPECT));
   const tilt = useTilt({ width: cardWidth, height: cardHeight(cardWidth) }, { scrollSafe: true });
   // Pull the page down past the threshold and let go: the card plays the team's own refresh (see TeamRefresh/motions.ts).
   const { refreshing, refresh } = useManualRefresh([['team', teamId], ['schedule', teamId], ['standings'], ['leagueTeamStats'], ['scoreboard']], REFRESH_MIN_MS);
@@ -190,7 +191,7 @@ export function TeamHome({ teamId, pushed = false, origin }: { teamId?: string |
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight(insets.top), paddingBottom: insets.bottom + 32 }]}>
+        contentContainerStyle={[READABLE, styles.scrollContent, { paddingTop: headerHeight(insets.top), paddingBottom: insets.bottom + 32 }]}>
         {/* Team card */}
         <View style={styles.cardArea}>
           {pushed ? (

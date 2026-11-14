@@ -8,6 +8,7 @@ import { useFutures, useRefresh } from '@/hooks';
 import type { FuturesEntry, Team } from '@/lib/espn';
 import { fontSize, fonts, palette, radius, space, surfaces, teamTheme, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
+import { READABLE } from '@/lib/layout';
 
 const pct = (chance: number) => (chance >= 0.1 ? `${Math.round(chance * 100)}%` : chance >= 0.001 ? `${(chance * 100).toFixed(1)}%` : '<0.1%');
 
@@ -39,7 +40,7 @@ export const OddsPage = memo(function OddsPage({ teams, currentTeamId, width }: 
           keyExtractor={(e) => e.id}
           showsVerticalScrollIndicator={false}
           initialNumToRender={10}
-          contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: 6 }}
+          contentContainerStyle={[READABLE, { paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: 6 }]}
           ListHeaderComponent={
             <Text style={styles.category}>{`Odds to win the NBA title, as a chance with the sportsbook's margin removed (DraftKings, via ESPN). Not advice.`}</Text>
           }

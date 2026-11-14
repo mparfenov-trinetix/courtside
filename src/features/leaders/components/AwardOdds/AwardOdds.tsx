@@ -7,6 +7,7 @@ import { useFutures, useTeams } from '@/hooks';
 import { marketLabel, type FuturesEntry, type FuturesMarket, type Team } from '@/lib/espn';
 import { fontSize, fonts, palette, radius, space, surfaces, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
+import { READABLE } from '@/lib/layout';
 
 /** How many names each market lists: the favorites, the rest are long shots. */
 const SHOWN = 5;
@@ -27,7 +28,7 @@ export function AwardOdds() {
     return <EmptyState title="No award odds right now" text="ESPN lists no player award markets at the moment (the sportsbook opens and closes them, and the MVP market was there earlier today). They appear here as soon as ESPN lists them again." placement="center" />;
   }
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.lg }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[READABLE, { paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.lg }]}>
       {markets.map((market) => (
         <Market key={market.key} market={market} teams={teams ?? []} />
       ))}

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { Glass } from '@/components';
+import { SHEET_MAX } from '@/lib/layout';
 import { fonts, palette, ratingTone, surfaces, withAlpha } from '@/lib/theme';
 
 const OPEN_MS = 280;
@@ -122,9 +123,10 @@ export function LegendSheet({ visible, live = false, onClose }: { visible: boole
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, justifyContent: 'flex-end' },
+  // On an iPad or a Mac window the sheet keeps a sheet's width, not the window's.
+  root: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
   dim: { backgroundColor: '#000000' },
-  limit: { maxHeight: '86%' },
+  limit: { maxHeight: '86%', width: '100%', maxWidth: SHEET_MAX },
   sheetPlain: { backgroundColor: palette.arenaRaised },
   sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 16, paddingTop: 8, flexShrink: 1 },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 6 },

@@ -14,6 +14,7 @@ import { fonts, fontSize, palette, space } from '@/lib/theme';
 import { goBack } from '@/navigation';
 import { SeriesHeaderTitle, SeriesHero, SeriesPerformances } from '../../components';
 import { useSeries } from './useSeries';
+import { READABLE } from '@/lib/layout';
 
 const day = (iso: string) => new Date(iso.replace(/T(\d\d:\d\d)Z$/, 'T$1:00Z')).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
@@ -66,7 +67,7 @@ export function SeriesScreen() {
     const topTeam = teamOf(series.top.teamId);
     const bottomTeam = teamOf(series.bottom.teamId);
     body = (
-      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
+      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={[READABLE, { paddingBottom: insets.bottom + 32 }]}>
         <SeriesHero series={series} top={{ score: series.topWins }} bottom={{ score: series.bottomWins }} />
 
         {/* The two best players over the series face to face, and the best nights: they arrive once the games' box scores have, and what is under them glides down. */}

@@ -3,7 +3,7 @@ import { useLocalSearchParams, type Href } from 'expo-router';
 
 import { useState } from 'react';
 
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import Animated, { Easing, useAnimatedScrollHandler, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ArrowLeftIcon, Card, EmptyState, GlassButton } from '@/components';
 
-import { useAfterSettle, useAllStars, usePlayerBio, usePlayerCareer, usePlayerGameLog, usePlayerProfile, useInjuries, usePlayerStats, useRefresh, useRoster, useTeam } from '@/hooks';
+import { useAfterSettle, useAllStars, usePlayerBio, usePlayerCareer, usePlayerGameLog, usePlayerProfile, useInjuries, usePlayerStats, useRefresh, useRoster, useTeam, useAppWindow } from '@/hooks';
 
 import { cupSeasons, nba2kRating, titleSeasons } from '@/lib/league';
 
@@ -53,7 +53,7 @@ function formatBorn(iso: string) {
 type Tab = 'season' | 'career' | 'games' | 'info';
 
 export function PlayerScreen() {
-  const { width } = useWindowDimensions();
+  const { width } = useAppWindow();
   const insets = useSafeAreaInsets();
   const { id, teamId: linkedTeamId } = useLocalSearchParams<{ id: string; teamId: string }>();
   // The link carries the team he played for in the game, season or list it came from. He may have moved since, or

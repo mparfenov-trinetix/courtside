@@ -8,6 +8,7 @@ import { useAllStarWeekend, useRefresh } from '@/hooks';
 import { allStarSeasons, currentSeason } from '@/lib/espn';
 import { palette } from '@/lib/theme';
 import { EventsBack } from '@/features/events';
+import { READABLE } from '@/lib/layout';
 
 /**
  * All-Star Weekend by year: the game (or games, the format has changed over the years), who played and the MVP. The dunk, three-point and
@@ -31,7 +32,7 @@ export function AllStarScreen() {
       ) : data.games.length === 0 && data.mvps.length === 0 ? (
         <EmptyState title="No game found" text={`ESPN has no All-Star Game for ${season}.`} placement="center" />
       ) : (
-        <ScrollView refreshControl={refreshControl} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
+        <ScrollView refreshControl={refreshControl} showsVerticalScrollIndicator={false} contentContainerStyle={[READABLE, { paddingBottom: insets.bottom + 24 }]}>
           <WeekendHero weekend={data} />
           <AllStarGames games={data.games} />
           <MissingGameNote weekend={data} />

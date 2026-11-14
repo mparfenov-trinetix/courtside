@@ -7,7 +7,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
@@ -15,12 +14,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CompareHeaderTitle, CompareRow, PlayerExtras, PlayerHeadToHead, type Row, Radar, type RadarAxis, TeamCompare, useSlotsStyle, useTeamPicks } from '../../components';
 import { Button, MINI_CARD_RATIO, MiniCardEmpty, MiniPlayerCard, PageSheet, Segmented, dealIn, slideIn, ScreenHeader, SearchInput, EmptyState } from '@/components';
-import { usePlayerCareer, usePlayerSearch, usePlayerStats, useSceneSettled, useTeams } from '@/hooks';
+import { usePlayerCareer, usePlayerSearch, usePlayerStats, useSceneSettled, useTeams, useAppWindow } from '@/hooks';
 import { currentSeason, headshotUrl, seasonLabel, teamAsItWas, tricode, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
 import { lastNameOf, nba2kRating, namesScale } from '@/lib/league';
 import { goBack } from '@/navigation';
 import { fonts, matchupColors, palette, teamTheme, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { MODES, SCOPES, CEILING } from './constants';
+import { READABLE } from '@/lib/layout';
 
 type Slot = PlayerSearchResult | null;
 
@@ -164,7 +164,7 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
         ? buildRows(statsA, statsB, { a: slotA?.name, b: slotB?.name })
         : [];
   // The numbers on the cards: season averages, or the career's when that is what is compared; the better of each pair is lit.
-  const { width: screen } = useWindowDimensions();
+  const { width: screen } = useAppWindow();
   const cardW = Math.floor((screen - 32 - 10) / 2);
   const lineOf = (season?: PlayerSeasonStats, rec?: Record<string, string>) =>
     viaCareer
@@ -217,7 +217,7 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
       {/* The title is "Compare" until the cards have scrolled away, then the two sides rise into the same row. */}
       <ScreenHeader title={<CompareHeaderTitle a={bar?.a} b={bar?.b} scrollY={scrollY} cardH={cardH} scale={mode === 'teams' || !slotA || !slotB ? 1 : namesScale(slotA.name, slotB.name)} />} onBack={pushed ? goBack : undefined} />
       {/* Inside the scroll view, so it scrolls away with the page instead of taking room all the time. */}
-      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={[READABLE, { paddingBottom: insets.bottom + 32 }]} showsVerticalScrollIndicator={false}>
         <Segmented
           style={{ marginBottom: 14 }}
           options={[...MODES]}
@@ -381,7 +381,7 @@ function PickerModal({
           data={data ?? []}
           keyExtractor={(p) => p.id}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          contentContainerStyle={[READABLE, { paddingBottom: insets.bottom + 24 }]}
           ListEmptyComponent={
             query.trim().length >= 2 && !isFetching ? <Text style={styles.noResults}>{isError ? 'Couldn’t search. Check your connection.' : 'No players found'}</Text> : undefined
           }

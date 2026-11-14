@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   Extrapolation,
@@ -20,13 +20,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BoxScoreTab, GameBackdrop, GameLogos, GameSkeleton, HERO_INSET, backdropColors, PlayByPlay, GameTopBar, ScoreHero, ShotChart, SummaryTab, GameStickyBar, type GameTab, type LogoSlot } from '../../components';
 import { ArrowLeftIcon, IconButton, slideIn, ErrorState } from '@/components';
 import { playoffTag } from '@/lib/league';
-import { useGameSummary, useGameTeams, useHeadToHead, usePlayoffSeeds, useRefresh, useTeams } from '@/hooks';
+import { useGameSummary, useGameTeams, useHeadToHead, usePlayoffSeeds, useRefresh, useTeams, useAppWindow } from '@/hooks';
 import type { BoxScorePlayer, BoxScoreTeam } from '@/lib/espn';
 import { buildPeriodOptions, timeoutLabel, deriveFlow, numsFromLine, numsFromTotals, playersWithStats, deriveQuarterStats, emptyLine, lineToStats, sumPeriods, type Line, type QuarterStats } from '@/lib/game';
 import { kickoffLabel } from '@/lib/date';
 import { matchupColors, mix, palette } from '@/lib/theme';
 import { goBack } from '@/navigation';
 import { useWatchlist } from '@/state';
+import { READABLE, READABLE_MAX } from '@/lib/layout';
 
 const TAB_ORDER: GameTab[] = ['summary', 'box', 'plays', 'shots'];
 
@@ -36,7 +37,7 @@ const TAB_ORDER: GameTab[] = ['summary', 'box', 'plays', 'shots'];
  */
 export function GameScreen() {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width } = useAppWindow();
   const { id, o } = useLocalSearchParams<{ id: string; o?: string }>();
   const { data, isPending, error, refetch } = useGameSummary(id);
   // A finished game never changes (it is cached forever), so there is nothing to pull for.
@@ -227,7 +228,8 @@ export function GameScreen() {
       <View
         style={{ flex: 1 }}
         onLayout={(e) => {
-          frame.current = { x: e.nativeEvent.layout.x, y: e.nativeEvent.layout.y };
+          // The page's content is centred at READABLE_MAX on a wide window, and the header's slots are measured inside it.
+          frame.current = { x: e.nativeEvent.layout.x + Math.max(0, (width - READABLE_MAX) / 2), y: e.nativeEvent.layout.y };
           place();
         }}>
       <Animated.ScrollView
@@ -237,7 +239,7 @@ export function GameScreen() {
         refreshControl={refreshControl}
         stickyHeaderIndices={tabbed ? [1] : undefined}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
+        contentContainerStyle={[READABLE, { paddingBottom: insets.bottom + 32 }]}>
         <ScoreHero
           away={away}
           home={home}

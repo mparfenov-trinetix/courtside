@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { fonts, palette, withAlpha } from '@/lib/theme';
+import { useAppWindow } from '@/hooks';
 
 const FACE = 32;
 /** The names' font size at full size. */
@@ -37,7 +38,7 @@ export function useSlotsStyle(scrollY: SharedValue<number>, cardH: number) {
  * it lives in the row that says "Compare". Without both sides picked it is just the word.
  */
 export function CompareHeaderTitle({ a, b, scrollY, cardH, scale = 1, title = 'Compare' }: { a?: BarSide | null; b?: BarSide | null; scrollY: SharedValue<number>; cardH: number; /** The names' size as a share of full size (see `namesScale`): the same for both. */ scale?: number; title?: string }) {
-  const { width: screen } = useWindowDimensions();
+  const { width: screen } = useAppWindow();
   const start = startOf(cardH);
   const end = endOf(cardH);
   const word = useAnimatedStyle(() => ({

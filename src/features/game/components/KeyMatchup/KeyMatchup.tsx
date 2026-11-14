@@ -1,15 +1,16 @@
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { Extrapolation, FadeIn, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 import type { Href } from 'expo-router';
 
-import { useTeam, useTeamRated } from '@/hooks';
+import { useTeam, useTeamRated, useAppWindow } from '@/hooks';
 import { currentSeason, seasonLabel, type Injury, type Team } from '@/lib/espn';
 import { GROUP_LABEL, pickKeyMatchup, type PositionGroup } from '@/lib/league';
 import { fonts, palette, radius, teamTheme, textStyle, withAlpha } from '@/lib/theme';
 import { openDetail, pushOnce } from '@/navigation';
 import { MINI_CARD_RATIO, MiniPlayerCard, type MiniStar } from '@/components';
-import { GAP, MEET_DELAY_MS, SIDE } from './constants';
+import { READABLE_MAX } from '@/lib/layout';
+import { GAP, MAX_CARD, MEET_DELAY_MS, SIDE } from './constants';
 
 /** One side of the duel: a team and the player it is represented by. */
 export type DuelSide = { team: Team; star: MiniStar };
@@ -68,9 +69,12 @@ export function KeyMatchupView({
   /** The season these two played in, for a game or series of the past: "Compare their seasons" then compares that season, not the one in progress. */
   season?: number;
 }) {
-  const { width: screen } = useWindowDimensions();
+  const { width: screen } = useAppWindow();
   const reduced = useReducedMotion();
-  const cardW = Math.floor((screen - SIDE * 2 - GAP) / 2);
+  // The cards stop growing at a size a trading card can have; on a wider page the pair sits in the middle of it (pages are READABLE_MAX wide at most).
+  const box = Math.min(screen, READABLE_MAX);
+  const cardW = Math.min(Math.floor((box - SIDE * 2 - GAP) / 2), MAX_CARD);
+  const sideX = Math.round((box - cardW * 2 - GAP) / 2);
   const cardH = Math.round(cardW * MINI_CARD_RATIO);
   const awayTheme = teamTheme(away.team);
   const homeTheme = teamTheme(home.team);
@@ -118,13 +122,13 @@ export function KeyMatchupView({
 
   return (
     <Animated.View entering={FadeIn.duration(320)} style={[styles.wrap, section && styles.section]}>
-      <Text style={styles.title}>{title ?? (group ? `Key matchup · ${GROUP_LABEL[group]}` : 'Key matchup')}</Text>
-      <View style={[styles.row, { height: cardH }]}>
+      <Text style={[styles.title, { paddingHorizontal: sideX }]}>{title ?? (group ? `Key matchup · ${GROUP_LABEL[group]}` : 'Key matchup')}</Text>
+      <View style={[styles.row, { height: cardH, paddingHorizontal: sideX }]}>
         <MiniPlayerCard team={away.team} theme={awayTheme} star={away.star} width={cardW} better={better(away, home)} unit={unit} style={awayStyle} onPress={() => open(away)} />
         <MiniPlayerCard team={home.team} theme={homeTheme} star={home.star} width={cardW} better={better(home, away)} unit={unit} style={homeStyle} onPress={() => open(home)} />
         {/* Where they meet: a flash in white, then the VS badge. */}
-        <Animated.View pointerEvents="none" style={[styles.flash, { left: SIDE + cardW + GAP / 2 - 26, height: cardH }, flashStyle]} />
-        <Animated.View pointerEvents="none" style={[styles.vs, { left: screen / 2 - 20, top: cardH / 2 - 20 }, vsStyle]}>
+        <Animated.View pointerEvents="none" style={[styles.flash, { left: sideX + cardW + GAP / 2 - 26, height: cardH }, flashStyle]} />
+        <Animated.View pointerEvents="none" style={[styles.vs, { left: box / 2 - 20, top: cardH / 2 - 20 }, vsStyle]}>
           <Text style={styles.vsText}>VS</Text>
         </Animated.View>
       </View>

@@ -10,6 +10,7 @@ import { gameHeat, periodLabel, TIMEOUTS_PER_GAME } from '@/lib/game';
 import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 import { goBack, openDetail, sharedTag, teamHref } from '@/navigation';
 import { BAR_LOGO, HERO_LOGO } from '../GameLogos';
+import { useScale } from '@/hooks';
 
 // ─── Big header ───────────────────────────────────────────────────────────────
 
@@ -55,6 +56,8 @@ export function ScoreHero({
   /** The game's season (the year it ends in): tapping a team that went by another name then opens that name's card. */
   season?: number;
 }) {
+  // 1 on a phone; an iPad or a Mac window draws the score bigger.
+  const k = useScale();
   const filtered = selPeriods != null;
   const bars = useAnimatedStyle(() => ({ opacity: scrollY ? Math.max(0, 1 - scrollY.get() / 36) : 1 }));
   // The clock, timeout and heat labels fade as the header starts to collapse, before the top bar shows the same ones: at no
@@ -88,15 +91,15 @@ export function ScoreHero({
           {hasStarted ? (
             <View style={styles.bigScore}>
               <Animated.View sharedTransitionTag={sharedTag(origin, 'game', gameId ?? '', 'away', 'score')}>
-                <RollingNumber value={away.score} fontSize={32} style={styles.vsScore} />
+                <RollingNumber value={away.score} fontSize={32 * k} style={[styles.vsScore, k > 1 && { fontSize: 32 * k }]} />
               </Animated.View>
-              <Text style={styles.vsScore}>–</Text>
+              <Text style={[styles.vsScore, k > 1 && { fontSize: 32 * k }]}>–</Text>
               <Animated.View sharedTransitionTag={sharedTag(origin, 'game', gameId ?? '', 'home', 'score')}>
-                <RollingNumber value={home.score} fontSize={32} style={styles.vsScore} />
+                <RollingNumber value={home.score} fontSize={32 * k} style={[styles.vsScore, k > 1 && { fontSize: 32 * k }]} />
               </Animated.View>
             </View>
           ) : (
-            <Text style={styles.vsScore}>vs</Text>
+            <Text style={[styles.vsScore, k > 1 && { fontSize: 32 * k }]}>vs</Text>
           )}
           <Animated.View style={[styles.labels, labels]}>
             {live ? <LivePill label={status} /> : <Text style={styles.gameStatus}>{status}</Text>}
@@ -188,6 +191,7 @@ function TeamScore({
   showTimeouts: boolean;
   barsStyle: StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>;
 }) {
+  const k = useScale();
   return (
     <Pressable
       onPress={() => openDetail(teamHref(team.team.id, season))}
@@ -196,8 +200,8 @@ function TeamScore({
       style={({ pressed }) => [styles.teamBlock, right && styles.teamBlockRight, pressed && { opacity: 0.7 }]}>
       <View style={styles.lockup}>
         {/* Empty: it only keeps the room. The logo is drawn above the page, so it can travel into the top bar. */}
-        <View ref={slot} onLayout={onLayout} style={styles.teamLogo} />
-        <Text style={styles.teamAbbr}>
+        <View ref={slot} onLayout={onLayout} style={[styles.teamLogo, k > 1 && { width: HERO_LOGO * k, height: HERO_LOGO * k }]} />
+        <Text style={[styles.teamAbbr, k > 1 && { fontSize: 24 * k }]}>
           {team.team.abbreviation}
           {seed ? <Text style={styles.seed}> ({seed})</Text> : null}
         </Text>

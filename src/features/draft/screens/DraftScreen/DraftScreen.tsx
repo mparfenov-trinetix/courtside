@@ -9,6 +9,7 @@ import { currentSeason, draftSeasons, teamInSeason, type NbaDraftPick } from '@/
 import { palette, space } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
 import { EventsBack } from '@/features/events';
+import { READABLE } from '@/lib/layout';
 
 type Item = { key: string; round: number } | { key: string; pick: NbaDraftPick };
 const ROUND_NAMES: Record<number, string> = { 1: 'First round', 2: 'Second round' };
@@ -59,7 +60,7 @@ export function DraftScreen() {
           maxToRenderPerBatch={8}
           windowSize={7}
           ListHeaderComponent={<DraftHero draft={data} teamOf={teamOf} />}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 24, gap: space.sm }}
+          contentContainerStyle={[READABLE, { paddingBottom: insets.bottom + 24, gap: space.sm }]}
           renderItem={({ item }) =>
             'round' in item ? (
               <SectionLabel style={{ paddingHorizontal: space.lg, paddingTop: space.md }}>{ROUND_NAMES[item.round] ?? `Round ${item.round}`}</SectionLabel>

@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
@@ -16,7 +16,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { useTilt } from '@/hooks';
+import { useTilt, useAppWindow } from '@/hooks';
 import { NBA2K_TOP_COUNT, type Nba2kRating } from '@/lib/league';
 import { fonts, palette, withAlpha } from '@/lib/theme';
 import { COUNT_DELAY_MS, COUNT_MS, CARD_HEIGHT, MAX_ROTATE, RADIUS, tintFor } from './constants';
@@ -34,13 +34,13 @@ const AnimatedInput = Animated.createAnimatedComponent(TextInput);
  */
 export function RatingCard({ rating, scrollY }: { rating: Nba2kRating; scrollY: SharedValue<number> }) {
   const tint = tintFor(rating.overall);
-  const { width: screen } = useWindowDimensions();
+  const { width: screen } = useAppWindow();
   const width = screen - 32;
   const tilt = useTilt({ width, height: CARD_HEIGHT }, { scrollSafe: true });
   const { x, y } = tilt;
 
   // The reveal: 0 until the card is on screen, then 1. The count and the glint start with it.
-  const { height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight } = useAppWindow();
   const ref = useAnimatedRef<Animated.View>();
   const reveal = useSharedValue(0);
   const started = useSharedValue(false);

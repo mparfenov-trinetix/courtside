@@ -1,11 +1,11 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
 import { ListSkeleton, PaneTitle, ScreenHeader, SeasonButton, SeasonSheet, Spotlight } from '@/components';
 import { PlayInView, PlayoffsView } from '../../components';
-import { useSceneSettled } from '@/hooks';
+import { useSceneSettled, useAppWindow } from '@/hooks';
 import { currentSeason } from '@/lib/espn';
 import { hasPlayIn } from '@/lib/league';
 import { palette } from '@/lib/theme';
@@ -21,7 +21,7 @@ const LABELS = ['Playoffs', 'Play-In'];
  */
 export function PlayoffsScreen({ pushed = false }: { pushed?: boolean }) {
   const params = useLocalSearchParams<{ teams?: string; season?: string; pane?: string }>();
-  const { width } = useWindowDimensions();
+  const { width } = useAppWindow();
   const spot = pushed ? (params.teams ?? '').split(',').filter(Boolean) : [];
   const [season, setSeason] = useState(pushed && params.season ? Number(params.season) : currentSeason());
   // The pane on screen (0 playoffs, 1 play-in); kept across a season change, which starts the pager over on it.
@@ -48,7 +48,7 @@ export function PlayoffsScreen({ pushed = false }: { pushed?: boolean }) {
         {playIn ? (
           <Animated.ScrollView
             // A season change starts the pager over, on the pane you were on.
-            key={season}
+            key={`${season}-${width}`}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}

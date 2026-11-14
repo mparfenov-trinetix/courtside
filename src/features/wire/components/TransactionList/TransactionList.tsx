@@ -8,6 +8,7 @@ import { useRefresh, useTeams, useTransactions } from '@/hooks';
 import type { Transaction } from '@/lib/espn';
 import { fontSize, fonts, palette, space, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
+import { READABLE } from '@/lib/layout';
 
 const PAGE = 40;
 const dayLabel = (iso: string) => new Date(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' });
@@ -48,7 +49,7 @@ export function TransactionList() {
       showsVerticalScrollIndicator={false}
       initialNumToRender={12}
       windowSize={7}
-      contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.sm }}
+      contentContainerStyle={[READABLE, { paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.sm }]}
       ListFooterComponent={
         more ? <Button tone="secondary" label={isFetching ? 'Loading…' : 'Show earlier moves'} onPress={() => setLimit((n) => n + PAGE)} style={{ marginTop: space.md }} /> : undefined
       }

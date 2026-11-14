@@ -16,6 +16,7 @@ import { useTeams , useRefresh } from '@/hooks';
 
 import { palette, teamTheme, withAlpha, textStyle } from '@/lib/theme';
 import { useWatchlist, type WatchedPlayer } from '@/state';
+import { READABLE } from '@/lib/layout';
 
 
 export function WatchlistScreen() {
@@ -63,7 +64,7 @@ export function WatchlistScreen() {
             ) : undefined
           }
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}
+          contentContainerStyle={[READABLE, { paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }]}
           renderSectionHeader={({ section }) => (
             <View style={styles.sectionHeader}>
               {section.team?.logoDark || section.team?.logo ? (

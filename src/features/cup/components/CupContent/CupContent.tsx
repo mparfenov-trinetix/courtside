@@ -15,6 +15,7 @@ import { openDetail } from '@/navigation';
 import { useTeamStore } from '@/state';
 import { CupGameList } from '../CupGames';
 import { GroupCard } from '../GroupCard';
+import { READABLE } from '@/lib/layout';
 
 type View_ = 'groups' | 'games' | 'knockout';
 const VIEWS = [
@@ -58,7 +59,7 @@ export function CupContent({ season, initialView = 'groups' }: { season?: number
           <ScrollView
             refreshControl={refreshControl}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}>
+            contentContainerStyle={[READABLE, { paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }]}>
             <Animated.View key={view} entering={slideIn(slide)}>
               {view === 'groups' ? (
                 <Groups cup={cup} favoriteTeamId={favoriteTeamId} />

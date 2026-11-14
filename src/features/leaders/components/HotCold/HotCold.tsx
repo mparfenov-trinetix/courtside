@@ -13,6 +13,7 @@ import { PlayerLine } from '../PlayerLine';
 import { useLeaderPool } from '../../utils';
 
 import { SHOWN } from './constants';
+import { READABLE } from '@/lib/layout';
 
 const HOT = palette.win;
 const COLD = '#60A5FA';
@@ -37,7 +38,7 @@ export function HotCold({ teams }: { teams?: Team[] }) {
     .reverse();
 
   return (
-    <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}>
+    <ScrollView contentContainerStyle={[READABLE, { paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }]}>
       <Text style={styles.note}>
         His last 5 games (3 while the season is young) against the rest of his season, by impact: points, rebounds, assists, steals and
         blocks, less turnovers. Among the league&apos;s top scorers, rebounders and passers.

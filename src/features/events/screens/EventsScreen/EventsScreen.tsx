@@ -7,6 +7,7 @@ import { CupIcon, DraftIcon, MedalIcon, ScreenHeader, StarIcon } from '@/compone
 import { eventsOnNow, orderEvents, type EventKey } from '@/lib/league';
 import { palette, space } from '@/lib/theme';
 import { EventCard } from '../../components';
+import { READABLE } from '@/lib/layout';
 
 const EVENTS: Record<EventKey, { title: string; text: string; href: Href; icon: (color: string) => React.ReactNode }> = {
   cup: { title: 'NBA Cup', text: 'The groups, the standings and the knockout', href: '/cup' as Href, icon: (c) => <CupIcon color={c} size={26} /> },
@@ -25,7 +26,7 @@ export function EventsScreen() {
   return (
     <View style={styles.root}>
       <ScreenHeader title="Events" color={palette.chalk} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.md }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[READABLE, { paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.md }]}>
         {order.map((key) => (
           <EventCard
             key={key}

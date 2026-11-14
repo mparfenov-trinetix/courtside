@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,6 +7,7 @@ import type { BoxScoreTeam } from '@/lib/espn';
 import { fonts } from '@/lib/theme';
 import { openDetail, sharedTag, teamHref } from '@/navigation';
 import { BAR_LOGO, BAR_ROW, BAR_TOP, HERO_LOGO } from './constants';
+import { useAppWindow, useScale } from '@/hooks';
 
 /** Where a logo sits in the big header, measured on screen at scroll 0 (its center). */
 export type LogoSlot = { x: number; y: number };
@@ -72,11 +73,14 @@ function Logo({
   tag?: string;
 }) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width } = useAppWindow();
   const barY = insets.top + BAR_TOP + BAR_ROW / 2;
   const { size, offset } = hasStarted ? BAR_LOGO.started : BAR_LOGO.pregame;
   const barX = width / 2 + side * offset;
-  const half = HERO_LOGO / 2;
+  // 1 on a phone; an iPad or a Mac window draws the big header's logo bigger (the slot in ScoreHero grows with it).
+  const k = useScale();
+  const hero = HERO_LOGO * k;
+  const half = hero / 2;
 
   const style = useAnimatedStyle(() => {
     const from = slot.get();
@@ -88,7 +92,7 @@ function Logo({
         { translateX: from.x - half + (barX - from.x) * progress },
         // Rides up with the page, then stays at the bar.
         { translateY: Math.max(from.y - scroll, barY) - half },
-        { scale: 1 + (size / HERO_LOGO - 1) * progress },
+        { scale: 1 + (size / hero - 1) * progress },
       ],
     };
   });
@@ -98,7 +102,7 @@ function Logo({
 
   const source = team.team.logoDark || team.team.logo;
   return (
-    <Animated.View style={[styles.logo, style]}>
+    <Animated.View style={[styles.logo, { width: hero, height: hero }, style]}>
       <Pressable
         onPress={() => openDetail(teamHref(team.team.id, season))}
         accessibilityRole="button"

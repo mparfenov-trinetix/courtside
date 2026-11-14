@@ -1,10 +1,10 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
 import { ListSkeleton, PaneTitle, ScreenHeader } from '@/components';
-import { useSceneSettled } from '@/hooks';
+import { useSceneSettled, useAppWindow } from '@/hooks';
 import { NewsScreen } from '@/features/news';
 import { InjuryReport, TransactionList } from '@/features/wire';
 import { palette } from '@/lib/theme';
@@ -19,7 +19,7 @@ const PANES = ['news', 'injuries', 'moves'];
  * which one is on screen, with a dot for each. `pane` (a prop, or the route's param) opens one; the old `/news` and `/wire` routes render this with it set.
  */
 export function AroundScreen({ pane: opened }: { pane?: 'news' | 'injuries' | 'moves' } = {}) {
-  const { width } = useWindowDimensions();
+  const { width } = useAppWindow();
   const params = useLocalSearchParams<{ pane?: string }>();
   const start = Math.max(0, PANES.indexOf(opened ?? params.pane ?? 'news'));
   const favoriteTeamId = useScreenTeamStore((s) => s.favoriteTeamId);
@@ -36,11 +36,12 @@ export function AroundScreen({ pane: opened }: { pane?: 'news' | 'injuries' | 'm
     <View style={{ flex: 1, backgroundColor: palette.arena }}>
       <ScreenHeader title={<PaneTitle labels={LABELS} page={page} />} />
       <Animated.ScrollView
-        key={start}
+        // Turned to a new width the pager starts again on the pane it was on.
+        key={`${start}-${width}`}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        contentOffset={{ x: start * width, y: 0 }}
+        contentOffset={{ x: pane * width, y: 0 }}
         onScroll={onScroll}
         scrollEventThrottle={16}
         onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) => setPane(Math.round(e.nativeEvent.contentOffset.x / width))}

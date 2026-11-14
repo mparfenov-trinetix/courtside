@@ -8,6 +8,7 @@ import { useRefresh, useSeasonAwards, useTeams } from '@/hooks';
 import { awardSeasons, currentSeason, teamInSeason } from '@/lib/espn';
 import { palette } from '@/lib/theme';
 import { EventsBack } from '@/features/events';
+import { READABLE } from '@/lib/layout';
 
 /**
  * The season awards by year, from 1999-00: MVP, Finals MVP, Defensive Player, Rookie, Sixth Man, Most Improved and Clutch Player of the Year, the
@@ -34,7 +35,7 @@ export function AwardsScreen() {
       ) : data.groups.length === 0 ? (
         <EmptyState title="No awards yet" text={`ESPN has no awards for the ${season - 1}-${String(season).slice(-2)} season yet. They are given out in the spring.`} placement="center" />
       ) : (
-        <ScrollView refreshControl={refreshControl} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
+        <ScrollView refreshControl={refreshControl} showsVerticalScrollIndicator={false} contentContainerStyle={[READABLE, { paddingBottom: insets.bottom + 24 }]}>
           <AwardsHero awards={data} teamOf={teamOf} />
           {data.groups.map((group) => (
             <AwardSection key={group.key} group={group} teamOf={teamOf} />

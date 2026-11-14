@@ -7,6 +7,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { Glass } from '@/components';
 import { CALENDAR_MODES, type CalendarMode } from '../../constants';
+import { SHEET_MAX } from '@/lib/layout';
 import { fonts, palette, withAlpha, surfaces } from '@/lib/theme';
 
 const OPEN_MS = 280;
@@ -58,7 +59,7 @@ export function ViewSheet({
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, dim]}>
           <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
         </Animated.View>
-        <Animated.View onLayout={(e) => height.set(e.nativeEvent.layout.height)} style={sheet}>
+        <Animated.View onLayout={(e) => height.set(e.nativeEvent.layout.height)} style={[sheet, styles.limit]}>
           <Glass tint={withAlpha(palette.arena, 0.55)} style={[styles.sheet, { paddingBottom: insets.bottom + 12 }]} fallbackStyle={styles.sheetPlain}>
           <View style={styles.head}>
             <Text style={styles.title}>Calendar view</Text>
@@ -93,8 +94,10 @@ export function ViewSheet({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, justifyContent: 'flex-end' },
+  // On an iPad or a Mac window the sheet keeps a sheet's width, not the window's.
+  root: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
   dim: { backgroundColor: '#000000' },
+  limit: { width: '100%', maxWidth: SHEET_MAX },
   sheetPlain: { backgroundColor: palette.arenaRaised },
   sheet: {
     borderTopLeftRadius: 28,

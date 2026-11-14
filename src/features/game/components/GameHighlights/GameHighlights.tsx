@@ -1,10 +1,10 @@
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import { createElement, useState } from 'react';
-import { Pressable, StyleSheet, Text, TurboModuleRegistry, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TurboModuleRegistry, View } from 'react-native';
 
 import { Highlights, PlayIcon, Skeleton, SkeletonGroup } from '@/components';
-import { useGameVideo } from '@/hooks';
+import { useGameVideo, useAppWindow } from '@/hooks';
 import type { GameVideo, Team } from '@/lib/espn';
 import { fonts, palette, radius, textStyle, withAlpha } from '@/lib/theme';
 import { youtubeThumbnail, youtubeWatchUrl } from '@/lib/youtube';
@@ -34,7 +34,7 @@ const SIDE = 16;
  * (`useWindowSizeGuard` in the root layout puts the window size right once it is closed).
  */
 export function GameHighlights({ gameId, away, home, awayScore, homeScore, date, completed, clips }: { gameId: string; away: Team; home: Team; awayScore: number; homeScore: number; date?: string; completed: boolean; /** ESPN's clips of the game, the ones to show under the video. */ clips: GameVideo[] }) {
-  const { width } = useWindowDimensions();
+  const { width } = useAppWindow();
   const height = Math.round(((width - SIDE * 2) * 9) / 16);
   const { data, isPending } = useGameVideo({ id: gameId, awayName: away.name, homeName: home.name, awayScore, homeScore, date }, completed);
   const [playing, setPlaying] = useState(false);

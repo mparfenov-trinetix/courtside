@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeInDown,
   FadeOutDown,
@@ -13,15 +13,16 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NbaLogo, ErrorState, OutlinedLogo, Skeleton, SkeletonGroup } from '@/components';
-import { useTeams } from '@/hooks';
+import { useTeams, useAppWindow } from '@/hooks';
 import type { Team } from '@/lib/espn';
 import { fonts, logoOn, OUTLINED_LOGO, palette, teamTheme, withAlpha } from '@/lib/theme';
 import { useTeamStore } from '@/state';
-import { COLUMNS, GAP, PADDING } from './constants';
+import { COLUMNS, GAP, PADDING, REGULAR_COLUMNS } from './constants';
 
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, regular } = useAppWindow();
+  const columns = regular ? REGULAR_COLUMNS : COLUMNS;
   const { data: teams, isPending, error, refetch } = useTeams();
   const { favoriteTeamId, setFavorite } = useTeamStore();
   const [selectedId, setSelectedId] = useState<string | null>(favoriteTeamId);
@@ -31,7 +32,7 @@ export function OnboardingScreen() {
 
   const selected = teams?.find((t) => t.id === selectedId) ?? null;
   const theme = teamTheme(selected);
-  const tileSize = (width - PADDING * 2 - GAP * (COLUMNS - 1)) / COLUMNS;
+  const tileSize = (width - PADDING * 2 - GAP * (columns - 1)) / columns;
 
   // The whole screen washes toward the chosen team's color.
   const bg = useSharedValue<string>(palette.arena);
@@ -56,7 +57,7 @@ export function OnboardingScreen() {
       {isPending ? (
         <SkeletonGroup style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, padding: 16, paddingTop: 120 }}>
           {Array.from({ length: 15 }, (_, i) => (
-            <Skeleton key={i} width="30.5%" height={110} radius={20} />
+            <Skeleton key={i} width={regular ? '18.5%' : '30.5%'} height={110} radius={20} />
           ))}
         </SkeletonGroup>
       ) : error ? (
@@ -65,7 +66,9 @@ export function OnboardingScreen() {
         <FlatList
           data={teams}
           keyExtractor={(t) => t.id}
-          numColumns={COLUMNS}
+          // A new column count needs a new list.
+          key={columns}
+          numColumns={columns}
           columnWrapperStyle={{ gap: GAP }}
           contentContainerStyle={{
             paddingHorizontal: PADDING,

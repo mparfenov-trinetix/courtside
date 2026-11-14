@@ -22,7 +22,8 @@ import { ReduceMotion, ReducedMotionConfig } from 'react-native-reanimated';
 
 import { WidgetSync } from '@/widgets';
 import { NavDepthTracker } from '@/navigation';
-import { DataHealthBanner, ScreenError, installEraLogos } from '@/components';
+import { allowTabletRotation } from '@/lib/orientation';
+import { AppColumn, DataHealthBanner, ScreenError, installEraLogos } from '@/components';
 import { IntroOverlay, RootLinkRedirect } from '@/features/intro';
 import { PickemSync } from '@/features/pickem';
 import { reportIssue } from '@/lib/data-health';
@@ -135,6 +136,11 @@ export default function RootLayout() {
     return () => clearTimeout(id);
   }, []);
 
+  // An iPad turns every way (a phone stays in portrait).
+  useEffect(() => {
+    allowTabletRotation();
+  }, []);
+
   // Refetch stale queries (and resume live-game polling) when the app returns to the foreground.
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -148,6 +154,8 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.arena }} onLayout={onRootLayout}>
       {/* Every Reanimated animation follows the system's "Reduce Motion" setting (it is the library's default; stated here so it stays a decision). */}
       <ReducedMotionConfig mode={ReduceMotion.System} />
+      {/* On an iPad or a Mac window the app is one column in the middle of the window; on a phone this is the window itself. */}
+      <AppColumn>
       <PersistQueryClientProvider
         client={queryClient}
         persistOptions={{
@@ -199,6 +207,7 @@ export default function RootLayout() {
           </WatchlistProvider>
         </TeamProvider>
       </PersistQueryClientProvider>
+      </AppColumn>
     </GestureHandlerRootView>
   );
 }

@@ -10,6 +10,7 @@ import type { NewsArticle } from '@/lib/espn';
 import { palette, space } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { useScreenTeamStore } from '@/state';
+import { READABLE } from '@/lib/layout';
 
 type Filter = 'all' | 'mine' | 'recap' | 'preview' | 'story' | 'video';
 
@@ -86,7 +87,7 @@ export function NewsScreen({ embedded = false }: { embedded?: boolean } = {}) {
           initialNumToRender={6}
           maxToRenderPerBatch={6}
           windowSize={7}
-          contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.sm }}
+          contentContainerStyle={[READABLE, { paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.sm }]}
           renderItem={({ item, index }) => <ArticleCard article={item} teamOf={teamOf} lead={index === 0} onPress={() => open(item)} />}
         />
       )}

@@ -11,6 +11,7 @@ import { usePlayerSearch, useTeams } from '@/hooks';
 import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { goBack, openDetail } from '@/navigation';
 import { RECENT_KEY, MAX_RECENT } from './constants';
+import { READABLE } from '@/lib/layout';
 
 type Hit =
   | { kind: 'team'; id: string; title: string; subtitle: string; image?: string }
@@ -130,7 +131,7 @@ export function SearchScreen() {
         keyboardShouldPersistTaps="handled"
         onScrollBeginDrag={Keyboard.dismiss}
         stickySectionHeadersEnabled={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={[READABLE, { paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }]}
         ListEmptyComponent={
           <Text style={styles.empty}>
             {searching ? (isFetching ? ' ' : isError ? 'Couldn’t search players. Teams are still listed when they match.' : 'No players or teams found') : 'Type at least two letters.'}

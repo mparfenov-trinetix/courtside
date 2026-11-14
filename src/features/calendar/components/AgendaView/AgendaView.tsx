@@ -14,6 +14,7 @@ import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
 import { opponentLook, type OpponentLook } from '../../utils';
 import { WIN, LOSS, DOW } from './constants';
+import { READABLE } from '@/lib/layout';
 
 type Row = { type: 'month'; label: string } | { type: 'game'; game: Game };
 
@@ -70,7 +71,7 @@ export function AgendaView({
       data={withMonths(shown)}
       refreshControl={refreshControl}
       keyExtractor={(row, i) => (row.type === 'month' ? `m-${row.label}-${i}` : row.game.id)}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }}
+      contentContainerStyle={[READABLE, { paddingHorizontal: 16, paddingBottom: insets.bottom + 24 }]}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <View style={styles.tabs}>

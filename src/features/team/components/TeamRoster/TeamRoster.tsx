@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChevronIcon, ErrorState, Card } from '@/components';
 import { RosterSkeleton } from './RosterSkeleton';
-import { useRefresh, useRoster } from '@/hooks';
+import { useRefresh, useRoster, useScale } from '@/hooks';
 import type { Player, Team } from '@/lib/espn';
 import { fonts, palette, teamTheme, withAlpha, type TeamTheme, surfaces } from '@/lib/theme';
 import { openDetail } from '@/navigation';
@@ -100,6 +100,8 @@ function CoachRow({ coach, theme }: { coach: string; theme: TeamTheme }) {
 }
 
 function PlayerRow({ player, theme, onPress }: { player: Player; theme: TeamTheme; onPress: () => void }) {
+  // 1 on a phone; an iPad or a Mac window draws the jersey, the photo and the name bigger.
+  const k = useScale();
   return (
     <View style={[styles.row, { backgroundColor: surfaces.card }]}>
       <Pressable
@@ -107,10 +109,10 @@ function PlayerRow({ player, theme, onPress }: { player: Player; theme: TeamThem
         accessibilityRole="button"
         accessibilityLabel={`${player.name}, number ${player.jersey ?? 'unknown'}, ${player.positionName ?? ''}`}
         style={({ pressed }) => [styles.rowMain, pressed && { backgroundColor: withAlpha(theme.primary, 0.25) }]}>
-        <Text style={[styles.jersey, { color: theme.accent }]}>{player.jersey ?? '–'}</Text>
-        <View style={[styles.headshotWrap, { backgroundColor: withAlpha(theme.primary, 0.6) }]}>
+        <Text style={[styles.jersey, k > 1 && { width: 44 * k, fontSize: 32 * k }, { color: theme.accent }]}>{player.jersey ?? '–'}</Text>
+        <View style={[styles.headshotWrap, k > 1 && { width: 52 * k, height: 52 * k, borderRadius: 26 * k }, { backgroundColor: withAlpha(theme.primary, 0.6) }]}>
           {player.headshot ? (
-            <Image source={player.headshot} style={styles.headshot} contentFit="cover" transition={150} />
+            <Image source={player.headshot} style={[styles.headshot, k > 1 && { width: 64 * k, height: 52 * k }]} contentFit="cover" transition={150} />
           ) : (
             <Text style={styles.initials}>
               {player.name
@@ -122,10 +124,10 @@ function PlayerRow({ player, theme, onPress }: { player: Player; theme: TeamThem
           )}
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.name} numberOfLines={1}>
+          <Text style={[styles.name, k > 1 && { fontSize: 17 * k }]} numberOfLines={1}>
             {player.name}
           </Text>
-          <Text style={styles.meta} numberOfLines={1}>
+          <Text style={[styles.meta, k > 1 && { fontSize: 13 * k }]} numberOfLines={1}>
             {[player.position, player.height, player.weight].filter(Boolean).join(', ')}
           </Text>
         </View>

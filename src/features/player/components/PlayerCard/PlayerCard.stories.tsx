@@ -1,11 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-native';
-import { View, useWindowDimensions } from 'react-native';
+import { View } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 
 import { PlayerCard } from './PlayerCard';
 import { playerCardSize } from './constants';
 import { teamTheme } from '@/lib/theme';
 import { home } from '@/storybook/fixtures';
+import { useAppWindow } from '@/hooks';
 
 const meta = { title: 'Player/PlayerCard' } satisfies Meta;
 export default meta;
@@ -15,7 +16,7 @@ const PLAYER = { name: 'Jaylen Sample', jersey: '7', position: 'SG', height: "6'
 const STATS = { ppg: 24.6, rpg: 5.1, apg: 6.3, spg: 1.4, bpg: 0.6, mpg: 33.8 };
 
 function Demo({ color, alternate, abbr }: { color?: string; alternate?: string; abbr?: string }) {
-  const { width: screen } = useWindowDimensions();
+  const { width: screen } = useAppWindow();
   const scrollY = useSharedValue(0);
   const team = { ...home.team, ...(color ? { color, alternateColor: alternate ?? '#FFFFFF', abbreviation: abbr ?? home.team.abbreviation } : null) };
   const theme = teamTheme(team);

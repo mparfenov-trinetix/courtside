@@ -8,6 +8,7 @@ import { useInjuries, useRefresh, useTeams } from '@/hooks';
 import type { InjuredPlayer, Team } from '@/lib/espn';
 import { fontSize, fonts, palette, space, surfaces, withAlpha } from '@/lib/theme';
 import { openDetail } from '@/navigation';
+import { READABLE } from '@/lib/layout';
 
 type Filter = 'all' | 'out' | 'dtd';
 const FILTERS: { key: Filter; label: string }[] = [
@@ -62,7 +63,7 @@ export function InjuryReport({ favoriteTeamId }: { favoriteTeamId: string | null
           showsVerticalScrollIndicator={false}
           initialNumToRender={10}
           windowSize={7}
-          contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.sm }}
+          contentContainerStyle={[READABLE, { paddingHorizontal: space.lg, paddingBottom: insets.bottom + 24, gap: space.sm }]}
           renderItem={({ item }) =>
             'player' in item ? (
               <PlayerRow player={item.player} teamId={item.teamId} />

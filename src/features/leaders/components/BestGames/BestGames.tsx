@@ -12,6 +12,7 @@ import { openDetail } from '@/navigation';
 
 import { useLeaderPool } from '../../utils';
 import { PlayerLine } from '../PlayerLine';
+import { READABLE } from '@/lib/layout';
 
 /** How many games are shown, and how many of the best-looking ones get their box score read to be sure (the log has no offensive / defensive split). */
 const SHOWN = 10;
@@ -78,7 +79,7 @@ export function BestGames({ teams }: { teams?: Team[] }) {
     .slice(0, SHOWN);
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 8 }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[READABLE, { paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 8 }]}>
       <Text style={styles.note}>
         The best single games of the season by Courtside Rating, among the league&apos;s top scorers, rebounders and passers. The rating stops at 10,
         so they are ranked by the raw Game Score under it.
