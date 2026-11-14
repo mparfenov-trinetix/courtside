@@ -44,3 +44,8 @@ example
 
 *storybook.log
 storybook-static
+
+# supabase
+supabase/.env
+supabase/.branches
+supabase/.temp

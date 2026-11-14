@@ -1,0 +1,61 @@
+# Supabase CLI configuration for local development (`supabase start`) and the settings `supabase link` / `db push` rely on.
+# Hosted-project settings (auth providers, the anonymous sign-in switch, rate limits) live in the dashboard: see README.md.
+
+project_id = "courtside"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+# Match the major version of the hosted project (Settings > Infrastructure).
+major_version = 17
+
+[db.seed]
+# Local `supabase db reset` runs seed.sql. `supabase db push` to a hosted project never does.
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "courtside://"
+additional_redirect_urls = ["courtside://"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+# The whole design rests on this: every phone gets an anonymous user, and the `join` function (join code + username) makes it a player.
+enable_anonymous_sign_ins = true
+minimum_password_length = 8
+
+[auth.rate_limit]
+# Anonymous sign-ins per hour per IP.
+anonymous_users = 30
+
+[auth.email]
+# Nobody signs in with an email in this app (Sign in with Apple may come later).
+enable_signup = false
+enable_confirmations = false
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+
+# join and delete-account identify the caller by the phone's JWT; settle is called by pg_cron with its own shared secret (SETTLE_SECRET).
+[functions.join]
+verify_jwt = true
+
+[functions.settle]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = true
