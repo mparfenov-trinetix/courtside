@@ -1,6 +1,6 @@
 import { Redirect, type Href, useSegments } from 'expo-router';
 import { Drawer, type DrawerContentComponentProps } from 'expo-router/drawer';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 import { DRAWER_WIDTH, DrawerMenu, SceneFrame, menuBackground } from '@/components';
 import { useTeam } from '@/hooks';
@@ -14,6 +14,8 @@ const renderMenu = (props: DrawerContentComponentProps) => <DrawerMenu {...props
 const PRELOADED: Href[] = ['/calendar', '/team-leaders', '/teams'];
 /** A light one (a list of ten rows): built later, once the intro has left, so the intro is not held for it. */
 const PRELOADED_LATER: Href[] = ['/league-leaders'];
+/** How long after a drawer screen is back on top before the menu's edge swipe works again. */
+const ARM_MS = 700;
 const sceneLayout = ({ children }: { children: ReactNode }) => <SceneFrame>{children}</SceneFrame>;
 
 export default function DrawerLayout() {
@@ -24,6 +26,16 @@ export default function DrawerLayout() {
   // catch the same finger as the back swipe (the screen below dragged open like the menu for a moment). Only a drawer screen on
   // top may open the menu.
   const onTop = useSegments()[0] === '(drawer)';
+  // Not at the very moment a page above it has gone: a back swipe that ends on the drawer screen (a series, a game, a player) is a finger still on the
+  // screen's edge, and the menu's own edge swipe, switched on that instant, took it and dragged the screen open for a second. The menu is armed a moment
+  // after the drawer screen is back on top, and off again as soon as anything is above it.
+  const [armed, setArmed] = useState(onTop);
+  if (!onTop && armed) setArmed(false);
+  useEffect(() => {
+    if (!onTop) return;
+    const t = setTimeout(() => setArmed(true), ARM_MS);
+    return () => clearTimeout(t);
+  }, [onTop]);
 
   // Mounted behind the intro the intro asks for the screens one at a time; mounted for any other reason (a link opened a game and the drawer
   // is underneath) they are paced gently. Decided once, when the layout mounts.
@@ -46,7 +58,7 @@ export default function DrawerLayout() {
         // Behind the screen's round corners: the menu's own color, so the corners read as the edge of a layer.
         sceneStyle: { backgroundColor: menu },
         swipeEdgeWidth: 40,
-        swipeEnabled: onTop,
+        swipeEnabled: onTop && armed,
       }}>
       <Drawer.Screen name="home" options={{ title: 'Team card' }} />
       <Drawer.Screen name="teams" options={{ title: 'Teams' }} />
