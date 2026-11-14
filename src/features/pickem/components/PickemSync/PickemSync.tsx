@@ -4,15 +4,19 @@ import { AppState } from 'react-native';
 
 import { scoreboardQueryFn } from '@/hooks';
 import { parseEspnDate, toNbaDateKey } from '@/lib/date';
-import { awaitingResult, winnerFromScores } from '@/lib/league';
+import { startedWithoutResult, winnerFromScores } from '@/lib/league';
 import { fetchGameSummary } from '@/lib/espn';
 import { hydratePicks, setPickDate, settleStoredPicks, usePicks } from '@/state';
 
 /**
  * Mounted once at the root: reads the saved picks, and writes the winners onto the picks whose games are over. It looks at the
- * scoreboard of each day that has a pick waiting (the same cached query the Calendar uses, one call per day), when the app opens, when
- * it comes back to the foreground and when a new pick is made, so a record is right without opening any game.
+ * scoreboard of each day that has a pick whose game has started (the same cached query the Calendar uses, one call per day), when the app opens, when
+ * it comes back to the foreground, when a new pick is made and **every minute while such a pick waits** (a game that ends while the Pick'em screen is
+ * open used to leave the record as it was until a game card was opened and closed), so a record is right without opening any game.
  */
+/** How often the scoreboards of days with a started, unsettled pick are looked at again. */
+const CHECK_MS = 60 * 1000;
+
 export function PickemSync() {
   const client = useQueryClient();
   const picks = usePicks();
@@ -26,8 +30,18 @@ export function PickemSync() {
     return () => sub.remove();
   }, []);
 
+  // While a started pick has no winner, look again every minute (only while the app is on screen).
+  const watching = startedWithoutResult(picks).length > 0;
   useEffect(() => {
-    const waiting = awaitingResult(picks);
+    if (!watching) return;
+    const id = setInterval(() => {
+      if (AppState.currentState === 'active') setWake((n) => n + 1);
+    }, CHECK_MS);
+    return () => clearInterval(id);
+  }, [watching]);
+
+  useEffect(() => {
+    const waiting = startedWithoutResult(picks);
     if (waiting.length === 0) return;
     let cancelled = false;
     (async () => {
@@ -35,7 +49,7 @@ export function PickemSync() {
       const onBoard = new Set<string>();
       for (const key of new Set(waiting.map((p) => toNbaDateKey(parseEspnDate(p.date))))) {
         const games = await client
-          .fetchQuery({ queryKey: ['scoreboard', key], queryFn: scoreboardQueryFn(client, key), staleTime: 5 * 60 * 1000 })
+          .fetchQuery({ queryKey: ['scoreboard', key], queryFn: scoreboardQueryFn(client, key), staleTime: CHECK_MS - 5000 })
           .catch(() => undefined);
         for (const g of games ?? []) {
           onBoard.add(g.id);

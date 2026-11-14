@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  awaitingResult,
+  startedWithoutResult,
   favoriteOf,
   isLocked,
   isPickableKind,
@@ -66,11 +66,12 @@ test('settling records the winners it is given and returns the same array when n
   assert.equal(resultOf(settlePicks(picks, { g2: 'a' })[1]), 'loss');
 });
 
-test('a pick awaits its result once the game must be over', () => {
+test('a pick is looked up on the scoreboard from tip-off until it has a winner', () => {
   const picks = [pick('g1', 1, 'a'), pick('g2', 1, 'a', { winnerId: 'a' })];
   const tip = Date.parse('2026-11-01T00:30:00Z');
-  assert.equal(awaitingResult(picks, tip + 3 * 3600_000).length, 0);
-  assert.deepEqual(awaitingResult(picks, tip + 4 * 3600_000).map((p) => p.id), ['g1']);
+  assert.equal(startedWithoutResult(picks, tip - 60_000).length, 0);
+  assert.deepEqual(startedWithoutResult(picks, tip + 3600_000).map((p) => p.id), ['g1']);
+  assert.deepEqual(startedWithoutResult(picks, tip + 4 * 3600_000).map((p) => p.id), ['g1']);
 });
 
 test('the score card: record, accuracy, the run you are on and the best run', () => {

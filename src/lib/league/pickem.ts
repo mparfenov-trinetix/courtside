@@ -81,9 +81,12 @@ export function settlePicks(picks: GamePick[], winners: Record<string, string | 
   return changed ? next : picks;
 }
 
-/** Picks that wait for a result and whose game must be over by now (three and a half hours after the start, with overtime to spare). */
-export function awaitingResult(picks: GamePick[], now: number = Date.now()): GamePick[] {
-  return picks.filter((p) => !p.winnerId && now > startOf(p.date) + 3.5 * 60 * 60 * 1000);
+/**
+ * Picks that have no winner yet and whose game has started: the ones to look up on the scoreboard. It is the scoreboard that says a game is over
+ * (`completed`), not a clock: waiting 3.5 hours after the start left a record unchanged for an hour after the final buzzer while the app was open.
+ */
+export function startedWithoutResult(picks: GamePick[], now: number = Date.now()): GamePick[] {
+  return picks.filter((p) => !p.winnerId && now >= startOf(p.date));
 }
 
 export type PickSummary = {
