@@ -59,11 +59,6 @@ export function MiniPlayerCard({
         style={({ pressed }) => [styles.card, { width, height, backgroundColor: theme.primary }, pressed && { opacity: 0.9 }]}>
         {team ? <LogoWatermark team={team} onColor={theme.onPrimary} size={logoSize} style={{ position: 'absolute', left: (width - logoSize) / 2, top: width * 0.06 }} /> : null}
 
-        {star.jersey ? (
-          <Text pointerEvents="none" style={[styles.number, { color: withAlpha(theme.onPrimary, 0.16), fontSize: width * (star.jersey.length < 2 ? 0.55 : 0.4), lineHeight: width * (star.jersey.length < 2 ? 0.55 : 0.4), right: width * 0.05 }]}>
-            {star.jersey}
-          </Text>
-        ) : null}
 
         {/* Upper left: his position, and a flag when he is day-to-day. */}
         <View style={styles.tags}>
@@ -76,6 +71,13 @@ export function MiniPlayerCard({
             <Image source={star.headshot} style={StyleSheet.absoluteFill} contentFit="cover" priority="high" cachePolicy="memory-disk" />
             <EdgeFade color={theme.primary} />
           </View>
+        ) : null}
+
+        {/* After the photo, not before: the photo's edge fade is painted in the card color and used to wipe out the part of the number under it. */}
+        {star.jersey ? (
+          <Text pointerEvents="none" style={[styles.number, { color: withAlpha(theme.onPrimary, 0.16), fontSize: width * (star.jersey.length < 2 ? 0.55 : 0.4), lineHeight: width * (star.jersey.length < 2 ? 0.55 : 0.4), right: width * 0.05 }]}>
+            {star.jersey}
+          </Text>
         ) : null}
 
         <View style={styles.footer}>
