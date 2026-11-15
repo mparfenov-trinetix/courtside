@@ -1,3 +1,4 @@
+import { useEffect, useRef, type ComponentRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -69,6 +70,16 @@ export function SeasonSheet({
 }) {
   const insets = useSafeAreaInsets();
   const now = currentSeason();
+  // Open with the chosen year on screen: the list is long, and the year is somewhere down it. Its place is known once its row is drawn (`onLayout`),
+  // and the sheet may keep its content between openings, so it is also scrolled to when the sheet becomes visible.
+  const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
+  const rowY = useRef<number | null>(null);
+  const showSelected = () => {
+    if (rowY.current != null) scroller.current?.scrollTo({ y: Math.max(0, rowY.current - SELECTED_MARGIN), animated: false });
+  };
+  useEffect(() => {
+    if (visible) showSelected();
+  }, [visible, season]);
   return (
     <PageSheet visible={visible} onClose={onClose}>
       <View style={styles.sheet}>
@@ -79,7 +90,7 @@ export function SeasonSheet({
           </Pressable>
         </View>
         {/* The list runs to the bottom edge and pads its own end, so rows scroll under the home indicator instead of being cut off. */}
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
+        <ScrollView ref={scroller} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
         {(seasons ?? availableSeasons(from)).map((year) => {
           const on = year === season;
           return (
@@ -91,6 +102,7 @@ export function SeasonSheet({
               }}
               accessibilityRole="button"
               accessibilityState={{ selected: on }}
+              onLayout={on ? (e) => { rowY.current = e.nativeEvent.layout.y; showSelected(); } : undefined}
               style={({ pressed }) => [styles.row, on && styles.rowOn, pressed && { opacity: 0.7 }]}>
               <Text style={[styles.rowText, on && { color: palette.chalk }]}>{label(year)}</Text>
               {year === now ? <Text style={styles.tag}>CURRENT</Text> : null}
@@ -103,6 +115,9 @@ export function SeasonSheet({
     </PageSheet>
   );
 }
+
+/** How much of the list above the chosen year stays in view when the sheet opens on it. */
+const SELECTED_MARGIN = 120;
 
 const styles = StyleSheet.create({
   buttonText: { fontFamily: fonts.bodySemi, fontSize: 14, color: palette.chalk },
