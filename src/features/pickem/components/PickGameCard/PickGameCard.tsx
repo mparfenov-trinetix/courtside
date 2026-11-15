@@ -8,7 +8,7 @@ import { matchupColors, palette, withAlpha } from '@/lib/theme';
 import { usePickChoice } from '../PickButtons';
 
 /** A game as the Pick'em list holds it. */
-export const toPickable = (g: ScoreboardGame, teams?: Team[]): PickableGame => ({
+const toPickable = (g: ScoreboardGame, teams?: Team[]): PickableGame => ({
   id: g.id,
   date: g.date,
   away: { id: g.away.teamId, abbr: g.away.abbreviation, logo: teams?.find((t) => t.id === g.away.teamId)?.logoDark || g.away.logo },

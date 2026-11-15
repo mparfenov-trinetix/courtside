@@ -1,8 +1,8 @@
 /** The box the map is drawn in: the lower 48 plus southern Ontario (Toronto is one of the 30). */
-export const LON_MIN = -125;
-export const LON_MAX = -66;
-export const LAT_MIN = 24.5;
-export const LAT_MAX = 50;
+const LON_MIN = -125;
+const LON_MAX = -66;
+const LAT_MIN = 24.5;
+const LAT_MAX = 50;
 
 /** A degree of longitude is shorter than one of latitude; at 38 N it is this much (a flat equirectangular map would look stretched sideways). */
 const KX = Math.cos((38 * Math.PI) / 180);
@@ -41,7 +41,7 @@ export const OUTLINE: [number, number][] = [
 ];
 
 /** The Great Lakes, cut out of the land (longitude, latitude). Rough, but enough that Michigan is a mitten and Lake Erie a lake once the grid is fine. */
-export const LAKES: [number, number][][] = [
+const LAKES: [number, number][][] = [
   // Superior
   [[-92.1, 46.75], [-90.5, 46.6], [-89.0, 46.9], [-88.2, 47.4], [-87.0, 46.55], [-85.0, 46.75], [-84.6, 46.5], [-84.8, 47.1], [-86.5, 48.05], [-88.4, 48.3], [-89.6, 48.0], [-91.0, 47.1]],
   // Michigan
