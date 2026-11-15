@@ -1,4 +1,5 @@
 import type { Game } from '../espn';
+import type { RoundKey } from './bracket';
 
 /** How far a team's season went. */
 export type SeasonStage = 'missed' | 'play-in' | 'r1' | 'r2' | 'r3' | 'finals' | 'champions';
@@ -11,6 +12,10 @@ export type SeasonResult = {
   detail?: string;
   /** Playoff rounds played, 0 to 4 (the play-in is not a round). */
   rounds: number;
+  /** The team played in the play-in (and so has a play-in bracket to look at), whether it went on or not. */
+  playIn: boolean;
+  /** The last playoff series, where the season ended: its round and the opponent's team id, to find it in the season's bracket. */
+  lastSeries?: { round: RoundKey; opponentId: string };
 };
 
 const LABELS: Record<SeasonStage, string> = {
@@ -46,7 +51,7 @@ export function seasonResult(games: Game[], regularGames: number | undefined, se
 
   if (playoffs.length === 0) {
     const stage: SeasonStage = playedPlayIn ? 'play-in' : 'missed';
-    return { stage, label: LABELS[stage], rounds: 0 };
+    return { stage, label: LABELS[stage], rounds: 0, playIn: playedPlayIn };
   }
 
   const series: { opponent: string; wins: number; losses: number; id: string }[] = [];
@@ -66,5 +71,6 @@ export function seasonResult(games: Game[], regularGames: number | undefined, se
   const won = last.wins >= needed && last.wins > last.losses;
   const stage: SeasonStage = rounds === 4 && won ? 'champions' : STAGES[rounds];
   const verdict = won ? `Beat ${last.opponent} ${last.wins}–${last.losses}` : `Lost ${last.wins}–${last.losses} to ${last.opponent}`;
-  return { stage, label: LABELS[stage], detail: verdict, rounds };
+  const round = (['r1', 'r2', 'r3', 'finals'] as const)[rounds - 1];
+  return { stage, label: LABELS[stage], detail: verdict, rounds, playIn: playedPlayIn, lastSeries: { round, opponentId: last.id } };
 }

@@ -183,6 +183,11 @@ function finish(d: Draft, seedOf: (id: string) => number | undefined, preferHome
 
 const side = (s: CupSide): SeriesTeam => ({ teamId: s.teamId, abbr: s.abbr, logo: s.logo });
 
+/** The id of the series two teams played in a round (a play-in game is its own id: its game's). */
+export function seriesId(round: RoundKey, teamA: string, teamB: string): string {
+  return `${round}:${[teamA, teamB].sort().join('-')}`;
+}
+
 /** Group games into one series per (round, pair of teams). */
 function group(
   games: CupGame[],
@@ -192,9 +197,8 @@ function group(
   for (const game of games) {
     const k = keyOf(game);
     if (!k) continue;
-    const pair = [game.home.teamId, game.away.teamId].sort().join('-');
     // A play-in game is its own "series"; everything else groups by the two teams.
-    const id = k.bestOf === 1 ? game.id : `${k.round}:${pair}`;
+    const id = k.bestOf === 1 ? game.id : seriesId(k.round, game.home.teamId, game.away.teamId);
     let d = drafts.get(id);
     if (!d) {
       d = { id, round: k.round, conference: k.conference, title: k.title, teams: new Map(), games: [], bestOf: k.bestOf };

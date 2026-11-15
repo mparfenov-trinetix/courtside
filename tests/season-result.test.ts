@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { seasonResult } from '../src/lib/league';
+import { seasonResult, seriesId } from '../src/lib/league';
 
 let n = 0;
 const game = (opponentId: string, result: 'W' | 'L', extra: Record<string, unknown> = {}) =>
@@ -74,4 +74,23 @@ test('the first round was best-of-five until 2002-03: three wins win it', () => 
 test('the record not known: no result', () => {
   assert.equal(seasonResult(season(82), undefined, 2010), null);
   assert.equal(seasonResult(season(82), 0, 2010), null);
+});
+
+test('where to look: the last series and whether the team played in the play-in, nothing for a team that missed', () => {
+  const missed = seasonResult(season(82), 82, 2023)!;
+  assert.deepEqual([missed.playIn, missed.lastSeries], [false, undefined]);
+  const lostInPlayIn = seasonResult(season(82, one('P1', 'L', { note: 'West Play-In Tournament' })), 82, 2023)!;
+  assert.deepEqual([lostInPlayIn.playIn, lostInPlayIn.lastSeries], [true, undefined]);
+  const through = seasonResult(season(82, one('P1', 'W', { note: 'West Play-In Tournament' }), series('A', 4, 1), series('B', 1, 4)), 82, 2023)!;
+  assert.equal(through.playIn, true);
+  assert.deepEqual(through.lastSeries, { round: 'r2', opponentId: 'B' });
+  const straight = seasonResult(season(82, series('A', 4, 1)), 82, 2023)!;
+  assert.deepEqual([straight.playIn, straight.lastSeries], [false, { round: 'r1', opponentId: 'A' }]);
+  const title = seasonResult(season(82, series('A', 4, 0), series('B', 4, 1), series('C', 4, 2), series('D', 4, 3)), 82, 2015)!;
+  assert.deepEqual(title.lastSeries, { round: 'finals', opponentId: 'D' });
+});
+
+test('a series id is the round and the two teams in order, whoever is asking', () => {
+  assert.equal(seriesId('r2', '25', '9'), 'r2:25-9');
+  assert.equal(seriesId('r2', '9', '25'), 'r2:25-9');
 });
