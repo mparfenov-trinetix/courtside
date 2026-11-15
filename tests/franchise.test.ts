@@ -130,3 +130,47 @@ test('the team as its card shows it: name, logo and colors of the season; the sa
   // No era colors: today's colors stay (the same as teamInSeason gives).
   assert.equal(teamAsItWas(bullets, 1995).color, '007ac1');
 });
+
+test('a look that is not a name change: the Warriors of 1997-98 to 2009-10 wear the warrior, before and after they do not', () => {
+  const gsw = { id: '9', abbreviation: 'GS', location: 'Golden State', name: 'Warriors', displayName: 'Golden State Warriors', color: '1d428a', alternateColor: 'ffc72c', logo: 'gsw.png', logoDark: 'gsw-dark.png', logoOnPrimary: 'gsw-on.png', mark: 'gsw-mark.png' } as Team;
+  // Nothing is drawn before the picture is registered: the team is untouched.
+  assert.equal(eraLogoFor('9', 2005), undefined);
+  assert.equal(teamInSeason(gsw, 2005), gsw);
+  registerEraLogos({ '9|warrior-1997': 'warrior.png' });
+  assert.equal(eraLogoFor('9', 2000), 'warrior.png');
+  assert.equal(eraLogoFor('9', 2010), 'warrior.png');
+  assert.equal(eraLogoFor('9', 1999), undefined);
+  assert.equal(eraLogoFor('9', 2011), undefined);
+  const then = teamInSeason(gsw, 2005);
+  assert.equal(then.logo, 'warrior.png');
+  assert.equal(then.logoDark, 'warrior.png');
+  assert.equal(then.mark, undefined);
+  assert.equal(then.name, 'Warriors');
+  assert.equal(teamInSeason(gsw, 2005), then);
+  assert.equal(teamInSeason(gsw, 2012), gsw);
+  assert.equal(teamInSeason(gsw), gsw);
+  assert.equal(teamAsItWas(gsw, 2005).color, '#F47B20');
+  assert.equal(teamAsItWas(gsw, 2005).logo, 'warrior.png');
+  assert.equal(teamAsItWas(gsw, 2012), gsw);
+  assert.equal(eraColorsFor('9', 2012), undefined);
+  assert.equal(withEraLogo(gsw, 2003).logo, 'warrior.png');
+  assert.equal(withEraLogo(gsw, 2015), gsw);
+});
+
+test('every look has a picture registered under its key and a file, and the looks of a team do not overlap', async () => {
+  const { readFileSync, existsSync } = await import('node:fs');
+  const registered = readFileSync(new URL('../src/components/EraLogos/EraLogos.ts', import.meta.url), 'utf8');
+  const { TEAM_LOOKS } = await import('../src/lib/espn');
+  for (const [id, looks] of Object.entries(TEAM_LOOKS)) {
+    const line = (key: string) => registered.split('\n').find((l) => l.includes(`'${id}|${key}'`));
+    for (const [i, look] of looks.entries()) {
+      assert.ok(look.from <= look.to, `${id}|${look.key} runs backwards`);
+      assert.ok(look.from >= 2000, `${id}|${look.key} starts before 2000, where the app has no data`);
+      if (i > 0) assert.ok(look.from > looks[i - 1].to, `${id}|${look.key} overlaps the one before`);
+      const row = line(look.key);
+      assert.ok(row, `${id}|${look.key} is not registered in EraLogos`);
+      const file = /history-team-logos\/([^']+)'/.exec(row!)?.[1];
+      assert.ok(file && existsSync(new URL(`../assets/images/history-team-logos/${file}`, import.meta.url)), `${id}|${look.key}: no file`);
+    }
+  }
+});
