@@ -35,8 +35,10 @@ export const formatGameScore = (score?: number): string => (score === undefined 
 
 /**
  * Game Score on the way to a rating: where a raw score lands on the 1-10 scale, between these points (a straight line from one to the next).
- * 0 (a few points on bad shooting) is already a 5, a typical rotation game (about 10) a 7, a very good one (16) an 8, 25 (a big night) a 9
- * and 38 (40 points, 10 rebounds and 10 assists on good shooting works out at about that) a 10.
+ * 0 (a few points on bad shooting) is already a 5, a typical rotation game (about 10) a 7, a very good one (16) a 7.6, a big night (21) an 8
+ * and an excellent one (28, 30 points on good shooting with the rest of a line) an 8.6. The top is hard to reach on purpose: 36 (40 points, 10 rebounds
+ * and 10 assists on good shooting) is a 9.6, and only a historic night (48) is a 10. It used to be 25 for a 9 and 38 for a 10, and every big game
+ * read as a 9.5 or a 10.
  */
 const RATING_POINTS: [score: number, rating: number][] = [
   [-10, 1],
@@ -44,9 +46,11 @@ const RATING_POINTS: [score: number, rating: number][] = [
   [0, 5],
   [5, 6],
   [10, 7],
-  [16, 8],
-  [25, 9],
-  [38, 10],
+  [16, 7.6],
+  [21.4, 8],
+  [27.6, 8.6],
+  [36.7, 9.6],
+  [48, 10],
 ];
 
 /** A raw Game Score on the 1-10 scale. */
@@ -64,6 +68,13 @@ export function ratingOf(score: number): number {
   }
   return last[1];
 }
+
+/**
+ * A game that is on gets no rating until its first quarter is over: after twelve minutes a player's pace says little (a hot start reads as a 9,
+ * a cold one as a 5) and the rating would swing the most. The fraction is the share of the game's minutes played (`gameFraction`), so a quarter
+ * is 0.25.
+ */
+export const MIN_LIVE_FRACTION = 0.25;
 
 /** A player with fewer minutes than this has no rating: a few minutes of garbage time say nothing (and read as a bad game). */
 const MIN_RATED_MINUTES = 5;
@@ -106,13 +117,15 @@ export const gameFraction = (stats: Record<string, string>[]): number => Math.mi
  * game, at the pace of his own minutes (`minutes / fraction` is the total he is on course for, 40 at the most) and at a rate leaned toward a typical player's
  * while he has played little. `fraction` is how much of the game is over (`gameFraction`). At 1 it is exactly the finished game's rating; the
  * raw Game Score is a count, so showing it as it stands would rate every player low until late in the game.
- * Undefined, as for a finished game, for someone who did not play or played under `MIN_RATED_MINUTES`.
+ * Undefined, as for a finished game, for someone who did not play or played under `MIN_RATED_MINUTES`, and for the whole game until its first
+ * quarter is over (`MIN_LIVE_FRACTION`).
  */
 export function projectedRating(stats: Record<string, string>, fraction: number): number | undefined {
   const score = gameScore(stats);
   const minutes = minutesOf(stats);
   if (score === undefined || minutes < MIN_RATED_MINUTES) return undefined;
-  const f = Math.min(1, Math.max(0.05, fraction));
+  if (fraction < MIN_LIVE_FRACTION) return undefined;
+  const f = Math.min(1, fraction);
   if (f >= 1) return ratingOf(score);
   const rate = (score + PRIOR_RATE * PRIOR_MINUTES) / (minutes + PRIOR_MINUTES);
   // The minutes he is on course for, but no more than a starter plays: early in a game a player who has not sat yet is on course for all 48.

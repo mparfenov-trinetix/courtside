@@ -23,12 +23,14 @@ export function PregameOdds({
 }: {
   away: Side;
   home: Side;
-  pregame: Pick<Pregame, 'winProb' | 'odds'>;
+  pregame: Pick<Pregame, 'winProb'> & Partial<Pick<Pregame, 'odds'>>;
   pickable?: (pct: { away: number; home: number }) => ReactNode;
-  /** The game is over: these are what ESPN and the book said before it, and the line is the closing one. */
+  /** The game is over: this is what ESPN said before it (its win chance); the odds are not shown. */
   past?: boolean;
 }) {
-  const { winProb, odds } = pregame;
+  // The closing line of a game that is over says nothing, so it is never drawn (an older cached copy may still hold one).
+  const { winProb } = pregame;
+  const odds = past ? undefined : pregame.odds;
   if (!winProb && !odds) return null;
   // Rounded so the two always add up to 100.
   const awayPct = winProb ? Math.round(winProb.away) : 0;
@@ -62,7 +64,7 @@ export function PregameOdds({
 
       {odds && (
         <>
-          <Text style={[styles.title, winProb && { marginTop: 18 }]}>{past ? 'Closing odds' : 'Odds'} · {odds.provider}</Text>
+          <Text style={[styles.title, winProb && { marginTop: 18 }]}>Odds · {odds.provider}</Text>
           <View style={styles.card}>
             <View style={styles.prices}>
               <Price side={away} odds={odds.away} />

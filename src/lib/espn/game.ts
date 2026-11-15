@@ -332,35 +332,27 @@ function normalizeOdds(pick: Json | undefined): GameOdds | undefined {
 }
 
 /**
- * What ESPN said before tip-off, read after the game: the summary drops its `predictor` and `pickcenter` once a game has started, but the
- * core API keeps them (`.../competitions/{id}/predictor` and `/odds`; the line is the closing one). The predictor lists the statistics of
- * one side only, so the other is the rest of 100.
+ * What ESPN said before tip-off, read after the game: the summary drops its `predictor` once a game has started, but the core API keeps it
+ * (`.../competitions/{id}/predictor`). The predictor lists the statistics of one side only, so the other is the rest of 100. The closing line
+ * (`.../odds`) is kept too, but it says nothing once the game is played, so it is neither read nor shown.
  */
-export function normalizePastPregame(predictor: Json | undefined, odds: Json | undefined): Pick<Pregame, 'winProb' | 'odds'> {
+export function normalizePastPregame(predictor: Json | undefined): Pick<Pregame, 'winProb'> {
   const projection = (team: Json | undefined) => pctOf(((team?.statistics ?? []) as Json[]).find((s) => s.name === 'gameProjection')?.value);
   const homeP = projection(predictor?.homeTeam);
   const awayP = projection(predictor?.awayTeam);
   const home = homeP ?? (awayP != null ? 100 - awayP : undefined);
   const away = awayP ?? (homeP != null ? 100 - homeP : undefined);
-  const items = (odds?.items ?? []) as Json[];
-  return {
-    winProb: home != null && away != null ? { home, away } : undefined,
-    odds: normalizeOdds(items.find((p) => p.homeTeamOdds || p.awayTeamOdds)),
-  };
+  return { winProb: home != null && away != null ? { home, away } : undefined };
 }
 
-/** A finished game's pregame chances and closing line (`normalizePastPregame`); a game ESPN has neither for gives an empty object. */
-export async function fetchPastPregame(gameId: string): Promise<Pick<Pregame, 'winProb' | 'odds'>> {
-  const read = async (part: string) => {
-    try {
-      return await getJson(`${CORE}/events/${gameId}/competitions/${gameId}/${part}`);
-    } catch (error) {
-      if (error instanceof HttpError) return undefined; // not published for this game
-      throw error;
-    }
-  };
-  const [predictor, odds] = await Promise.all([read('predictor'), read('odds')]);
-  return normalizePastPregame(predictor, odds);
+/** A finished game's pregame chances (`normalizePastPregame`); a game ESPN has none for gives an empty object. */
+export async function fetchPastPregame(gameId: string): Promise<Pick<Pregame, 'winProb'>> {
+  try {
+    return normalizePastPregame(await getJson(`${CORE}/events/${gameId}/competitions/${gameId}/predictor`));
+  } catch (error) {
+    if (error instanceof HttpError) return {}; // not published for this game
+    throw error;
+  }
 }
 
 function normalizePregame(json: Json, homeId: string, awayId: string): Pregame {

@@ -236,7 +236,7 @@ export function SummaryTab({
   const past = usePastPregame(gameId, completed).data;
   useSettlePick(gameId, away.team.id, home.team.id, { away: away.score, home: home.score }, completed);
   const canPick = !!info.date && isPickableKind(kind);
-  const pastCard = completed && past && (past.winProb || past.odds) && (
+  const pastCard = completed && past && past.winProb && (
     <View key="past" style={{ paddingHorizontal: 16, marginBottom: 14 }}>
       <PregameOdds
         away={awaySide}

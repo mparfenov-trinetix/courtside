@@ -29,11 +29,11 @@ export type TeamStatRow = {
  * from this table in `src/lib/team-stats.ts`: ESPN's own per-team `rank` fields are inconsistent
  * for derived stats such as 3-point %.
  */
-export async function fetchLeagueTeamStats(): Promise<TeamStatRow[]> {
+export async function fetchLeagueTeamStats(season: number = currentSeason()): Promise<TeamStatRow[]> {
   const rows = normalizeLeagueTeamStats(
     await getJson(
       `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/statistics/byteam` +
-        `?region=us&lang=en&contentorigin=espn&season=${currentSeason()}&seasontype=2`,
+        `?region=us&lang=en&contentorigin=espn&season=${season}&seasontype=2`,
     ),
   );
   const played = rows.filter((r) => r.gp > 0);

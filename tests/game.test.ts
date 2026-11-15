@@ -280,27 +280,32 @@ test('Game Score: every player who played in the fixture has one, and the best g
   assert.ok(Number(best.p.stats.PTS) >= 20);
 });
 
-test('rating: Game Score on a 1-10 scale, 5 already a bad game, 7 a typical one, 8 very good, 10 a monster', () => {
+test('rating: Game Score on a 1-10 scale, 5 already a bad game, 7 a typical one, 8 very good, 9 and 10 hard to earn', () => {
   assert.equal(ratingOf(-50), 1);
   assert.equal(ratingOf(0), 5);
   assert.equal(ratingOf(10), 7);
-  assert.equal(ratingOf(16), 8);
-  assert.equal(ratingOf(25), 9);
-  assert.equal(ratingOf(38), 10);
+  assert.equal(ratingOf(16), 7.6);
+  assert.equal(ratingOf(21.4), 8);
+  assert.equal(ratingOf(27.6), 8.6);
+  assert.equal(ratingOf(36.7), 9.6);
+  assert.equal(ratingOf(48), 10);
   assert.equal(ratingOf(60), 10);
+  // A big night is not a 9 any more: 25 is a bit over 8, 38 a bit under 10.
+  assert.ok(ratingOf(25) > 8.3 && ratingOf(25) < 8.5);
+  assert.ok(ratingOf(38) < 9.8);
   // Straight lines between the points, and never a lower rating for a better game.
   assert.ok(Math.abs(ratingOf(7.5) - 6.5) < 1e-9);
   for (let s = -12; s < 45; s += 0.5) assert.ok(ratingOf(s + 0.5) >= ratingOf(s));
-  // 40 points, 10 rebounds and 10 assists on good shooting is a 10 (or within a whisker of it).
+  // 40 points, 10 rebounds and 10 assists on good shooting is a 9.6 or so, near the top but not a 10.
   const monster = { MIN: '38', PTS: '40', FG: '15-24', FT: '8-9', OREB: '2', DREB: '8', AST: '10', STL: '2', BLK: '0', PF: '2', TO: '3' };
-  assert.ok(gameRating(monster)! >= 9.7);
+  assert.ok(gameRating(monster)! >= 9.5 && gameRating(monster)! < 10);
   // The same stats on 14-for-35 shooting are worth less.
   assert.ok(gameRating({ ...monster, FG: '14-35' })! < gameRating(monster)! - 0.5);
 });
 
 test('rating: no rating for a player who did not play or only had a few minutes, one decimal otherwise', () => {
   const line = { MIN: '33', PTS: '22', FG: '8-16', FT: '4-5', REB: '5', AST: '5', TO: '3', STL: '1', BLK: '0', OREB: '0', DREB: '5', PF: '1' };
-  assert.equal(formatRating(gameRating(line)), '8.0');
+  assert.equal(formatRating(gameRating(line)), '7.6');
   assert.equal(gameRating({ ...line, MIN: '3' }), undefined);
   assert.equal(gameRating({ ...line, MIN: '--' }), undefined);
   assert.equal(gameRating({}), undefined);
@@ -352,7 +357,7 @@ test('live rating: a player on his usual pace is not rated low just because the 
 
 test('live rating: a hot start is leaned toward an ordinary player\'s, and the lean fades as the game goes on', () => {
   const hot = { MIN: '8', PTS: '7', FG: '3-5', FT: '1-2', REB: '2', AST: '1', TO: '0', STL: '0', BLK: '0', OREB: '0', DREB: '2', PF: '0' };
-  const early = projectedRating(hot, 0.17)!;
+  const early = projectedRating(hot, 0.25)!;
   // The same pace taken at face value to the end of his 40 minutes, with no lean toward an ordinary player's.
   const score = gameScore(hot)!;
   const faceValue = ratingOf(score + (score / 8) * 32);
@@ -360,6 +365,14 @@ test('live rating: a hot start is leaned toward an ordinary player\'s, and the l
   assert.ok(early > 6, 'but a good start still reads as good');
   // The same line held back to later in the game counts for more of the rating (less of it is still to be played).
   assert.ok(projectedRating({ ...hot, MIN: '8' }, 0.5)! < early, 'at the half the same line has less to add');
+});
+
+test('live rating: none during the first quarter, from the end of it on', () => {
+  const line = { MIN: '10', PTS: '9', FG: '4-7', FT: '1-2', REB: '3', AST: '2', TO: '0', STL: '1', BLK: '0', OREB: '0', DREB: '3', PF: '0' };
+  assert.equal(projectedRating(line, 0.1), undefined);
+  assert.equal(projectedRating(line, 0.24), undefined);
+  assert.ok(projectedRating(line, 0.25) !== undefined);
+  assert.ok(projectedRating(line, 0.6) !== undefined);
 });
 
 test('live rating: the game\'s fraction comes from the minutes played, up to 1', () => {
