@@ -25,10 +25,10 @@ export const TEAM_LOOKS: Record<string, TeamLook[]> = {
     { from: 2004, to: 2008, key: 'nuggets-2004', colors: ['#1D2F57', '#F2B21B'] },
     { from: 2009, to: 2018, key: 'nuggets-2009', colors: ['#1D2F57', '#F2B21B'] },
   ],
-  // Detroit Pistons: the flaming horse in teal, until 2000-01 (2001-02 to 2004-05 is not carried), then the red and blue ball, 2005-06 to 2016-17.
+  // Detroit Pistons: the flaming horse in teal, until 2000-01 carried to 2002-03 over the 2001-05 logo, then the red and blue ball from 2003-04 to 2016-17 (it began in 2005-06; the owner asked for it from 2003-04) on a pink card.
   '8': [
-    { from: 2000, to: 2001, key: 'pistons-1997', colors: ['#8C1D2C', '#00A3AD'] },
-    { from: 2006, to: 2017, key: 'pistons-2006', colors: ['#2A2F3A', '#C8102E'] },
+    { from: 2000, to: 2003, key: 'pistons-1997', colors: ['#8C1D2C', '#00A3AD'] },
+    { from: 2004, to: 2017, key: 'pistons-2006', colors: ['#B5476B', '#1D428A'] },
   ],
   // Milwaukee Bucks: the buck's head in a triangle, until 2005-06, then the green and red buck's head, 2006-07 to 2014-15.
   '15': [
@@ -40,11 +40,11 @@ export const TEAM_LOOKS: Record<string, TeamLook[]> = {
     { from: 2000, to: 2008, key: 'wolves-1997', colors: ['#3B6C8C', '#2E9E57'] },
     { from: 2009, to: 2017, key: 'wolves-2009', colors: ['#3B6C8C', '#2E9E57'] },
     // ESPN's logo is the 2026-27 one now; the circle with the wolf of 2017-18 to 2025-26 is the one before it.
-    { from: 2018, to: 2026, key: 'wolves-2018', colors: ['#9AA6B5', '#78BE20'] },
+    { from: 2018, to: 2026, key: 'wolves-2018', colors: ['#0F2D52', '#78BE20'] },
   ],
   // Orlando Magic: the star and comet, 2000-01 to 2009-10, then the lettering over the ball, 2010-11 to 2024-25. 1999-2000 keeps today's logo.
   '19': [
-    { from: 2001, to: 2010, key: 'magic-2001', colors: ['#1B1F2E', '#0077C0'] },
+    { from: 2001, to: 2010, key: 'magic-2001', colors: ['#6FA8DC', '#0057B8'] },
     { from: 2011, to: 2025, key: 'magic-2011', colors: ['#7E8AA0', '#0077C0'] },
   ],
   // Philadelphia 76ers: the star-burst 76ers with the ball, until 2008-09.
@@ -55,7 +55,7 @@ export const TEAM_LOOKS: Record<string, TeamLook[]> = {
   ],
   // Atlanta Hawks: the hawk over a ball in navy and red, 2007-08 to 2014-15, carried back to 2000 over the red and black one of 1995-2007. The slate card lets the dark outline of the hawk stand out.
   '1': [
-    { from: 2000, to: 2015, key: 'hawks-2008', colors: ['#566175', '#E03A3E'] },
+    { from: 2000, to: 2015, key: 'hawks-2008', colors: ['#14213D', '#E03A3E'] },
   ],
   // LA Clippers: the red and blue ball with the speed lines, 1999-2000 to 2014-15 (the 2011 redraw looks the same),
   // then the round LA ball of the alternate logo, 2015-16 to 2023-24.
@@ -65,7 +65,7 @@ export const TEAM_LOOKS: Record<string, TeamLook[]> = {
   ],
   // Sacramento Kings: the crown and swords, until 2015-16.
   '23': [
-    { from: 2000, to: 2016, key: 'kings-1995', colors: ['#2A2A33', '#A1AAB1'] },
+    { from: 2000, to: 2016, key: 'kings-1995', colors: ['#5B3A8C', '#B8C0C8'] },
   ],
   // Utah Jazz: the mountain in navy and light blue, 2004-05 to 2009-10, carried back to 2000 over the purple and teal one of 1996-2004, then the navy,
   // gold and green mountain, 2010-11 to 2015-16 (ESPN's logo is the 2025-26 one now).
@@ -80,7 +80,7 @@ export const TEAM_LOOKS: Record<string, TeamLook[]> = {
   ],
   // Toronto Raptors: the dinosaur on the purple ring (until 2007-08), then on the red ring (2008-09 to 2014-15).
   '28': [
-    { from: 2000, to: 2008, key: 'raptors-1996', colors: ['#4A515C', '#CE1141'] },
+    { from: 2000, to: 2008, key: 'raptors-1996', colors: ['#2E1A47', '#CE1141'] },
     { from: 2009, to: 2015, key: 'raptors-2009', colors: ['#4A515C', '#CE1141'] },
   ],
 };
