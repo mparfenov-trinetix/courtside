@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-import { articleBlocks, normalizeArticle, normalizeGameRecap, normalizeNews } from '../src/lib/espn';
+import { articleBlocks, articleRelated, normalizeArticle, normalizeGameRecap, normalizeNews } from '../src/lib/espn';
 import { timeAgo } from '../src/lib/date';
 
 // Real responses, trimmed: the league feed with one article of each type, and the text of three of them.
@@ -95,4 +95,26 @@ test('a game summary\'s recap: only a Recap with an id and a headline, the dash 
   assert.equal(normalizeGameRecap({ ...article, id: undefined }), undefined);
   assert.equal(normalizeGameRecap({ ...article, headline: '' }), undefined);
   assert.equal(normalizeGameRecap(undefined), undefined);
+});
+
+test('article related: the game, the teams and the players it is tagged with, each once, other tags ignored', () => {
+  const related = articleRelated([
+    { type: 'league', description: 'NBA' },
+    { type: 'team', description: 'LA Clippers', teamId: 12 },
+    { type: 'team', description: 'Oklahoma City Thunder', teamId: 25 },
+    { type: 'team', description: 'LA Clippers', teamId: 12 },
+    { type: 'athlete', description: 'Austin Reaves', athleteId: 4066457 },
+    { type: 'contributor', description: 'Dave McMenamin' },
+    { type: 'event', description: 'Oklahoma City Thunder @ LA Clippers', eventId: 401909304 },
+  ]);
+  assert.deepEqual(related.game, { id: '401909304', name: 'Oklahoma City Thunder @ LA Clippers' });
+  assert.deepEqual(related.teams, [{ id: '12', name: 'LA Clippers' }, { id: '25', name: 'Oklahoma City Thunder' }]);
+  assert.deepEqual(related.players, [{ id: '4066457', name: 'Austin Reaves' }]);
+  assert.deepEqual(articleRelated([]), { game: undefined, teams: [], players: [] });
+});
+
+test('article text: an article carries its tags as related links', () => {
+  const a = normalizeArticle({ headlines: [{ id: 1, headline: 'H', story: '<p>x</p>', categories: [{ type: 'team', description: 'Miami Heat', teamId: 14 }] }] })!;
+  assert.deepEqual(a.related.teams, [{ id: '14', name: 'Miami Heat' }]);
+  assert.equal(a.related.game, undefined);
 });
