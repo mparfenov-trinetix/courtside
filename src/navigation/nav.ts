@@ -6,6 +6,8 @@ import { currentSeason } from '@/lib/espn';
 const MAX_DETAIL_DEPTH = 3;
 
 let detailDepth = 0;
+/** Pages of every kind over the drawer (details, an article, a series, a pushed Compare...). */
+let coveringDepth = 0;
 
 /** A screen takes about this long to slide in or out: a second press before then is a double tap, not a second request. */
 const SETTLE_MS = 700;
@@ -25,20 +27,21 @@ export function pushOnce(href: Href) {
 }
 
 /** Kept up to date by <NavDepthTracker/> in the root layout. */
-export function setDetailDepth(n: number) {
+export function setDetailDepth(n: number, covering = n) {
   // A page was closed: the drawer screen under it is about to show again (see `returningFromDetail`).
-  if (n < detailDepth) poppedAt = Date.now();
+  if (covering < coveringDepth) poppedAt = Date.now();
   detailDepth = n;
+  coveringDepth = covering;
 }
 
 let poppedAt = 0;
 
 /**
- * Whether the drawer screen that has just come into focus is only showing again because a game, player or team page on top of it was
- * closed (or is closing). It was on screen all along, so it must not slide in: every other focus is a deliberate trip to it.
+ * Whether the drawer screen that has just come into focus is only showing again because a page on top of it (a game, player or team, an
+ * article, a series, a pushed Compare, Standings, Playoffs or Cup) was closed (or is closing). It was on screen all along, so it must not slide in: every other focus is a deliberate trip to it.
  */
 export function returningFromDetail(): boolean {
-  return detailDepth > 0 || Date.now() - poppedAt < 1000;
+  return coveringDepth > 0 || Date.now() - poppedAt < 1000;
 }
 
 /**
