@@ -88,7 +88,7 @@ export function LegendSheet({ visible, live = false, onClose }: { visible: boole
                       <>
                         <Text style={styles.note}>
                           Worked out from the box score for the whole game, 1 to 10, for players with 5 minutes or more.
-                          {live ? ' While the game is on it is a projection of the final rating from the minutes so far, refreshed every few minutes of the game, so it can still move a lot.' : ''}
+                          {live ? ' While the game is on there is none in the first quarter, then a projection of the final rating from the minutes so far, refreshed every few minutes of the game, so it can still move a lot.' : ''}
                         </Text>
                         <View style={styles.bands}>
                           {BANDS.map((b) => {

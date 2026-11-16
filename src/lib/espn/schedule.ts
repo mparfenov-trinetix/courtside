@@ -81,17 +81,19 @@ const isPlayed = (g: Game): g is HeadToHeadGame =>
 
 /**
  * The latest finished games between two teams, newest first. ESPN has no head-to-head feed, so this reads
- * the first team's schedules (regular season and playoffs) season by season, newest first, until it has enough.
+ * the first team's schedules (regular season and playoffs) season by season, newest first, until it has enough. `endSeason` is where it starts
+ * reading back from (the season in progress by default): a past game's page shows the meetings up to its own season, not up to now.
  */
-export async function fetchHeadToHead(teamId: string, rivalId: string, limit = 10, maxSeasons = 6): Promise<HeadToHeadGame[]> {
+export async function fetchHeadToHead(teamId: string, rivalId: string, limit = 10, maxSeasons = 6, endSeason: number = currentSeason()): Promise<HeadToHeadGame[]> {
+  const end = Math.min(endSeason, currentSeason());
   const found = new Map<string, HeadToHeadGame>();
   let failures = 0;
   let requests = 0;
   // Seasons are read three at a time (six requests together) rather than one by one: ten meetings are usually within the
   // last three seasons, and the page waits for the slowest of them, not for their sum.
   const CHUNK = 3;
-  for (let from = currentSeason(); from > currentSeason() - maxSeasons && found.size < limit; from -= CHUNK) {
-    const seasons = Array.from({ length: CHUNK }, (_, i) => from - i).filter((season) => season > currentSeason() - maxSeasons);
+  for (let from = end; from > end - maxSeasons && found.size < limit; from -= CHUNK) {
+    const seasons = Array.from({ length: CHUNK }, (_, i) => from - i).filter((season) => season > end - maxSeasons);
     const results = await Promise.allSettled(seasons.flatMap((season) => [2, 3].map((seasonType) => fetchTeamSchedule(teamId, { season, seasonType }))));
     for (const r of results) {
       requests++;

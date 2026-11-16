@@ -37,6 +37,15 @@ export type ArticleText = {
   image?: string;
   blocks: ArticleBlock[];
   webUrl?: string;
+  /** What the article is about, from ESPN's tags: a game, teams and players (the links of its "Related" block). */
+  related: ArticleRelated;
+};
+
+export type ArticleRelated = {
+  /** The game a recap or preview is about, with ESPN's name for it ("Oklahoma City Thunder @ LA Clippers"). */
+  game?: { id: string; name: string };
+  teams: { id: string; name: string }[];
+  players: { id: string; name: string }[];
 };
 
 const KINDS: Record<string, NewsKind> = { Recap: 'recap', Preview: 'preview', Story: 'story', HeadlineNews: 'news', Media: 'video' };
@@ -129,6 +138,22 @@ export function articleBlocks(html: string): ArticleBlock[] {
     .map((text) => ({ kind: 'paragraph' as const, text }));
 }
 
+/** Pure: the game, teams and players an article is tagged with (`categories`), each once, in ESPN's order. */
+export function articleRelated(categories: Json[]): ArticleRelated {
+  const named = (type: string, key: string) => {
+    const seen = new Set<string>();
+    return categories.flatMap((c) => {
+      if (c.type !== type || c[key] == null || !c.description) return [];
+      const id = String(c[key]);
+      if (seen.has(id)) return [];
+      seen.add(id);
+      return [{ id, name: String(c.description) }];
+    });
+  };
+  const game = named('event', 'eventId')[0];
+  return { game, teams: named('team', 'teamId'), players: named('athlete', 'athleteId') };
+}
+
 /** Pure: one article from the content API's response. */
 export function normalizeArticle(json: Json): ArticleText | undefined {
   const a = (json.headlines?.[0] ?? undefined) as Json | undefined;
@@ -142,6 +167,7 @@ export function normalizeArticle(json: Json): ArticleText | undefined {
     image: pickImage((a.images ?? []) as Json[]),
     blocks: articleBlocks(String(a.story ?? '')),
     webUrl: https(a.links?.web?.href),
+    related: articleRelated((a.categories ?? []) as Json[]),
   };
 }
 

@@ -17,7 +17,7 @@ export type PlayerMeeting = {
  * Whether an opponent is one of the league's franchises (ESPN ids 1 to 30). An All-Star Game sits in a player's regular-season log with the
  * other conference's (or captain's) team as its opponent, under an id past 30 (EAST is 31), and is no meeting of two clubs.
  */
-export const isLeagueTeamId = (id: string) => {
+const isLeagueTeamId = (id: string) => {
   const n = Number(id);
   return Number.isInteger(n) && n >= 1 && n <= 30;
 };

@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { Skeleton, SkeletonGroup } from '@/components';
-import { usePlayerSeasonLogs } from '@/hooks';
+import { usePlayerMeetingLogs } from '@/hooks';
 import { seasonLabel } from '@/lib/espn';
 import { meetingsSummary, playerHeadToHead, type PlayerMeeting } from '@/lib/league';
 import { fonts, palette, radius, surfaces, textStyle, withAlpha } from '@/lib/theme';
@@ -20,19 +20,31 @@ const day = (iso: string) => {
 const last = (name: string) => name.trim().split(/\s+/).slice(-1)[0];
 
 /**
- * The two players against each other: their last games in which both played for opposite teams (over the last three seasons, or the three that end at `season`, regular
- * season and playoffs, All-Star Games left out), each with the two players' points, rebounds and assists and the game's score, the higher scorer lit. A line on top says who
- * won more of them and what each averaged. Nothing to list is said in words, not hidden: it is an answer too.
+ * The two players against each other: the games in which both played for opposite teams, regular season and playoffs, All-Star Games left out (every
+ * season both played, up to `season` or now, read newest first in the background; with `single` only the season in progress, or `season` itself: what
+ * the This season segment compares), the latest few listed with the two players' points, rebounds and assists and the game's score, the higher scorer
+ * lit. A line on top says who won more of them over all of it and what each averaged. Nothing to list is said in words, not hidden: it is an answer too.
  */
-export function PlayerHeadToHead({ a, b, aColor, bColor, season }: { a: Who; b: Who; aColor: string; bColor: string; /** A past season the comparison is about: the three seasons end there, not now. */ season?: number }) {
-  const logsA = usePlayerSeasonLogs(a.id, 3, season);
-  const logsB = usePlayerSeasonLogs(b.id, 3, season);
-  const window = season ? `the three seasons to ${seasonLabel(season)}` : 'the last three seasons';
-  const loading = [...logsA, ...logsB].some((q) => q.isLoading);
-  const all = playerHeadToHead(
-    logsA.flatMap((q) => q.data ?? []),
-    logsB.flatMap((q) => q.data ?? []),
-  );
+export function PlayerHeadToHead({
+  a,
+  b,
+  aColor,
+  bColor,
+  season,
+  single = false,
+}: {
+  a: Who;
+  b: Who;
+  aColor: string;
+  bColor: string;
+  /** A past season the comparison is about: the seasons end there, not now. */
+  season?: number;
+  /** Only that one season (the season in progress when there is no `season`), not the three that end in it. */
+  single?: boolean;
+}) {
+  const { logsA, logsB, loading, more } = usePlayerMeetingLogs(a.id, b.id, { single, season });
+  const window = single ? (season ? `the ${seasonLabel(season)} season` : 'this season') : season ? `their careers to ${seasonLabel(season)}` : 'their careers';
+  const all = playerHeadToHead(logsA, logsB);
   const shown = all.slice(0, SHOWN);
   const sum = meetingsSummary(all);
 
@@ -48,13 +60,13 @@ export function PlayerHeadToHead({ a, b, aColor, bColor, season }: { a: Who; b: 
             ))}
           </SkeletonGroup>
         ) : shown.length === 0 ? (
-          <Text style={styles.empty}>They have not played against each other in {window}.</Text>
+          <Text style={styles.empty}>{more ? 'Looking through earlier seasons…' : `They have not played against each other in ${window}.`}</Text>
         ) : (
           <>
             <View style={styles.summary}>
               <Text style={[styles.record, styles.recordLeft, { color: aColor }]}>{sum.winsA}</Text>
               <View style={styles.summaryMid}>
-                <Text style={styles.summaryLabel}>{sum.games === 1 ? 'meeting' : `last ${sum.games} meetings`}</Text>
+                <Text style={styles.summaryLabel}>{sum.games === 1 ? 'meeting' : `${sum.games} meetings`}</Text>
                 <Text style={styles.avg}>
                   {sum.a.pts.toFixed(1)} · {sum.b.pts.toFixed(1)} points
                 </Text>
@@ -65,6 +77,7 @@ export function PlayerHeadToHead({ a, b, aColor, bColor, season }: { a: Who; b: 
               <Meeting key={m.gameId} m={m} aColor={aColor} bColor={bColor} aName={last(a.name)} bName={last(b.name)} first={i === 0} />
             ))}
             {all.length > SHOWN && <Text style={styles.more}>Latest {SHOWN} of {all.length} games in {window}</Text>}
+            {more ? <Text style={styles.more}>Looking through earlier seasons…</Text> : null}
           </>
         )}
       </View>

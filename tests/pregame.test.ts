@@ -123,21 +123,17 @@ test('the last minute is written with a decimal and still parses (4th and overti
   assert.equal(gameHeat(100, 99, '4:00 - OT').level, 'clutch');
 });
 
-test('a finished game keeps its pregame chances and closing line in the core API', () => {
+test('a finished game keeps its pregame win chance in the core API (the closing line is not read)', () => {
   const past = JSON.parse(readFileSync(new URL('./fixtures/game-past-pregame.json', import.meta.url), 'utf8'));
-  const { winProb, odds } = normalizePastPregame(past.predictor, past.odds);
+  const result = normalizePastPregame(past.predictor);
+  const winProb = result.winProb;
   // The predictor lists only the away side (13.7%): the home side is the rest of 100.
   assert.ok(winProb);
   assert.ok(Math.abs(winProb.away - 13.667) < 0.01);
   assert.ok(Math.abs(winProb.home + winProb.away - 100) < 1e-9);
-  assert.equal(odds?.provider, 'DraftKings');
-  assert.equal(odds?.details, 'PHI -10.5');
-  assert.equal(odds?.overUnder, 240.5);
-  assert.equal(odds?.home.moneyLine, -518);
-  assert.equal(odds?.home.favorite, true);
-  assert.equal(odds?.away.decimal, 4.94);
+  assert.deepEqual(Object.keys(result), ['winProb']);
 });
 
 test('a game with no published pregame data gives nothing, not a throw', () => {
-  assert.deepEqual(normalizePastPregame(undefined, undefined), { winProb: undefined, odds: undefined });
+  assert.deepEqual(normalizePastPregame(undefined), { winProb: undefined });
 });
