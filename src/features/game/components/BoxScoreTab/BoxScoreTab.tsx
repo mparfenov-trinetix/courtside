@@ -154,7 +154,7 @@ export function BoxScoreTab({
             />
           </View>
           {filtered ? <Text style={styles.note}>{periodLabel} stats rebuilt from play-by-play</Text> : null}
-          {rated && !completed ? <Text style={styles.note}>Live ratings: projected from the game so far, refreshed every few minutes</Text> : null}
+          {rated && !completed ? <Text style={styles.note}>Live ratings: from the second quarter, projected from the game so far, refreshed every few minutes</Text> : null}
 
           {detailed ? (
             <DetailedTable

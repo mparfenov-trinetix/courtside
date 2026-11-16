@@ -12,15 +12,15 @@ import {
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CompareHeaderTitle, CompareRow, PlayerExtras, PlayerHeadToHead, type Row, Radar, type RadarAxis, TeamCompare, useSlotsStyle, useTeamPicks } from '../../components';
-import { Button, MINI_CARD_RATIO, MiniCardEmpty, MiniPlayerCard, PageSheet, Segmented, dealIn, slideIn, ScreenHeader, SearchInput, EmptyState } from '@/components';
-import { usePlayerCareer, usePlayerSearch, usePlayerStats, useSceneSettled, useTeams, useAppWindow } from '@/hooks';
+import { Button, EmptyState, MINI_CARD_RATIO, MiniCardEmpty, MiniPlayerCard, PageSheet, ScreenHeader, SearchInput, Segmented, dealIn, slideIn } from '@/components';
+import { useAppWindow, usePlayerCareer, usePlayerSearch, usePlayerStats, useSceneSettled, useTeams } from '@/hooks';
 import { currentSeason, headshotUrl, seasonLabel, teamAsItWas, tricode, type PlayerCareer, type PlayerSearchResult, type PlayerSeasonStats, type Team } from '@/lib/espn';
-import { lastNameOf, nba2kRating, namesScale } from '@/lib/league';
-import { goBack } from '@/navigation';
-import { fonts, matchupColors, palette, teamTheme, withAlpha, surfaces, textStyle } from '@/lib/theme';
-import { MODES, SCOPES, CEILING } from './constants';
 import { READABLE } from '@/lib/layout';
+import { lastNameOf, namesScale, nba2kRating } from '@/lib/league';
+import { fonts, matchupColors, palette, surfaces, teamTheme, textStyle, withAlpha } from '@/lib/theme';
+import { goBack } from '@/navigation';
+import { CompareHeaderTitle, CompareRow, PlayerExtras, PlayerHeadToHead, Radar, TeamCompare, useSlotsStyle, useTeamPicks, type RadarAxis, type Row } from '../../components';
+import { CEILING, MODES, SCOPES } from './constants';
 
 type Slot = PlayerSearchResult | null;
 
@@ -126,9 +126,12 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
 
   const { data: statsA, isLoading: loadingStatsA, isError: failedStatsA, refetch: retryStatsA } = usePlayerStats(pastSeason ? undefined : slotA?.id);
   const { data: statsB, isLoading: loadingStatsB, isError: failedStatsB, refetch: retryStatsB } = usePlayerStats(pastSeason ? undefined : slotB?.id);
-  // A retired player has no season in progress: the career is what they can be compared on, so it is what opens (the toggle still goes back).
-  const retired = pastSeason == null && !!statsA && !!statsB && buildRows(statsA, statsB).length === 0;
-  const scope: Scope = chosen ?? (retired ? 'career' : 'season');
+  // A player with no season in progress (retired, or not signed) has nothing to put beside the other's this season: from the menu the career is the
+  // only thing they can be compared on, so it is what shows and the This season / Career switch is not offered. From an old game or series (a past
+  // season) the switch stays: that season's line and the career are both there.
+  const hasSeasonLine = (s?: PlayerSeasonStats) => !!s && [s.ppg, s.rpg, s.apg, s.mpg, s.gamesPlayed].some((v) => v != null);
+  const retired = pastSeason == null && !!statsA && !!statsB && (!hasSeasonLine(statsA) || !hasSeasonLine(statsB));
+  const scope: Scope = retired ? 'career' : (chosen ?? 'season');
   // Season averages of the season in progress come from their own feed; a past season and the career both come from the career table.
   const viaCareer = scope === 'career' || pastSeason != null;
   const { data: careerA, isLoading: loadingCareerA, isError: failedCareerA, refetch: retryCareerA } = usePlayerCareer(viaCareer ? slotA?.id : undefined);
@@ -143,7 +146,7 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.set(e.contentOffset.y);
   });
-  const teamPicks = useTeamPicks();
+  const teamPicks = useTeamPicks(pastSeason ?? undefined);
 
   // A past season's team as it was then (the SuperSonics' colors, not the Thunder's).
   const teamOf = (s: Slot): Team | undefined => {
@@ -229,7 +232,7 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
         />
         <Animated.View key={mode} entering={slideIn(slide)}>
         {mode === 'teams' ? (
-          <TeamCompare scrollY={scrollY} />
+          <TeamCompare scrollY={scrollY} season={pastSeason ?? undefined} />
         ) : (
           <>
         {/* The two players as small trading cards (a seat to fill when one is missing), VS between them. */}
@@ -241,7 +244,7 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
           </View>
         </Animated.View>
 
-        {slotA && slotB && (
+        {slotA && slotB && !retired && (
           <View style={styles.scope}>
             <Segmented options={SCOPES.map((o) => (o.key === 'season' && pastSeason ? { ...o, label: seasonLabel(pastSeason) } : o))} value={scope} onChange={(key) => setScope(key)} segmentWidth={120} />
           </View>
@@ -277,8 +280,8 @@ export function CompareScreen({ pushed = false }: { pushed?: boolean }) {
           />
         )}
 
-        {slotA && slotB && <PlayerHeadToHead a={slotA} b={slotB} aColor={colors.away} bColor={colors.home} season={pastSeason ?? undefined} />}
-        {slotA && slotB && <PlayerExtras a={slotA} b={slotB} aColor={colors.away} bColor={colors.home} />}
+        {slotA && slotB && <PlayerHeadToHead a={slotA} b={slotB} aColor={colors.away} bColor={colors.home} season={scope === 'season' ? (pastSeason ?? undefined) : undefined} single={scope === 'season'} />}
+        {slotA && slotB && <PlayerExtras a={slotA} b={slotB} aColor={colors.away} bColor={colors.home} career={scope === 'career'} past={pastSeason != null} />}
           </>
         )}
         </Animated.View>

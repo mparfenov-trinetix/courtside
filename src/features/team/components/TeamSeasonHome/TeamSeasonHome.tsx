@@ -7,9 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, ListSkeleton, Pill, ScreenHeader, SeasonButton, SeasonSheet, SectionLabel, TeamMark, TITLE_INSET, Glide, headerHeight } from '@/components';
 import { useSeasonGames, useStandings, useTeam, useTilt, useAppWindow } from '@/hooks';
 import { currentSeason, teamAsItWas, type Game, type TeamDetail } from '@/lib/espn';
-import { conferenceStanding, PLAYOFFS_FROM, playoffTag, seasonResult } from '@/lib/league';
+import { conferenceStanding, PLAYOFFS_FROM, playoffTag, seasonResult, seriesId } from '@/lib/league';
 import { fonts, fontSize, palette, space, surfaces, teamTheme, withAlpha } from '@/lib/theme';
-import { goBack, openDetail } from '@/navigation';
+import { goBack, openDetail, pushOnce } from '@/navigation';
 import { SeasonResultCard } from '../SeasonResultCard';
 import { CARD_ASPECT, cardHeight, TeamCard } from '../TeamCard';
 import { TeamStarCard } from '../TeamStarCard';
@@ -117,7 +117,22 @@ export function TeamSeasonHome({ teamId, season: initial }: { teamId: string; se
 
         {/* How the season ended, and who carried it. */}
         {/* Both arrive when their data does (the result needs the games and the record, the player his own request), fading in while what is under them glides down. */}
-        <Glide>{result ? <SeasonResultCard result={result} theme={theme} place={standing ? `Finished ${standing.toLowerCase()}` : undefined} /> : null}</Glide>
+        <Glide>
+          {result ? (
+            <SeasonResultCard
+              result={result}
+              theme={theme}
+              place={standing ? `Finished ${standing.toLowerCase()}` : undefined}
+              // The series the season ended in (the Series page), and the play-in bracket for a team that played in it; nothing for a team that missed.
+              onOpenSeries={
+                result.lastSeries
+                  ? () => pushOnce({ pathname: '/series', params: { season: String(season), id: seriesId(result.lastSeries!.round, teamId, result.lastSeries!.opponentId) } } as never)
+                  : undefined
+              }
+              onOpenPlayIn={result.playIn ? () => pushOnce({ pathname: '/matchup-playoffs', params: { season: String(season), pane: 'playin', teams: teamId } } as never) : undefined}
+            />
+          ) : null}
+        </Glide>
         <Glide>
           <TeamStarCard teamId={teamId} theme={theme} season={season} />
         </Glide>

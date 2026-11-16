@@ -10,6 +10,8 @@ import { timeAgo } from '@/lib/date';
 import { fontSize, fonts, palette, radius, space, surfaces } from '@/lib/theme';
 import { goBack } from '@/navigation';
 
+import { RelatedLinks } from '../../components';
+
 /**
  * One article's text, as plain paragraphs under its picture and headline, with a way on to its page on espn.com. ESPN's text comes with
  * links and pictures in the middle of it; they are left out, the words stay.
@@ -40,6 +42,7 @@ export function ArticleScreen() {
             {data.webUrl ? (
               <Button label="Read on ESPN" tone="secondary" onPress={() => WebBrowser.openBrowserAsync(data.webUrl!).catch(() => {})} style={styles.more} />
             ) : null}
+            <RelatedLinks related={data.related} />
           </View>
         </ScrollView>
       )}

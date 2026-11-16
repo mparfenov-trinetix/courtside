@@ -31,8 +31,13 @@ function honorLines(
   ].filter((l): l is Line => l != null);
 }
 
-/** Contract and honors side by side. Separate from the stats chart: these are facts, not averages to put on a radar. */
-export function PlayerExtras({ a, b, aColor, bColor }: { a: Who; b: Who; aColor: string; bColor: string }) {
+/**
+ * What each player is beyond one season's numbers, side by side: his contract and draft pick ("Contract & draft") and his honors. Separate from the
+ * stats chart: these are facts, not averages to put on a radar. All of it is a career's, so none of it is drawn when a single season is compared
+ * (`career` false). The contract is also today's, not that of an old season, so it is left out when the comparison came from a game or series of
+ * the past (`past`), whichever segment is open; the draft pick stays.
+ */
+export function PlayerExtras({ a, b, aColor, bColor, career, past }: { a: Who; b: Who; aColor: string; bColor: string; career: boolean; past: boolean }) {
   const profA = usePlayerProfile(a.id);
   const profB = usePlayerProfile(b.id);
   const careerA = usePlayerCareer(a.id);
@@ -44,27 +49,28 @@ export function PlayerExtras({ a, b, aColor, bColor }: { a: Who; b: Who; aColor:
   const da = profA.data?.draft;
   const db = profB.data?.draft;
 
-  const contract: Line[] = [];
-  if (ca || cb) {
-    contract.push({ label: 'Salary', a: ca ? money(ca.salary) : '–', b: cb ? money(cb.salary) : '–', winner: ca && cb ? better(ca.salary, cb.salary) : undefined });
-    contract.push({ label: 'Years left', a: ca ? String(ca.yearsRemaining) : '–', b: cb ? String(cb.yearsRemaining) : '–', winner: ca && cb ? better(ca.yearsRemaining, cb.yearsRemaining) : undefined });
+  const facts: Line[] = [];
+  const hasContract = (ca || cb) && !past;
+  if (hasContract) {
+    facts.push({ label: 'Salary', a: ca ? money(ca.salary) : '–', b: cb ? money(cb.salary) : '–', winner: ca && cb ? better(ca.salary, cb.salary) : undefined });
+    facts.push({ label: 'Years left', a: ca ? String(ca.yearsRemaining) : '–', b: cb ? String(cb.yearsRemaining) : '–', winner: ca && cb ? better(ca.yearsRemaining, cb.yearsRemaining) : undefined });
     if (ca && cb) {
       const total = (c: typeof ca) => c.salary * Math.max(1, c.yearsRemaining);
-      contract.push({ label: 'Remaining value (at this salary)', a: money(total(ca)), b: money(total(cb)), winner: better(total(ca), total(cb)) });
+      facts.push({ label: 'Remaining value (at this salary)', a: money(total(ca)), b: money(total(cb)), winner: better(total(ca), total(cb)) });
     }
   }
   if (da || db) {
-    contract.push({ label: 'Draft pick', a: da ? `#${da.pick} · ${da.year}` : 'Undrafted', b: db ? `#${db.pick} · ${db.year}` : 'Undrafted' });
+    facts.push({ label: 'Draft pick', a: da ? `#${da.pick} · ${da.year}` : 'Undrafted', b: db ? `#${db.pick} · ${db.year}` : 'Undrafted' });
   }
 
-  const honors = honorLines(
+  const honors = !career ? [] : honorLines(
     { profile: profA.data, titles: careerA.data ? titleSeasons(careerA.data.seasons).length : 0, allStars: allStars?.[a.id]?.length ?? 0 },
     { profile: profB.data, titles: careerB.data ? titleSeasons(careerB.data.seasons).length : 0, allStars: allStars?.[b.id]?.length ?? 0 },
   );
 
   return (
     <View>
-      {contract.length > 0 && <Block title="Contract" lines={contract} aColor={aColor} bColor={bColor} />}
+      {career && facts.length > 0 && <Block title={hasContract && (da || db) ? 'Contract & draft' : hasContract ? 'Contract' : 'Draft'} lines={facts} aColor={aColor} bColor={bColor} />}
       {honors.length > 0 && <Block title="Honors" lines={honors} aColor={aColor} bColor={bColor} />}
     </View>
   );

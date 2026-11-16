@@ -1,4 +1,5 @@
 import { FRANCHISE_ERAS } from './franchise-eras';
+import { lookIn } from './franchise-looks';
 import type { Team } from './teams';
 
 /**
@@ -59,9 +60,15 @@ export function registerEraLogos(logos: Record<string, string>) {
   dressed = new WeakMap();
 }
 
-/** The logo the team wore in that season, when it went by another name then and the app has the picture; otherwise nothing (use the feed's or today's). */
+/**
+ * The logo the team wore in that season when it was not today's and the app has the picture: a past look of the same name (`franchise-looks.ts`,
+ * keyed `<teamId>|<look key>`), else the logo of another name it went by then; otherwise nothing (use the feed's or today's).
+ */
 export function eraLogoFor(teamId: string, season?: number): string | undefined {
   if (season == null || Number.isNaN(season)) return undefined;
+  const look = lookIn(teamId, season);
+  const byLook = look && eraLogos.get(`${teamId}|${look.key}`);
+  if (byLook) return byLook;
   const era = eraIn(teamId, season);
   return era && !era.current ? eraLogos.get(`${teamId}|${era.name}`) : undefined;
 }
@@ -87,7 +94,7 @@ export function renamedSince(teamId: string, season: number): boolean {
 }
 
 type EraTeam = Pick<Team, 'id' | 'abbreviation' | 'location' | 'name' | 'displayName' | 'logo' | 'logoDark'> & { logoOnPrimary?: string; mark?: string };
-let dressed = new WeakMap<object, Map<number, unknown>>();
+let dressed = new WeakMap<object, Map<string, unknown>>();
 
 /**
  * The team as it was in a season: the same team with the name, location and tri-code of that time (the SuperSonics for Oklahoma City in 2007,
@@ -101,12 +108,15 @@ export function teamInSeason<T extends EraTeam>(team: T | undefined, season?: nu
 export function teamInSeason<T extends EraTeam>(team: T | undefined, season?: number): T | undefined {
   if (!team || season == null) return team;
   const era = eraIn(team.id, season);
-  if (!era || era.current) return team;
+  if (!era) return team;
+  const logo = eraLogoFor(team.id, season);
+  // The same name with the same logo as today's: nothing to change.
+  if (era.current && !logo) return team;
   let byEra = dressed.get(team);
   if (!byEra) dressed.set(team, (byEra = new Map()));
-  let out = byEra.get(era.from) as T | undefined;
+  const key = lookKey(team.id, season);
+  let out = byEra.get(key) as T | undefined;
   if (!out) {
-    const logo = eraLogoFor(team.id, season);
     out = {
       ...team,
       abbreviation: era.abbr || team.abbreviation,
@@ -116,9 +126,14 @@ export function teamInSeason<T extends EraTeam>(team: T | undefined, season?: nu
       // The secondary mark is today's emblem; the old logo stands in everywhere.
       ...(logo ? { logo, logoDark: logo, logoOnPrimary: logo, mark: undefined } : null),
     };
-    byEra.set(era.from, out);
+    byEra.set(key, out);
   }
   return out;
+}
+
+/** One key per identity and look of a team, for the caches of dressed teams. */
+function lookKey(teamId: string, season: number): string {
+  return `${eraIn(teamId, season)?.from ?? 0}|${lookIn(teamId, season)?.key ?? ''}`;
 }
 
 /**
@@ -137,15 +152,15 @@ const ERA_COLORS: Record<string, [string, string]> = {
   '3|New Orleans/Oklahoma City Hornets': ['#0B2F4E', '#F9BA00'],
 };
 
-/** The era's own colors, when the team went by another name then and the app has a card for that name. */
+/** The era's own colors, when the team went by another name then (or wore another look) and the app has a card for it. */
 export function eraColorsFor(teamId: string, season?: number): { color: string; alternateColor: string } | undefined {
   if (season == null || Number.isNaN(season)) return undefined;
   const era = eraIn(teamId, season);
-  const pair = era && !era.current ? ERA_COLORS[`${teamId}|${era.name}`] : undefined;
+  const pair = lookIn(teamId, season)?.colors ?? (era && !era.current ? ERA_COLORS[`${teamId}|${era.name}`] : undefined);
   return pair ? { color: pair[0], alternateColor: pair[1] } : undefined;
 }
 
-const lookedBack = new WeakMap<object, Map<number, unknown>>();
+const lookedBack = new WeakMap<object, Map<string, unknown>>();
 
 /**
  * `teamInSeason` with the era's colors too: the team as its card should look in that season, name, code, logo and colors. Only for a name with
@@ -157,7 +172,7 @@ export function teamAsItWas<T extends EraTeam & { color: string; alternateColor:
   if (!colors) return dressedTeam;
   let byDressed = lookedBack.get(dressedTeam);
   if (!byDressed) lookedBack.set(dressedTeam, (byDressed = new Map()));
-  const key = eraIn(team.id, season ?? 0)?.from ?? 0;
+  const key = lookKey(team.id, season ?? 0);
   let out = byDressed.get(key) as T | undefined;
   if (!out) {
     out = { ...dressedTeam, ...colors };

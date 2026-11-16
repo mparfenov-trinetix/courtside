@@ -4,6 +4,7 @@ export type { GameKind } from './common';
 export { eraColorsFor, eraIn, eraLogoFor, registerEraLogos, renamedSince, teamAsItWas, teamEras, teamInSeason, withEraLogo } from './franchise';
 export type { TeamEra } from './franchise';
 export { FRANCHISE_ERAS } from './franchise-eras';
+export { TEAM_LOOKS, lookIn, type TeamLook } from './franchise-looks';
 export { fetchRoster, fetchTeamDetail, fetchTeams } from './teams';
 export type { Player, Roster, Team, TeamDetail } from './teams';
 export { fetchHeadToHead, fetchTeamSchedule, fetchTeamSeason } from './schedule';
@@ -49,12 +50,14 @@ export {
 } from './awards';
 export {
   articleBlocks,
+  articleRelated,
   fetchArticle,
   fetchNews,
   normalizeArticle,
   normalizeGameRecap,
   normalizeNews,
   type ArticleBlock,
+  type ArticleRelated,
   type ArticleText,
   type GameRecap,
   type NewsArticle,

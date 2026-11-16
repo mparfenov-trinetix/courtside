@@ -5,7 +5,7 @@ import Animated from 'react-native-reanimated';
 
 import { Expandable } from '../Expandable';
 import { useHeadToHead } from '@/hooks';
-import type { HeadToHeadGame } from '@/lib/espn';
+import { seasonLabel, type HeadToHeadGame } from '@/lib/espn';
 import { summarizeHeadToHead } from '@/lib/league';
 import { fonts, palette, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { openDetail } from '@/navigation';
@@ -14,8 +14,8 @@ import { COLLAPSED } from './constants';
 export type H2HTeam = { id: string; abbr: string; logo: string; color: string };
 
 /** Last meetings between two teams. Loads its own data; `a` is the team whose side the results are read from. */
-export function HeadToHead({ a, b, flush = false }: { a: H2HTeam; b: H2HTeam; /** No room above: the page puts its own gap between sections. */ flush?: boolean }) {
-  const { data, isPending, error } = useHeadToHead(a.id, b.id);
+export function HeadToHead({ a, b, flush = false, season }: { a: H2HTeam; b: H2HTeam; /** No room above: the page puts its own gap between sections. */ flush?: boolean; /** A season of the past: the meetings up to that season, not up to now. */ season?: number }) {
+  const { data, isPending, error } = useHeadToHead(a.id, b.id, season);
   return (
     <Animated.View style={[styles.wrap, flush && styles.flush]}>
       <Text style={[styles.title, flush && styles.flushTitle]}>Head to head</Text>
@@ -28,14 +28,14 @@ export function HeadToHead({ a, b, flush = false }: { a: H2HTeam; b: H2HTeam; /*
           <Text style={styles.empty}>Couldn’t load the meeting history.</Text>
         </View>
       ) : (
-        <HeadToHeadCard a={a} b={b} games={data ?? []} />
+        <HeadToHeadCard a={a} b={b} games={data ?? []} season={season} />
       )}
     </Animated.View>
   );
 }
 
 /** The card itself: record, scoring, and the list of meetings (newest first, from `a`'s side). */
-export function HeadToHeadCard({ a, b, games }: { a: H2HTeam; b: H2HTeam; games: HeadToHeadGame[] }) {
+export function HeadToHeadCard({ a, b, games, season }: { a: H2HTeam; b: H2HTeam; games: HeadToHeadGame[]; /** The season the list goes up to, when it is not now. */ season?: number }) {
   const [all, setAll] = useState(false);
   if (games.length === 0) {
     return (
@@ -54,7 +54,7 @@ export function HeadToHeadCard({ a, b, games }: { a: H2HTeam; b: H2HTeam; games:
   return (
     <View style={styles.card}>
       <Text style={styles.sub}>
-        Last {s.played} meeting{s.played === 1 ? '' : 's'}
+        Last {s.played} meeting{s.played === 1 ? '' : 's'}{season ? ` to ${seasonLabel(season)}` : ''}
       </Text>
       <View style={styles.record}>
         <Image source={a.logo} style={styles.logo} contentFit="contain" />

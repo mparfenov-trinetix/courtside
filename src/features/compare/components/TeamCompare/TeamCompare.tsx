@@ -10,7 +10,7 @@ import { CompareRow, rowWinner, type Row } from '../CompareRow';
 import { Radar, type RadarAxis } from '../Radar';
 import { Button, HeadToHead, EmptyState, MINI_CARD_RATIO, MiniCardEmpty, MiniTeamCard, PageSheet, dealIn } from '@/components';
 import { useLeagueTeamStats, useSceneSettled, useStandings, useTeamDetail, useTeams, useAppWindow } from '@/hooks';
-import type { Team, TeamStatRow } from '@/lib/espn';
+import { seasonLabel, teamAsItWas, type Team, type TeamStatRow } from '@/lib/espn';
 import { TEAM_METRICS, conferenceStanding, formatMetric, metricByKey, ordinal, rankOf, type TeamMetric } from '@/lib/league';
 import { fonts, matchupColors, palette, teamTheme, withAlpha, surfaces, textStyle } from '@/lib/theme';
 import { useScreenTeamStore } from '@/state';
@@ -47,34 +47,52 @@ function radarAxes(rows: TeamStatRow[], a: TeamStatRow, b: TeamStatRow): RadarAx
   return RADAR.map(({ label, key }) => ({ label, a: score(a, key), b: score(b, key) }));
 }
 
-/** The two teams picked: the URL holds them so other screens can deep-link a matchup (e.g. a team page's Compare button), the first falling back to your team. */
-export function useTeamPicks() {
+/**
+ * The two teams picked: the URL holds them so other screens can deep-link a matchup (e.g. a team page's Compare button), the first falling back to
+ * the team of the first player a link carried (a game's or a series' compare link names both players' teams) and then to your team. `season`, a
+ * season of the past, dresses them as they were then (a SuperSonics card, not a Thunder one).
+ */
+export function useTeamPicks(season?: number) {
   const currentTeamId = useScreenTeamStore((s) => s.currentTeamId);
   const { data: teams } = useTeams();
-  const { a, b } = useLocalSearchParams<{ a?: string; b?: string }>();
-  const idA = a || currentTeamId;
+  const { a, b, teamId, teamId2 } = useLocalSearchParams<{ a?: string; b?: string; teamId?: string; teamId2?: string }>();
+  const idA = a || teamId || currentTeamId;
   // Never the same team twice (a link could ask for it).
-  const idB = b && b !== idA ? b : null;
-  const teamA = teams?.find((t) => t.id === idA);
-  const teamB = teams?.find((t) => t.id === idB);
+  const wantedB = b || teamId2;
+  const idB = wantedB && wantedB !== idA ? wantedB : null;
+  const found = (id: string | null) => {
+    const t = teams?.find((x) => x.id === id);
+    return t && season ? teamAsItWas(t, season) : t;
+  };
+  const teamA = found(idA);
+  const teamB = found(idB);
   const fallback = { color: '#8A96A8', alternateColor: '#F2F4F7' };
   const colors = matchupColors(teamA ?? fallback, teamB ?? { color: '#E2B077', alternateColor: '#F2F4F7' });
   return { teams, idA, idB, teamA, teamB, colors };
 }
 
-/** Head-to-head season comparison for two teams, with league ranks computed from all 30. `scrollY` is the page's scroll, which the cards follow. */
-export function TeamCompare({ scrollY }: { scrollY: SharedValue<number> }) {
-  const { teams, idA, idB, teamA, teamB, colors } = useTeamPicks();
-  const { data: table, isPending, isError, refetch } = useLeagueTeamStats();
+/**
+ * Head-to-head season comparison for two teams, with league ranks computed from all 30. `scrollY` is the page's scroll, which the cards follow.
+ * `season`, a season of the past (a link from an old game or series), compares the teams as they were in THAT season: that season's numbers,
+ * standings and record, their names and colors then.
+ */
+export function TeamCompare({ scrollY, season }: { scrollY: SharedValue<number>; season?: number }) {
+  const { teams, idA, idB, teamA, teamB, colors } = useTeamPicks(season);
+  const { data: table, isPending, isError, refetch } = useLeagueTeamStats(season);
   const [picking, setPicking] = useState<'a' | 'b' | null>(null);
   const { width: screen } = useAppWindow();
   const cardW = Math.floor((screen - 32 - 10) / 2);
-  const { data: standings, isLoading: loadingStandings } = useStandings();
+  const { data: standings, isLoading: loadingStandings } = useStandings(season);
   // A team chosen after the screen has settled is dealt in with a flip (not on the screen's own first draw, inside the slide in from the menu).
   const settled = useSceneSettled(0);
 
   const { data: detailA, isLoading: loadingA } = useTeamDetail(idA);
   const { data: detailB, isLoading: loadingB } = useTeamDetail(idB);
+  // A past season's record is the standings' (the team's own detail is today's).
+  const recordIn = (id: string | null) => {
+    const e = [...(standings?.east ?? []), ...(standings?.west ?? [])].find((x) => x.teamId === id);
+    return e ? `${e.wins}-${e.losses}` : undefined;
+  };
   const statsA = table?.find((r) => r.teamId === idA);
   const statsB = table?.find((r) => r.teamId === idB);
   const slotsStyle = useSlotsStyle(scrollY, Math.round(cardW * MINI_CARD_RATIO));
@@ -87,8 +105,8 @@ export function TeamCompare({ scrollY }: { scrollY: SharedValue<number> }) {
     <>
       {/* The two teams as small team cards (a seat to fill when one is missing), VS between them. */}
       <Animated.View style={[styles.slots, slotsStyle]}>
-        <TeamSlot key={teamA?.id ?? 'a'} team={teamA} color={colors.away} width={cardW} record={detailA?.record} standing={short(conferenceStanding(standings, idA))} loading={loadingA || loadingStandings} entering={settled ? dealIn('left') : undefined} onPress={() => setPicking('a')} />
-        <TeamSlot key={teamB?.id ?? 'b'} team={teamB} color={colors.home} width={cardW} record={detailB?.record} standing={short(conferenceStanding(standings, idB))} loading={loadingB || loadingStandings} entering={settled ? dealIn('right', 100) : undefined} onPress={() => setPicking('b')} />
+        <TeamSlot key={teamA?.id ?? 'a'} team={teamA} color={colors.away} width={cardW} record={season ? recordIn(idA) : detailA?.record} standing={short(conferenceStanding(standings, idA))} loading={loadingA || loadingStandings} entering={settled ? dealIn('left') : undefined} onPress={() => setPicking('a')} />
+        <TeamSlot key={teamB?.id ?? 'b'} team={teamB} color={colors.home} width={cardW} record={season ? recordIn(idB) : detailB?.record} standing={short(conferenceStanding(standings, idB))} loading={loadingB || loadingStandings} entering={settled ? dealIn('right', 100) : undefined} onPress={() => setPicking('b')} />
         <View pointerEvents="none" style={[styles.vsBadge, { left: screen / 2 - 20, top: Math.round(cardW * MINI_CARD_RATIO) / 2 - 20 }]}>
           <Text style={styles.vsText}>VS</Text>
         </View>
@@ -97,7 +115,7 @@ export function TeamCompare({ scrollY }: { scrollY: SharedValue<number> }) {
       {rows.length > 0 ? (
         <Animated.View style={styles.card}>
           <Radar axes={radarAxes(table!, statsA!, statsB!)} aColor={colors.away} bColor={colors.home} aName={statsA!.name} bName={statsB!.name} />
-          <Text style={styles.radarNote}>Outer ring = best in the league</Text>
+          <Text style={styles.radarNote}>{season ? `Outer ring = best in the league in ${seasonLabel(season)}` : 'Outer ring = best in the league'}</Text>
           <View style={styles.tally}>
             <Text style={[styles.tallyNum, { color: colors.away }]}>{winsA}</Text>
             <Text style={styles.tallyLabel}>categories won</Text>
@@ -120,6 +138,7 @@ export function TeamCompare({ scrollY }: { scrollY: SharedValue<number> }) {
           <HeadToHead
             a={{ id: teamA.id, abbr: teamA.abbreviation, logo: teamA.logoDark || teamA.logo, color: colors.away }}
             b={{ id: teamB.id, abbr: teamB.abbreviation, logo: teamB.logoDark || teamB.logo, color: colors.home }}
+            season={season}
           />
         </View>
       )}

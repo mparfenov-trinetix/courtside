@@ -1,6 +1,6 @@
 import { queryOptions, useQueries, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useIsFocused } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   fetchGameSummary,
@@ -273,7 +273,7 @@ export function useGamesOnDay(day: Date, today: Date, enabled = true) {
 }
 
 /**
- * What ESPN said before tip-off about a game that is over (win chance and closing line), read from the core API because the summary drops
+ * What ESPN said before tip-off about a game that is over (its win chance), read from the core API because the summary drops
  * it once the game has started. Never changes, so it is read once and kept (and persisted).
  */
 export function usePastPregame(gameId: string, enabled: boolean) {
@@ -423,22 +423,58 @@ export function usePlayerGameLog(athleteId?: string | null) {
   });
 }
 
+/** How many seasons of two players' game logs are read at once while their whole careers are being searched for meetings (six requests). */
+const MEETING_BATCH = 3;
+
 /**
- * A player's games over the last `count` seasons (the current one first), each season its own cached read: a finished season never changes. The
- * current season shares the key of `usePlayerGameLog`.
+ * The game logs two players' meetings are found in. `single`: just one season, `season` or the one in progress. Otherwise every season BOTH of
+ * them played (their career tables say which, so a season one of them sat out costs nothing), up to `season` or now, newest first, read
+ * `MEETING_BATCH` seasons at a time: the latest ones answer first and the page lists them at once, the older ones arrive behind them
+ * (`more` while they do), and a finished season is cached for good, so the whole search is paid for once and never blocks anything. The logs come
+ * back flat per player, in the order of the seasons.
  */
-/** A player's game logs for `count` seasons, newest first, ending at `endSeason` (the season in progress by default: a past game's head to head ends at its own season). */
-export function usePlayerSeasonLogs(athleteId: string | null | undefined, count = 3, endSeason?: number) {
+export function usePlayerMeetingLogs(aId: string, bId: string, { single = false, season }: { single?: boolean; season?: number } = {}) {
   const current = currentSeason();
-  const seasons = Array.from({ length: count }, (_, i) => Math.min(endSeason ?? current, current) - i);
-  return useQueries({
-    queries: seasons.map((season) => ({
-      queryKey: season === current ? ['playerGameLog', athleteId] : ['playerGameLog', athleteId, season],
-      queryFn: () => fetchPlayerGameLog(athleteId!, season === current ? undefined : season),
-      enabled: !!athleteId,
-      staleTime: season === current ? 30 * 60 * 1000 : Infinity,
-    })),
+  const end = Math.min(season ?? current, current);
+  const careerA = usePlayerCareer(single ? null : aId);
+  const careerB = usePlayerCareer(single ? null : bId);
+  const seasons = useMemo(() => {
+    if (single) return [end];
+    if (!careerA.data || !careerB.data) return [];
+    const years = (c: { seasons: { year: number }[] }) => new Set(c.seasons.map((r) => r.year));
+    const b = years(careerB.data);
+    return [...years(careerA.data)].filter((y) => b.has(y) && y <= end).sort((x, y) => y - x);
+  }, [single, end, careerA.data, careerB.data]);
+  const [batches, setBatches] = useState(1);
+  const wanted = single ? seasons : seasons.slice(0, batches * MEETING_BATCH);
+  const queries = useQueries({
+    queries: wanted.flatMap((year) =>
+      [aId, bId].map((id) => ({
+        queryKey: year === current ? ['playerGameLog', id] : ['playerGameLog', id, year],
+        queryFn: () => fetchPlayerGameLog(id, year === current ? undefined : year),
+        staleTime: year === current ? 30 * 60 * 1000 : Infinity,
+      })),
+    ),
   });
+  const settled = queries.every((q) => !q.isLoading);
+  const hasMore = !single && wanted.length < seasons.length;
+  // The next batch starts when this one is in (never all of a long career at once).
+  useEffect(() => {
+    if (!settled || !hasMore) return;
+    const id = setTimeout(() => setBatches((n) => n + 1), 0);
+    return () => clearTimeout(id);
+  }, [settled, hasMore, batches]);
+  const logsOf = (offset: number) => wanted.flatMap((_, i) => queries[i * 2 + offset]?.data ?? []);
+  const first = queries.slice(0, MEETING_BATCH * 2);
+  return {
+    logsA: logsOf(0),
+    logsB: logsOf(1),
+    /** Nothing to list yet: the careers or the first seasons are still coming. */
+    loading: !single && (careerA.isLoading || careerB.isLoading) ? true : first.some((q) => q.isLoading),
+    /** Older seasons are still being read behind the ones listed. */
+    more: hasMore || (!single && queries.some((q) => q.isLoading)),
+    failed: queries.length > 0 && queries.every((q) => q.isError),
+  };
 }
 
 export function usePlayerSearch(query: string) {
@@ -459,15 +495,18 @@ export function usePlayerSearch(query: string) {
   });
 }
 
-export const leagueTeamStatsOptions = () =>
-  queryOptions({
-    queryKey: ['leagueTeamStats'],
-    queryFn: fetchLeagueTeamStats,
-    staleTime: HOUR,
+/** The league's team stats: this season's (the plain key, persisted and refreshed elsewhere), or a past season's, which never changes. */
+export const leagueTeamStatsOptions = (season?: number) => {
+  const past = season != null && season < currentSeason();
+  return queryOptions({
+    queryKey: past ? ['leagueTeamStats', season] : ['leagueTeamStats'],
+    queryFn: () => fetchLeagueTeamStats(past ? season : undefined),
+    staleTime: past ? Infinity : HOUR,
   });
+};
 
-export function useLeagueTeamStats() {
-  return useQuery(leagueTeamStatsOptions());
+export function useLeagueTeamStats(season?: number) {
+  return useQuery(leagueTeamStatsOptions(season));
 }
 
 export function usePlayerCareer(athleteId?: string | null) {
@@ -554,12 +593,14 @@ export function prefetchHeadToHead(client: QueryClient, teamId?: string | null, 
   client.prefetchQuery({ queryKey: ['headToHead', teamId, rivalId], queryFn: () => fetchHeadToHead(teamId, rivalId), staleTime: 6 * HOUR });
 }
 
-export function useHeadToHead(teamId?: string | null, rivalId?: string | null) {
+/** The meetings of two teams: the latest, or, with `season` of the past, those up to and including that season (a finished season never changes). */
+export function useHeadToHead(teamId?: string | null, rivalId?: string | null, season?: number) {
+  const past = season != null && season < currentSeason();
   return useQuery({
-    queryKey: ['headToHead', teamId, rivalId],
-    queryFn: () => fetchHeadToHead(teamId!, rivalId!),
+    queryKey: past ? ['headToHead', teamId, rivalId, season] : ['headToHead', teamId, rivalId],
+    queryFn: () => fetchHeadToHead(teamId!, rivalId!, undefined, undefined, past ? season : undefined),
     enabled: !!teamId && !!rivalId && teamId !== rivalId,
-    staleTime: 6 * HOUR,
+    staleTime: past ? Infinity : 6 * HOUR,
   });
 }
 
